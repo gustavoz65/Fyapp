@@ -12,9 +12,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/backend/internal/config"
-	"github.com/gustavoz65/Cashing-go/backend/internal/model"
-	"github.com/gustavoz65/Cashing-go/backend/internal/repository"
+	"github.com/gustavoz65/Cashing-go/internal/config"
+	"github.com/gustavoz65/Cashing-go/internal/model"
+	"github.com/gustavoz65/Cashing-go/internal/repository"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )

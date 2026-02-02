@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gustavoz65/Cashing-go/backend/internal/database"
+	"github.com/gustavoz65/Cashing-go/internal/database"
 	"github.com/rs/zerolog"
 )
 

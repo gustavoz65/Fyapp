@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/backend/internal/config"
-	"github.com/gustavoz65/Cashing-go/backend/internal/database"
-	"github.com/gustavoz65/Cashing-go/backend/internal/lib/utils/job"
-	"github.com/gustavoz65/Cashing-go/backend/internal/logger"
+	"github.com/gustavoz65/Cashing-go/internal/config"
+	"github.com/gustavoz65/Cashing-go/internal/database"
+	"github.com/gustavoz65/Cashing-go/internal/lib/utils/job"
+	"github.com/gustavoz65/Cashing-go/internal/logger"
 	"github.com/redis/go-redis/v9"
 	zerolog "github.com/rs/zerolog"
 )

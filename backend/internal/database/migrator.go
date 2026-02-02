@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gustavoz65/Cashing-go/backend/internal/config"
+	"github.com/gustavoz65/Cashing-go/internal/config"
 	"github.com/rs/zerolog"
 
 	_ "github.com/go-sql-driver/mysql"

@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/backend/internal/model"
-	"github.com/gustavoz65/Cashing-go/backend/internal/repository"
+	"github.com/gustavoz65/Cashing-go/internal/model"
+	"github.com/gustavoz65/Cashing-go/internal/repository"
 	"github.com/rs/zerolog"
 )
 

@@ -1,7 +1,7 @@
 package job
 
 import (
-	"github.com/gustavoz65/Cashing-go/backend/internal/config"
+	"github.com/gustavoz65/Cashing-go/internal/config"
 	"github.com/hibiken/asynq"
 	zerolog "github.com/rs/zerolog"
 )

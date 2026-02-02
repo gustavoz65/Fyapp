@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/backend/internal/database"
-	"github.com/gustavoz65/Cashing-go/backend/internal/model"
+	"github.com/gustavoz65/Cashing-go/internal/database"
+	"github.com/gustavoz65/Cashing-go/internal/model"
 	"github.com/rs/zerolog"
 	"github.com/shopspring/decimal"
 )

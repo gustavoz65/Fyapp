@@ -1,6 +1,6 @@
 package handler
 
-import "github.com/gustavoz65/Cashing-go/backend/internal/server"
+import "github.com/gustavoz65/Cashing-go/internal/server"
 
 type Handler struct {
 	server *server.Server

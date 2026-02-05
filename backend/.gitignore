@@ -23,3 +23,6 @@ yarn-error.log*
 *.rej
 *.class
 go-boilerplate/
+GUIA_ARQUITECTURA.md
+README.md
+ANALISE_BACKEND.md

@@ -1,0 +1,160 @@
+package router
+
+import (
+	"net/http"
+
+	"github.com/gustavoz65/Cashing-go/internal/config"
+	"github.com/gustavoz65/Cashing-go/internal/database"
+	"github.com/gustavoz65/Cashing-go/internal/handler"
+	"github.com/gustavoz65/Cashing-go/internal/middleware"
+	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/Cashing-go/internal/service"
+	"github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog"
+)
+
+// New cria e configura o router Echo com todas as rotas
+func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger) *echo.Echo {
+	e := echo.New()
+	e.HideBanner = true
+	e.HidePort = true
+
+	// Error handler global
+	e.HTTPErrorHandler = middleware.ErrorHandler(logger)
+
+	// Middlewares globais
+	e.Use(echomiddleware.RequestID())
+	e.Use(middleware.RecoveryMiddleware(logger))
+	e.Use(middleware.LoggerMiddleware(logger))
+	e.Use(middleware.CORSMiddleware(cfg.Server.CORSAllowedOrigins))
+
+	// Repositories
+	userRepo := repository.NewUserRepository(db, logger)
+	transactionRepo := repository.NewTransactionRepository(db, logger)
+	accountRepo := repository.NewBankAccountRepository(db, logger)
+	categoryRepo := repository.NewCategoryRepository(db, logger)
+	budgetRepo := repository.NewBudgetRepository(db, logger)
+	goalRepo := repository.NewGoalRepository(db, logger)
+	notificationRepo := repository.NewNotificationRepository(db, logger)
+
+	// Services
+	authService := service.NewAuthService(userRepo, cfg, logger)
+	userService := service.NewUserService(userRepo, logger)
+	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, logger)
+	accountService := service.NewBankAccountService(accountRepo, logger)
+	categoryService := service.NewCategoryService(categoryRepo, logger)
+	budgetService := service.NewBudgetService(budgetRepo, notificationRepo, logger)
+	goalService := service.NewGoalService(goalRepo, notificationRepo, logger)
+	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
+	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger)
+
+	// Handlers
+	authHandler := handler.NewAuthHandler(authService)
+	userHandler := handler.NewUserHandler(userService)
+	transactionHandler := handler.NewTransactionHandler(transactionService)
+	accountHandler := handler.NewBankAccountHandler(accountService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
+	budgetHandler := handler.NewBudgetHandler(budgetService)
+	goalHandler := handler.NewGoalHandler(goalService)
+	dashboardHandler := handler.NewDashboardHandler(dashboardService)
+	notificationHandler := handler.NewNotificationHandler(notificationService)
+
+	// Health check
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status": "ok",
+		})
+	})
+
+	// API v1
+	api := e.Group("/api/v1")
+
+	// --- Rotas publicas (sem autenticacao) ---
+	auth := api.Group("/auth")
+	auth.POST("/register", authHandler.Register)
+	auth.POST("/login", authHandler.Login)
+	auth.POST("/refresh", authHandler.RefreshToken)
+	auth.POST("/logout", authHandler.Logout)
+
+	// --- Rotas autenticadas ---
+	authMiddleware := middleware.AuthMiddleware(authService)
+
+	// Auth (requer autenticacao)
+	authProtected := api.Group("/auth", authMiddleware)
+	authProtected.POST("/change-password", authHandler.ChangePassword)
+
+	// Users
+	users := api.Group("/users", authMiddleware)
+	users.GET("/me", userHandler.GetMe)
+	users.PUT("/me", userHandler.UpdateMe)
+	users.DELETE("/me", userHandler.DeactivateMe)
+	users.GET("/settings", userHandler.GetSettings)
+	users.PUT("/settings", userHandler.UpdateSettings)
+
+	// Categories
+	categories := api.Group("/categories", authMiddleware)
+	categories.GET("", categoryHandler.GetAll)
+	categories.GET("/:id", categoryHandler.GetByID)
+	categories.POST("", categoryHandler.Create)
+	categories.PUT("/:id", categoryHandler.Update)
+	categories.DELETE("/:id", categoryHandler.Delete)
+
+	// Bank Accounts
+	accounts := api.Group("/accounts", authMiddleware)
+	accounts.GET("", accountHandler.GetAll)
+	accounts.GET("/balance", accountHandler.GetTotalBalance)
+	accounts.GET("/:id", accountHandler.GetByID)
+	accounts.POST("", accountHandler.Create)
+	accounts.PUT("/:id", accountHandler.Update)
+	accounts.DELETE("/:id", accountHandler.Delete)
+
+	// Transactions
+	transactions := api.Group("/transactions", authMiddleware)
+	transactions.GET("", transactionHandler.GetAll)
+	transactions.GET("/upcoming", transactionHandler.GetUpcoming)
+	transactions.GET("/:id", transactionHandler.GetByID)
+	transactions.POST("", transactionHandler.Create)
+	transactions.PUT("/:id", transactionHandler.Update)
+	transactions.DELETE("/:id", transactionHandler.Delete)
+	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid)
+
+	// Budgets
+	budgets := api.Group("/budgets", authMiddleware)
+	budgets.GET("", budgetHandler.GetAll)
+	budgets.GET("/summary", budgetHandler.GetSummary)
+	budgets.GET("/:id", budgetHandler.GetByID)
+	budgets.POST("", budgetHandler.Create)
+	budgets.PUT("/:id", budgetHandler.Update)
+	budgets.DELETE("/:id", budgetHandler.Delete)
+
+	// Goals
+	goals := api.Group("/goals", authMiddleware)
+	goals.GET("", goalHandler.GetAll)
+	goals.GET("/summary", goalHandler.GetSummary)
+	goals.GET("/:id", goalHandler.GetByID)
+	goals.POST("", goalHandler.Create)
+	goals.PUT("/:id", goalHandler.Update)
+	goals.DELETE("/:id", goalHandler.Delete)
+	goals.POST("/:id/contributions", goalHandler.AddContribution)
+	goals.GET("/:id/contributions", goalHandler.GetContributions)
+
+	// Dashboard
+	dashboard := api.Group("/dashboard", authMiddleware)
+	dashboard.GET("", dashboardHandler.GetSummary)
+	dashboard.GET("/cash-flow", dashboardHandler.GetCashFlow)
+	dashboard.GET("/income-expense", dashboardHandler.GetIncomeVsExpense)
+	dashboard.GET("/monthly-comparison", dashboardHandler.GetMonthlyComparison)
+	dashboard.GET("/account-balances", dashboardHandler.GetAccountBalances)
+
+	// Notifications
+	notifications := api.Group("/notifications", authMiddleware)
+	notifications.GET("", notificationHandler.GetAll)
+	notifications.GET("/unread", notificationHandler.GetUnread)
+	notifications.GET("/unread/count", notificationHandler.GetUnreadCount)
+	notifications.PATCH("/:id/read", notificationHandler.MarkAsRead)
+	notifications.PATCH("/read-all", notificationHandler.MarkAllAsRead)
+	notifications.DELETE("/:id", notificationHandler.Delete)
+
+	return e
+}

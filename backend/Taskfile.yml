@@ -1,7 +1,14 @@
 version: "3"
 
+dotenv: ['.env']
+
 vars:
-  BOILERPLATE_DB_DSN: '{{.BOILERPLATE_DB_DSN | default ""}}'
+  DB_USER: '{{.BOILERPLATE_DATABASE_USER | default "root"}}'
+  DB_PASS: '{{.BOILERPLATE_DATABASE_PASSWORD | default "senha123"}}'
+  DB_HOST: '{{.BOILERPLATE_DATABASE_HOST | default "localhost"}}'
+  DB_PORT: '{{.BOILERPLATE_DATABASE_PORT | default "3306"}}'
+  DB_NAME: '{{.BOILERPLATE_DATABASE_DB_NAME | default "credit_management"}}'
+  DB_DSN: 'mysql://{{.DB_USER}}:{{.DB_PASS}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?parseTime=true'
 
 tasks:
   help:
@@ -42,7 +49,14 @@ tasks:
     deps: [confirm]
     cmds:
       - echo 'Running up migrations...'
-      - tern migrate -m ./internal/database/migrations --conn-string {{.BOILERPLATE_DB_DSN}}
+      - tern migrate -m ./internal/database/migrations --conn-string "{{.DB_DSN}}"
+
+  migrations-force:
+    desc: apply all up database migrations (skip confirmation)
+    cmds:
+      - echo 'Running up migrations...'
+      - echo 'Using DSN {{.DB_DSN}}'
+      - tern migrate -m ./internal/database/migrations --conn-string "{{.DB_DSN}}"
 
   tidy:
     desc: format all .go files, and tidy and vendor module dependencies

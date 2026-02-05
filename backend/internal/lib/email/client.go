@@ -45,7 +45,15 @@ func (c *Client) SendEmail(to, subject string, templateName Template, data map[s
 
 	_, err = c.client.Emails.Send(params)
 	if err != nil {
-		return fmt.Errorf("Failed to send email:", err)
+		return fmt.Errorf("failed to send email: %w", err)
 	}
 	return nil
+}
+
+// SendWelcomeEmail envia email de boas-vindas para o usuario
+func (c *Client) SendWelcomeEmail(to, firstName string) error {
+	data := map[string]string{
+		"FirstName": firstName,
+	}
+	return c.SendEmail(to, "Bem-vindo ao Cashing!", TemplateWelcome, data)
 }

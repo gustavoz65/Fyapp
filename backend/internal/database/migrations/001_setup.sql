@@ -459,24 +459,3 @@ INSERT INTO categories (id, user_id, name, description, type, color, icon, is_sy
 (UUID(), NULL, 'Reembolso', 'Reembolsos recebidos', 'income', '#84CC16', 'refresh-cw', TRUE),
 (UUID(), NULL, 'Outras Receitas', 'Outras receitas', 'income', '#6B7280', 'more-horizontal', TRUE);
 
----- create above / drop below ----
-
--- Drop tables in reverse order of creation (to handle foreign keys)
-DROP TABLE IF EXISTS email_verification_tokens;
-DROP TABLE IF EXISTS password_reset_tokens;
-DROP TABLE IF EXISTS installments;
-DROP TABLE IF EXISTS transfers;
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS audit_logs;
-DROP TABLE IF EXISTS bank_integrations;
-DROP TABLE IF EXISTS user_settings;
-DROP TABLE IF EXISTS notifications;
-DROP TABLE IF EXISTS goal_contributions;
-DROP TABLE IF EXISTS goals;
-DROP TABLE IF EXISTS budgets;
-DROP TABLE IF EXISTS recurring_transactions;
-DROP TABLE IF EXISTS transactions;
-DROP TABLE IF EXISTS bank_accounts;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS user_sessions;
-DROP TABLE IF EXISTS users;

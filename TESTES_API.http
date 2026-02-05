@@ -1,0 +1,514 @@
+### ========================================
+### 🔥 CASHING API - TESTES
+### ========================================
+### Instale a extensão "REST Client" no VS Code
+### Clique em "Send Request" acima de cada ###
+### ========================================
+
+@baseUrl = http://localhost:8080/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZDk4ZjRlYTItNTIwMy00NzJmLThjNjItOGZhNDNhZmE5NDE4IiwiZW1haWwiOiJndXN0YXZvLnRlc3RlQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpc3MiOiJjYXNoaW5nLWFwaSIsInN1YiI6ImQ5OGY0ZWEyLTUyMDMtNDcyZi04YzYyLThmYTQzYWZhOTQxOCIsImV4cCI6MTc3MDI1NTQ0OSwiaWF0IjoxNzcwMjU0NTQ5fQ.e92y17PdrbfK6m4g9JOa2qq2AFYpL6WJLpE4sPB6TTQ
+
+### ========================================
+### 1️⃣ HEALTH CHECK
+### ========================================
+
+### Health Check
+GET http://localhost:8080/health
+
+### ========================================
+### 2️⃣ AUTENTICAÇÃO
+### ========================================
+
+### 📝 Registrar novo usuário
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "first_name": "Gustavo",
+  "last_name": "Silva",
+  "email": "gustavo.teste@example.com",
+  "password": "senha123456",
+  "phone": "+5511999999999"
+}
+
+### 🔐 Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gustavo.teste@example.com",
+  "password": "senha123456"
+}
+
+### 🔄 Refresh Token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{token}}"
+}
+
+### 🚪 Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### 🔑 Mudar senha
+POST {{baseUrl}}/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "current_password": "meuteste123",
+  "new_password": "maisumavez123"
+}
+
+### ========================================
+### 3️⃣ USUÁRIO (PERFIL)
+### ========================================
+
+### 👤 Ver meu perfil
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### ✏️ Atualizar perfil
+PUT {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Gustavo Silva Rodrigues da Silva",
+  "phone": "65993634954"
+}
+
+### ⚙️ Ver configurações
+GET {{baseUrl}}/users/settings
+Authorization: Bearer {{token}}
+
+### 🔧 Atualizar configurações
+PUT {{baseUrl}}/users/settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currency": "BRL",
+  "language": "pt-BR",
+  "timezone": "America/Sao_Paulo",
+  "notifications_enabled": true,
+  "email_notifications": true
+}
+
+### 🗑️ Desativar conta
+DELETE {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### ========================================
+### 4️⃣ CATEGORIAS
+### ========================================
+
+### 📋 Listar todas categorias
+GET {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+
+### 📝 Criar categoria (Despesa)
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Alimentação",
+  "type": "expense",
+  "icon": "🍔",
+  "color": "#FF5733"
+}
+
+### 📝 Criar categoria (Receita)
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Salário",
+  "type": "income",
+  "icon": "💰",
+  "color": "#28A745"
+}
+
+### 📝 Criar categoria (Transporte)
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Transporte",
+  "type": "expense",
+  "icon": "🚗",
+  "color": "#007BFF"
+}
+
+### 👁️ Ver categoria por ID
+GET {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+
+### ✏️ Atualizar categoria
+PUT {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Alimentação & Bebidas",
+  "icon": "🍽️",
+  "color": "#FF6347"
+}
+
+### 🗑️ Deletar categoria
+DELETE {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+
+### ========================================
+### 5️⃣ CONTAS BANCÁRIAS
+### ========================================
+
+### 🏦 Listar todas contas
+GET {{baseUrl}}/accounts
+Authorization: Bearer {{token}}
+
+### 💰 Saldo total
+GET {{baseUrl}}/accounts/balance
+Authorization: Bearer {{token}}
+
+### 📝 Criar conta (Nubank)
+POST {{baseUrl}}/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Nubank",
+  "type": "checking",
+  "balance": 2500.00,
+  "currency": "BRL",
+  "institution": "Nubank"
+}
+
+### 📝 Criar conta (Poupança)
+POST {{baseUrl}}/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Poupança Itaú",
+  "type": "savings",
+  "balance": 5000.00,
+  "currency": "BRL",
+  "institution": "Itaú"
+}
+
+### 📝 Criar conta (Cartão de Crédito)
+POST {{baseUrl}}/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Cartão Inter",
+  "type": "credit_card",
+  "balance": 0,
+  "credit_limit": 3000.00,
+  "currency": "BRL",
+  "institution": "Banco Inter"
+}
+
+### 👁️ Ver conta por ID
+GET {{baseUrl}}/accounts/1
+Authorization: Bearer {{token}}
+
+### ✏️ Atualizar conta
+PUT {{baseUrl}}/accounts/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Nubank Pessoal",
+  "balance": 3000.00
+}
+
+### 🗑️ Deletar conta
+DELETE {{baseUrl}}/accounts/1
+Authorization: Bearer {{token}}
+
+### ========================================
+### 6️⃣ TRANSAÇÕES
+### ========================================
+
+### 💸 Listar todas transações
+GET {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+
+### 📅 Transações próximas (recorrentes)
+GET {{baseUrl}}/transactions/upcoming
+Authorization: Bearer {{token}}
+
+### 📝 Criar transação (Despesa)
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Almoço no restaurante",
+  "amount": 45.50,
+  "type": "expense",
+  "category_id": 1,
+  "account_id": 1,
+  "date": "2026-02-04",
+  "is_recurring": false,
+  "status": "paid"
+}
+
+### 📝 Criar transação (Receita)
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Salário de Janeiro",
+  "amount": 5000.00,
+  "type": "income",
+  "category_id": 2,
+  "account_id": 1,
+  "date": "2026-02-01",
+  "is_recurring": true,
+  "recurrence_frequency": "monthly",
+  "status": "paid"
+}
+
+### 📝 Criar transação (Conta a pagar)
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Fatura do cartão",
+  "amount": 850.00,
+  "type": "expense",
+  "category_id": 1,
+  "account_id": 1,
+  "date": "2026-02-15",
+  "due_date": "2026-02-15",
+  "is_recurring": true,
+  "recurrence_frequency": "monthly",
+  "status": "pending"
+}
+
+### 👁️ Ver transação por ID
+GET {{baseUrl}}/transactions/1
+Authorization: Bearer {{token}}
+
+### ✏️ Atualizar transação
+PUT {{baseUrl}}/transactions/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Almoço no restaurante japonês",
+  "amount": 60.00
+}
+
+### ✅ Marcar como paga
+PATCH {{baseUrl}}/transactions/3/pay
+Authorization: Bearer {{token}}
+
+### 🗑️ Deletar transação
+DELETE {{baseUrl}}/transactions/1
+Authorization: Bearer {{token}}
+
+### ========================================
+### 7️⃣ ORÇAMENTOS
+### ========================================
+
+### 💰 Listar todos orçamentos
+GET {{baseUrl}}/budgets
+Authorization: Bearer {{token}}
+
+### 📊 Resumo dos orçamentos
+GET {{baseUrl}}/budgets/summary
+Authorization: Bearer {{token}}
+
+### 📝 Criar orçamento
+POST {{baseUrl}}/budgets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Alimentação Fevereiro 2026",
+  "category_id": 1,
+  "amount": 800.00,
+  "period": "monthly",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-28",
+  "alert_threshold": 80,
+  "alert_enabled": true
+}
+
+### 📝 Criar orçamento (Transporte)
+POST {{baseUrl}}/budgets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Transporte Fevereiro",
+  "category_id": 3,
+  "amount": 300.00,
+  "period": "monthly",
+  "start_date": "2026-02-01",
+  "alert_threshold": 90
+}
+
+### 👁️ Ver orçamento por ID
+GET {{baseUrl}}/budgets/1
+Authorization: Bearer {{token}}
+
+### ✏️ Atualizar orçamento
+PUT {{baseUrl}}/budgets/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Alimentação Fevereiro (Ajustado)",
+  "amount": 900.00,
+  "alert_threshold": 85
+}
+
+### 🗑️ Deletar orçamento
+DELETE {{baseUrl}}/budgets/1
+Authorization: Bearer {{token}}
+
+### ========================================
+### 8️⃣ METAS FINANCEIRAS
+### ========================================
+
+### 🎯 Listar todas metas
+GET {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+
+### 📊 Resumo das metas
+GET {{baseUrl}}/goals/summary
+Authorization: Bearer {{token}}
+
+### 📝 Criar meta
+POST {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Viagem para Europa",
+  "description": "Guardar para viagem de férias em julho",
+  "target_amount": 10000.00,
+  "current_amount": 0,
+  "deadline": "2026-07-01",
+  "priority": "high",
+  "category": "travel"
+}
+
+### 📝 Criar meta (Reserva de Emergência)
+POST {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Reserva de Emergência",
+  "description": "Guardar 6 meses de salário",
+  "target_amount": 30000.00,
+  "current_amount": 5000.00,
+  "deadline": "2026-12-31",
+  "priority": "high",
+  "category": "emergency_fund"
+}
+
+### 👁️ Ver meta por ID
+GET {{baseUrl}}/goals/1
+Authorization: Bearer {{token}}
+
+### ✏️ Atualizar meta
+PUT {{baseUrl}}/goals/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Viagem para Europa e Ásia",
+  "target_amount": 15000.00,
+  "deadline": "2026-08-01"
+}
+
+### 💰 Adicionar contribuição
+POST {{baseUrl}}/goals/1/contributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 500.00,
+  "date": "2026-02-04",
+  "notes": "Contribuição mensal de fevereiro"
+}
+
+### 📋 Listar contribuições
+GET {{baseUrl}}/goals/1/contributions
+Authorization: Bearer {{token}}
+
+### 🗑️ Deletar meta
+DELETE {{baseUrl}}/goals/1
+Authorization: Bearer {{token}}
+
+### ========================================
+### 9️⃣ DASHBOARD
+### ========================================
+
+### 📊 Resumo geral
+GET {{baseUrl}}/dashboard
+Authorization: Bearer {{token}}
+
+### 💵 Fluxo de caixa
+GET {{baseUrl}}/dashboard/cash-flow
+Authorization: Bearer {{token}}
+
+### 📈 Receitas vs Despesas
+GET {{baseUrl}}/dashboard/income-expense
+Authorization: Bearer {{token}}
+
+### 📅 Comparação mensal
+GET {{baseUrl}}/dashboard/monthly-comparison
+Authorization: Bearer {{token}}
+
+### 🏦 Saldos das contas
+GET {{baseUrl}}/dashboard/account-balances
+Authorization: Bearer {{token}}
+
+### ========================================
+### 🔔 NOTIFICAÇÕES
+### ========================================
+
+### 📬 Listar todas notificações
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{token}}
+
+### 📭 Notificações não lidas
+GET {{baseUrl}}/notifications/unread
+Authorization: Bearer {{token}}
+
+### 🔢 Quantidade de não lidas
+GET {{baseUrl}}/notifications/unread/count
+Authorization: Bearer {{token}}
+
+### ✅ Marcar como lida
+PATCH {{baseUrl}}/notifications/1/read
+Authorization: Bearer {{token}}
+
+### ✅ Marcar todas como lidas
+PATCH {{baseUrl}}/notifications/read-all
+Authorization: Bearer {{token}}
+
+### 🗑️ Deletar notificação
+DELETE {{baseUrl}}/notifications/1
+Authorization: Bearer {{token}}
+
+### ========================================
+### FIM 🎉
+### ========================================

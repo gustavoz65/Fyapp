@@ -11,13 +11,13 @@ const (
 	TaskWelcome = "email:welcome"
 )
 
-type WelcomeEmailPlayload struct {
+type WelcomeEmailPayload struct {
 	To        string `json:"to"`
 	FirstName string `json:"first_name"`
 }
 
-func NewWelcomeEmailTasl(to, firstName string) (*asynq.Task, error) {
-	payload, err := json.Marshal(WelcomeEmailPlayload{
+func NewWelcomeEmailTask(to, firstName string) (*asynq.Task, error) {
+	payload, err := json.Marshal(WelcomeEmailPayload{
 		To:        to,
 		FirstName: firstName,
 	})

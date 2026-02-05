@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"net/http"
 	"time"
 
-	"github.com/aws/smithy-go/middleware"
+	"github.com/gustavoz65/Cashing-go/internal/middleware"
 	"github.com/gustavoz65/Cashing-go/internal/server"
+	"github.com/gustavoz65/Cashing-go/internal/validation"
 	"github.com/labstack/echo/v4"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
@@ -17,17 +19,17 @@ func NewHandler(s *server.Server) Handler {
 	return Handler{server: s}
 }
 
-// HandlerFunc representa a um tipo dandler e função que processa uma requisição e retorna uma resposta ou um erro.
-type HandlerFunc[Req validation.Validatable, Res any] func(c echo.Context, req Req) (Res, error)
+// HandlerFunc representa um tipo de funcao que processa uma requisicao e retorna uma resposta ou um erro.
+type HandlerFunc[Req any, Res any] func(c echo.Context, req Req) (Res, error)
 
-// HandlerFuncNoContent representa um tipo de função que processa uma requisição sem retornar conteúdo na resposta.
-type HandlerFuncNoContent[req validation.Validatable] func(c echo.Context, req Req) error
+// HandlerFuncNoContent representa um tipo de funcao que processa uma requisicao sem retornar conteudo na resposta.
+type HandlerFuncNoContent[Req any] func(c echo.Context, req Req) error
 
-// ResponseHandler é responsavel por manipular a resposta de uma operação, incluindo o manuseio da resposta, obtenção da operação e adição de atributos para monitoramento.
+// ResponseHandler e responsavel por manipular a resposta de uma operacao.
 type ResponseHandler interface {
 	Handle(c echo.Context, result interface{}) error
 	GetOperation() string
-	AddAttributes(trx *newrelic.Transaction, result interface{})
+	AddAttributes(txn *newrelic.Transaction, result interface{})
 }
 
 // JSONResponseHandler manipula respostas no formato JSON.
@@ -39,15 +41,13 @@ func (h *JSONResponseHandler) Handle(c echo.Context, result interface{}) error {
 	return c.JSON(h.status, result)
 }
 
-func (h *JSONResponseHandler) GEtOperation() string {
+func (h *JSONResponseHandler) GetOperation() string {
 	return "handler"
 }
 
-func (h *JSONResponseHandler) AddAttributes(txn *newrelic.Transaction, result interface{}) {
-	// Implementação específica para adicionar atributos ao New Relic, se necessário.
-}
+func (h *JSONResponseHandler) AddAttributes(txn *newrelic.Transaction, result interface{}) {}
 
-// NoContentResponseHandler manipula respostas sem conteúdo (204 No Content).
+// NoContentResponseHandler manipula respostas sem conteudo (204 No Content).
 type NoContentResponseHandler struct {
 	status int
 }
@@ -60,29 +60,27 @@ func (h *NoContentResponseHandler) GetOperation() string {
 	return "handler_no_content"
 }
 
-func (h *NoContentResponseHandler) AddAttributes(txn *newrelic.Transaction, result interface{}) {
-	// Implementação específica para adicionar atributos ao New Relic, se necessário.
-}
+func (h *NoContentResponseHandler) AddAttributes(txn *newrelic.Transaction, result interface{}) {}
 
+// FileResponseHandler manipula respostas de download de arquivos.
 type FileResponseHandler struct {
 	status      int
 	filename    string
 	contentType string
 }
 
-func (h FileResponseHandler) Handle(c echo.Context, result interface{}) error {
+func (h *FileResponseHandler) Handle(c echo.Context, result interface{}) error {
 	data := result.([]byte)
 	c.Response().Header().Set("Content-Disposition", "attachment; filename="+h.filename)
 	return c.Blob(h.status, h.contentType, data)
 }
 
-func (h FileResponseHandler) GetOperation() string {
+func (h *FileResponseHandler) GetOperation() string {
 	return "handler_file"
 }
 
-func (h FileResponseHandler) AddAttributes(txn *newrelic.Transaction, result interface{}) {
+func (h *FileResponseHandler) AddAttributes(txn *newrelic.Transaction, result interface{}) {
 	if txn != nil {
-		// http.status_code is already set by tracing middleware
 		txn.AddAttribute("file.name", h.filename)
 		txn.AddAttribute("file.content_type", h.contentType)
 		if data, ok := result.([]byte); ok {
@@ -91,8 +89,8 @@ func (h FileResponseHandler) AddAttributes(txn *newrelic.Transaction, result int
 	}
 }
 
-// handleRequest é uma função genérica que lida com a lógica comum de manipulação de requisições, incluindo validação, logging, métricas e rastreamento.
-func handleRequest[Req validation.Validatable](
+// handleRequest e uma funcao generica que lida com a logica comum de manipulacao de requisicoes.
+func handleRequest[Req any](
 	c echo.Context,
 	req Req,
 	handler func(c echo.Context, req Req) (interface{}, error),
@@ -103,32 +101,20 @@ func handleRequest[Req validation.Validatable](
 	path := c.Path()
 	route := path
 
-	// Get novo relic transaction
+	// Get New Relic transaction
 	txn := newrelic.FromContext(c.Request().Context())
 	if txn != nil {
 		txn.AddAttribute("handler.name", route)
-		// http.method comumentado pelo middleware de rastreamento
-		// http.url comumentado pelo middleware de rastreamento
 		responseHandler.AddAttributes(txn, nil)
 	}
 
 	// Get context-specific logger
-	loggerBuilder := middleware.GetLogger(c).With().
+	logger := middleware.GetLogger(c).With().
 		Str("operation", responseHandler.GetOperation()).
 		Str("method", method).
 		Str("path", path).
-		Str("route", route)
-
-	// Adicionar informações específicas para FileResponseHandler
-	if fileHandler, ok := responseHandler.(FileResponseHandler); ok {
-		loggerBuilder = loggerBuilder.
-			Str("filename", fileHandler.filename).
-			Str("content_type", fileHandler.contentType)
-	}
-
-	logger := loggerBuilder.Logger()
-
-	// user.id é adicionado pelo middleware de autenticação, se disponível
+		Str("route", route).
+		Logger()
 
 	logger.Info().Msg("handling request")
 
@@ -143,7 +129,7 @@ func handleRequest[Req validation.Validatable](
 			Msg("request validation failed")
 
 		if txn != nil {
-			txn.NoticeError(nrpkgerrors.Wrap(err))
+			txn.NoticeError(err)
 			txn.AddAttribute("validation.status", "failed")
 			txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
 		}
@@ -175,7 +161,7 @@ func handleRequest[Req validation.Validatable](
 			Msg("handler execution failed")
 
 		if txn != nil {
-			txn.NoticeError(nrpkgerrors.Wrap(err))
+			txn.NoticeError(err)
 			txn.AddAttribute("handler.status", "error")
 			txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
 			txn.AddAttribute("total.duration_ms", totalDuration.Milliseconds())
@@ -185,7 +171,6 @@ func handleRequest[Req validation.Validatable](
 
 	totalDuration := time.Since(start)
 
-	// Sucesso - adicionar atributos e log
 	if txn != nil {
 		txn.AddAttribute("handler.status", "success")
 		txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
@@ -202,8 +187,8 @@ func handleRequest[Req validation.Validatable](
 	return responseHandler.Handle(c, result)
 }
 
-// Handle serve para lidar com requisições que retornam uma resposta JSON.
-func Handle[Req validation.Validatable, Res any](
+// Handle serve para lidar com requisicoes que retornam uma resposta JSON.
+func Handle[Req any, Res any](
 	h Handler,
 	handler HandlerFunc[Req, Res],
 	status int,
@@ -212,11 +197,12 @@ func Handle[Req validation.Validatable, Res any](
 	return func(c echo.Context) error {
 		return handleRequest(c, req, func(c echo.Context, req Req) (interface{}, error) {
 			return handler(c, req)
-		}, JSONResponseHandler{status: status})
+		}, &JSONResponseHandler{status: status})
 	}
 }
 
-func HandleFile[Req validation.Validatable](
+// HandleFile serve para lidar com requisicoes que retornam um arquivo para download.
+func HandleFile[Req any](
 	h Handler,
 	handler HandlerFunc[Req, []byte],
 	status int,
@@ -227,7 +213,7 @@ func HandleFile[Req validation.Validatable](
 	return func(c echo.Context) error {
 		return handleRequest(c, req, func(c echo.Context, req Req) (interface{}, error) {
 			return handler(c, req)
-		}, FileResponseHandler{
+		}, &FileResponseHandler{
 			status:      status,
 			filename:    filename,
 			contentType: contentType,
@@ -235,8 +221,8 @@ func HandleFile[Req validation.Validatable](
 	}
 }
 
-// HandleNoContent serve para lidar com requisições que não retornam conteúdo na resposta.
-func HandleNoContent[Req validation.Validatable](
+// HandleNoContent serve para lidar com requisicoes que nao retornam conteudo na resposta.
+func HandleNoContent[Req any](
 	h Handler,
 	handler HandlerFuncNoContent[Req],
 	status int,
@@ -246,6 +232,32 @@ func HandleNoContent[Req validation.Validatable](
 		return handleRequest(c, req, func(c echo.Context, req Req) (interface{}, error) {
 			err := handler(c, req)
 			return nil, err
-		}, NoContentResponseHandler{status: status})
+		}, &NoContentResponseHandler{status: status})
 	}
+}
+
+// SimpleHandler e um helper para handlers simples que nao usam BindAndValidate do base.
+// Util para handlers que fazem seu proprio parsing (query params, path params, etc.)
+func SimpleHandler(fn func(c echo.Context) error) echo.HandlerFunc {
+	return fn
+}
+
+// JSONResponse helper para retornar JSON com status code
+func JSONResponse(c echo.Context, status int, data interface{}) error {
+	return c.JSON(status, data)
+}
+
+// SuccessResponse retorna uma resposta de sucesso padrao
+func SuccessResponse(c echo.Context, data interface{}) error {
+	return c.JSON(http.StatusOK, data)
+}
+
+// CreatedResponse retorna uma resposta de criacao
+func CreatedResponse(c echo.Context, data interface{}) error {
+	return c.JSON(http.StatusCreated, data)
+}
+
+// NoContentResponse retorna uma resposta sem conteudo
+func NoContentResponse(c echo.Context) error {
+	return c.NoContent(http.StatusNoContent)
 }

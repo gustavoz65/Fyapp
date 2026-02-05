@@ -69,8 +69,14 @@ func New(cfg *config.Config, log *zerolog.Logger, loggerService *logger.LoggerSe
 }
 
 func (s *Server) Start() error {
+	var handler http.Handler
+	if s.httpServer != nil {
+		handler = s.httpServer.Handler
+	}
+
 	s.httpServer = &http.Server{
 		Addr:         ":" + s.Config.Server.Port,
+		Handler:      handler,
 		ReadTimeout:  time.Duration(s.Config.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(s.Config.Server.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(s.Config.Server.IdleTimeout) * time.Second,

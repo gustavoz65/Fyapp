@@ -6,7 +6,7 @@
 ### ========================================
 
 @baseUrl = http://localhost:8080/api/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZDk4ZjRlYTItNTIwMy00NzJmLThjNjItOGZhNDNhZmE5NDE4IiwiZW1haWwiOiJndXN0YXZvLnRlc3RlQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpc3MiOiJjYXNoaW5nLWFwaSIsInN1YiI6ImQ5OGY0ZWEyLTUyMDMtNDcyZi04YzYyLThmYTQzYWZhOTQxOCIsImV4cCI6MTc3MDI1NTQ0OSwiaWF0IjoxNzcwMjU0NTQ5fQ.e92y17PdrbfK6m4g9JOa2qq2AFYpL6WJLpE4sPB6TTQ
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZDk4ZjRlYTItNTIwMy00NzJmLThjNjItOGZhNDNhZmE5NDE4IiwiZW1haWwiOiJndXN0YXZvLnRlc3RlQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpc3MiOiJjYXNoaW5nLWFwaSIsInN1YiI6ImQ5OGY0ZWEyLTUyMDMtNDcyZi04YzYyLThmYTQzYWZhOTQxOCIsImV4cCI6MTc3MDMzODc4MSwiaWF0IjoxNzcwMzM3ODgxfQ.H4z_Q0Ij0aeXEP-MQEKznFeASwXarBFMs_FSm2b-cv0
 
 ### ========================================
 ### 1️⃣ HEALTH CHECK
@@ -38,7 +38,7 @@ Content-Type: application/json
 
 {
   "email": "gustavo.teste@example.com",
-  "password": "senha123456"
+  "password": "maisumavez123"
 }
 
 ### 🔄 Refresh Token
@@ -149,6 +149,11 @@ Content-Type: application/json
 ### 👁️ Ver categoria por ID
 GET {{baseUrl}}/categories/1
 Authorization: Bearer {{token}}
+{
+  "id": 1
+  "name": "Alimentação",
+  "type": "expense"
+}
 
 ### ✏️ Atualizar categoria
 PUT {{baseUrl}}/categories/1

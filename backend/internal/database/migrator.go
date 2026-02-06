@@ -75,7 +75,7 @@ func Migrate(ctx context.Context, logger *zerolog.Logger, cfg *config.Config) er
 			logger.Info().Msg("No pending migrations")
 			return nil
 		}
-		return fmt.Errorf("failed to apply migrations:", err)
+		return fmt.Errorf("failed to apply migrations:%d", err)
 	}
 
 	newVersion, _, _ := m.Version()

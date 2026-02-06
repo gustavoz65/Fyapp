@@ -31,7 +31,7 @@ tasks:
       - go run ./cmd/go-boilerplate
 
   migrations:new:
-    desc: create a new database migration
+    desc: create a new database migration with Atlas (auto-generates SQL from models)
     vars:
       NAME: '{{.name | default ""}}'
     cmds:
@@ -41,22 +41,84 @@ tasks:
           echo "Usage: task migrations:new name=migration_name"
           exit 1
         fi
-      - echo 'Creating migration file for {{.NAME}}...'
-      - tern new -m ./internal/database/migrations {{.NAME}}
+      - echo 'Generating migration for {{.NAME}} from models...'
+      - atlas migrate diff {{.NAME}} --env local
+
+  migrations:new:manual:
+    desc: create empty migration files (manual SQL writing)
+    vars:
+      NAME: '{{.name | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ]; then
+          echo "Error: name parameter is required"
+          echo "Usage: task migrations:new:manual name=migration_name"
+          exit 1
+        fi
+      - echo 'Creating empty migration files for {{.NAME}}...'
+      - migrate create -ext sql -dir ./internal/database/migrations -seq {{.NAME}}
 
   migrations:up:
-    desc: apply all up database migrations
+    desc: apply all pending migrations
+    cmds:
+      - echo 'Running migrations...'
+      - go run ./cmd/go-boilerplate migrate
+
+  migrations:down:
+    desc: rollback last migration
     deps: [confirm]
     cmds:
-      - echo 'Running up migrations...'
-      - tern migrate -m ./internal/database/migrations --conn-string "{{.DB_DSN}}"
+      - echo 'Rolling back last migration...'
+      - migrate -path ./internal/database/migrations -database "{{.DB_DSN}}" down 1
 
-  migrations-force:
-    desc: apply all up database migrations (skip confirmation)
+  migrations:version:
+    desc: show current migration version
     cmds:
-      - echo 'Running up migrations...'
-      - echo 'Using DSN {{.DB_DSN}}'
-      - tern migrate -m ./internal/database/migrations --conn-string "{{.DB_DSN}}"
+      - migrate -path ./internal/database/migrations -database "{{.DB_DSN}}" version
+
+  migrations:force:
+    desc: force migration version (use with caution)
+    vars:
+      VERSION: '{{.version | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.VERSION}}" ]; then
+          echo "Error: version parameter is required"
+          echo "Usage: task migrations:force version=1"
+          exit 1
+        fi
+      - echo 'Forcing migration version to {{.VERSION}}...'
+      - migrate -path ./internal/database/migrations -database "{{.DB_DSN}}" force {{.VERSION}}
+
+  migrations:status:
+    desc: show migration status (pending, applied)
+    cmds:
+      - echo 'Checking migration status...'
+      - atlas migrate status --env local
+
+  migrations:validate:
+    desc: validate migration files
+    cmds:
+      - echo 'Validating migration files...'
+      - atlas migrate validate --env local
+
+  migrations:hash:
+    desc: update migration file hashes
+    cmds:
+      - echo 'Updating migration hashes...'
+      - atlas migrate hash --env local
+
+  schema:inspect:
+    desc: inspect current database schema
+    cmds:
+      - echo 'Inspecting database schema...'
+      - atlas schema inspect --env local
+
+  schema:diff:
+    desc: show diff between models and database
+    cmds:
+      - echo 'Comparing models with database...'
+      - atlas schema diff --env local
 
   tidy:
     desc: format all .go files, and tidy and vendor module dependencies

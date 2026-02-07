@@ -15,8 +15,13 @@ import (
 )
 
 type Database struct {
-	DB  *sql.DB
-	log *zerolog.Logger
+	DB   *sql.DB
+	log  *zerolog.Logger
+	Pool *sql.DB
+}
+
+type multiTracer struct {
+	tracers []any
 }
 
 const DatabasePingTimeout = 10

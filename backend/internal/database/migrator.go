@@ -59,7 +59,7 @@ func Migrate(ctx context.Context, logger *zerolog.Logger, cfg *config.Config) er
 
 	version, dirty, err := m.Version()
 	if err != nil && err != migrate.ErrNilVersion {
-		return fmt.Errorf("failed to get current migration version:", err)
+		return fmt.Errorf("failed to get current migration version: %d", err)
 	}
 
 	if dirty {

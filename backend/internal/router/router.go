@@ -1,13 +1,12 @@
 package router
 
 import (
-	"net/http"
-
 	"github.com/gustavoz65/Cashing-go/internal/config"
 	"github.com/gustavoz65/Cashing-go/internal/database"
 	"github.com/gustavoz65/Cashing-go/internal/handler"
 	"github.com/gustavoz65/Cashing-go/internal/middleware"
 	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/Cashing-go/internal/server"
 	"github.com/gustavoz65/Cashing-go/internal/service"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -15,7 +14,7 @@ import (
 )
 
 // New cria e configura o router Echo com todas as rotas
-func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger) *echo.Echo {
+func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv *server.Server) *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -61,16 +60,13 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger) *ech
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 
 	// Health check
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"status": "ok",
-		})
-	})
+	healthHandler := handler.NewHealthHandler(srv)
+	e.GET("/health", healthHandler.CheckHandler)
 
 	// API v1
 	api := e.Group("/api/v1")
 
-	// --- Rotas publicas (sem autenticacao) ---
+	//  Rotas publicas (sem autenticacao)
 	auth := api.Group("/auth")
 	auth.POST("/register", authHandler.Register)
 	auth.POST("/login", authHandler.Login)

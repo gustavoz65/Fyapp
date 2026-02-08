@@ -37,7 +37,6 @@ func New(cfg *config.Config, logger *zerolog.Logger) (*Database, error) {
 		cfg.Database.Name,
 	)
 
-	// Add TLS configuration if not local
 	if cfg.Database.SSLMode != "disable" && cfg.Database.SSLMode != "" {
 		dsn += "&tls=" + cfg.Database.SSLMode
 	}
@@ -54,8 +53,9 @@ func New(cfg *config.Config, logger *zerolog.Logger) (*Database, error) {
 	db.SetConnMaxIdleTime(time.Duration(cfg.Database.ConnMaxIdleTime) * time.Second)
 
 	database := &Database{
-		DB:  db,
-		log: logger,
+		DB:   db,
+		log:  logger,
+		Pool: db,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), DatabasePingTimeout*time.Second)

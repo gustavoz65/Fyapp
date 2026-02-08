@@ -36,6 +36,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	budgetRepo := repository.NewBudgetRepository(db, logger)
 	goalRepo := repository.NewGoalRepository(db, logger)
 	notificationRepo := repository.NewNotificationRepository(db, logger)
+	auditLogRepo := repository.NewAuditLogRepository(db, logger)
 
 	// Services
 	authService := service.NewAuthService(userRepo, cfg, logger)
@@ -76,12 +77,15 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// --- Rotas autenticadas ---
 	authMiddleware := middleware.AuthMiddleware(authService)
 
+	// Audit middleware (deve vir DEPOIS do AuthMiddleware para ter acesso ao user_id)
+	auditMiddleware := middleware.NewAuditMiddleware(auditLogRepo, logger)
+
 	// Auth (requer autenticacao)
-	authProtected := api.Group("/auth", authMiddleware)
+	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
 	authProtected.POST("/change-password", authHandler.ChangePassword)
 
 	// Users
-	users := api.Group("/users", authMiddleware)
+	users := api.Group("/users", authMiddleware, auditMiddleware.Handler())
 	users.GET("/me", userHandler.GetMe)
 	users.PUT("/me", userHandler.UpdateMe)
 	users.DELETE("/me", userHandler.DeactivateMe)
@@ -89,7 +93,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	users.PUT("/settings", userHandler.UpdateSettings)
 
 	// Categories
-	categories := api.Group("/categories", authMiddleware)
+	categories := api.Group("/categories", authMiddleware, auditMiddleware.Handler())
 	categories.GET("", categoryHandler.GetAll)
 	categories.GET("/:id", categoryHandler.GetByID)
 	categories.POST("", categoryHandler.Create)
@@ -97,7 +101,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	categories.DELETE("/:id", categoryHandler.Delete)
 
 	// Bank Accounts
-	accounts := api.Group("/accounts", authMiddleware)
+	accounts := api.Group("/accounts", authMiddleware, auditMiddleware.Handler())
 	accounts.GET("", accountHandler.GetAll)
 	accounts.GET("/balance", accountHandler.GetTotalBalance)
 	accounts.GET("/:id", accountHandler.GetByID)
@@ -106,7 +110,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	accounts.DELETE("/:id", accountHandler.Delete)
 
 	// Transactions
-	transactions := api.Group("/transactions", authMiddleware)
+	transactions := api.Group("/transactions", authMiddleware, auditMiddleware.Handler())
 	transactions.GET("", transactionHandler.GetAll)
 	transactions.GET("/upcoming", transactionHandler.GetUpcoming)
 	transactions.GET("/:id", transactionHandler.GetByID)
@@ -116,7 +120,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid)
 
 	// Budgets
-	budgets := api.Group("/budgets", authMiddleware)
+	budgets := api.Group("/budgets", authMiddleware, auditMiddleware.Handler())
 	budgets.GET("", budgetHandler.GetAll)
 	budgets.GET("/summary", budgetHandler.GetSummary)
 	budgets.GET("/:id", budgetHandler.GetByID)
@@ -125,7 +129,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	budgets.DELETE("/:id", budgetHandler.Delete)
 
 	// Goals
-	goals := api.Group("/goals", authMiddleware)
+	goals := api.Group("/goals", authMiddleware, auditMiddleware.Handler())
 	goals.GET("", goalHandler.GetAll)
 	goals.GET("/summary", goalHandler.GetSummary)
 	goals.GET("/:id", goalHandler.GetByID)
@@ -136,7 +140,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goals.GET("/:id/contributions", goalHandler.GetContributions)
 
 	// Dashboard
-	dashboard := api.Group("/dashboard", authMiddleware)
+	dashboard := api.Group("/dashboard", authMiddleware, auditMiddleware.Handler())
 	dashboard.GET("", dashboardHandler.GetSummary)
 	dashboard.GET("/cash-flow", dashboardHandler.GetCashFlow)
 	dashboard.GET("/income-expense", dashboardHandler.GetIncomeVsExpense)
@@ -144,7 +148,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	dashboard.GET("/account-balances", dashboardHandler.GetAccountBalances)
 
 	// Notifications
-	notifications := api.Group("/notifications", authMiddleware)
+	notifications := api.Group("/notifications", authMiddleware, auditMiddleware.Handler())
 	notifications.GET("", notificationHandler.GetAll)
 	notifications.GET("/unread", notificationHandler.GetUnread)
 	notifications.GET("/unread/count", notificationHandler.GetUnreadCount)

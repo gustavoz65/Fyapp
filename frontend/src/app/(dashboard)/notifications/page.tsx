@@ -60,17 +60,27 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Notificacoes</h1>
-        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20" />)}
+      <div className="space-y-8 pb-8">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Notificacoes</h1>
+          <p className="text-muted-foreground mt-2">
+            Acompanhe suas notificacoes e alertas
+          </p>
+        </div>
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Notificacoes</h1>
+    <div className="space-y-8 pb-8">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Notificacoes</h1>
+          <p className="text-muted-foreground mt-2">
+            Acompanhe suas notificacoes e alertas
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button variant={showUnreadOnly ? "default" : "outline"} size="sm" onClick={() => setShowUnreadOnly(!showUnreadOnly)}>
             {showUnreadOnly ? "Ver todas" : "Apenas nao lidas"}
@@ -82,17 +92,20 @@ export default function NotificationsPage() {
       </div>
 
       {notifications.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Nenhuma notificacao</p>
+        <Card className="border-2">
+          <CardContent className="py-16 text-center">
+            <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4 opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma notificacao</h3>
+            <p className="text-sm text-muted-foreground">
+              Voce esta em dia! Nao ha notificacoes no momento
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {notifications.map((notification) => (
-            <Card key={notification.id} className={!notification.is_read ? "border-primary/50 bg-primary/5" : ""}>
-              <CardContent className="flex items-start gap-4 p-4">
+            <Card key={notification.id} className={`hover:shadow-md transition-all ${!notification.is_read ? "border-primary/50 bg-primary/5" : ""}`}>
+              <CardContent className="flex items-start gap-4 p-5">
                 <div className={`mt-1 ${notificationIcon[notification.type] || "text-muted-foreground"}`}>
                   <Bell className="h-5 w-5" />
                 </div>

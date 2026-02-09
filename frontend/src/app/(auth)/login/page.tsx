@@ -36,10 +36,10 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground mb-4">
-            <DollarSign className="h-7 w-7" />
-          </div>
-          <CardTitle className="text-2xl">Entrar no Cashing</CardTitle>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-2">
+            Cashing
+          </h1>
+          <CardTitle className="text-2xl">Bem-vindo de volta</CardTitle>
           <CardDescription>
             Gerencie suas financas de forma inteligente
           </CardDescription>

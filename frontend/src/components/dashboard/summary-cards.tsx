@@ -69,20 +69,22 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            <card.icon className="h-4 w-4 text-muted-foreground" />
+        <Card key={card.title} className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <card.icon className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <p className={`text-xs ${
+            <div className="text-3xl font-bold tracking-tight">{card.value}</div>
+            <p className={`text-sm mt-2 ${
               card.trend !== null
                 ? card.trend >= 0
-                  ? "text-green-500"
-                  : "text-red-500"
+                  ? "text-green-600 dark:text-green-500"
+                  : "text-red-600 dark:text-red-500"
                 : "text-muted-foreground"
             }`}>
               {card.description}

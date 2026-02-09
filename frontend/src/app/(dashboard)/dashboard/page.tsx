@@ -82,14 +82,22 @@ export default function DashboardPage() {
   const data = summary || defaultSummary;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
+    <div className="space-y-8 pb-8">
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-2">
+          Visao geral das suas financas
+        </p>
+      </div>
+
       <SummaryCards summary={data} />
-      <div className="grid gap-4 md:grid-cols-2">
+
+      <div className="grid gap-6 md:grid-cols-2">
         <CashFlowChart data={monthlyData} />
         <TopCategories categories={data.top_categories || []} />
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+
+      <div className="grid gap-6 md:grid-cols-2">
         <RecentTransactions transactions={data.recent_transactions || []} />
         <UpcomingBills transactions={upcomingBills} />
       </div>

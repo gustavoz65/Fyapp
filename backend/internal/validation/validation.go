@@ -15,7 +15,6 @@ func init() {
 	validate = validator.New()
 }
 
-// Validatable interface para tipos que podem ser validados
 type Validatable interface {
 	any
 }

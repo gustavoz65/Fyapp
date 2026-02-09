@@ -10,7 +10,6 @@ import {
   Bell,
   Settings,
   LogOut,
-  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,11 +50,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <DollarSign className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-bold">Cashing</span>
+        <div className="px-4 py-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Cashing
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Gestao Financeira
+          </p>
         </div>
       </SidebarHeader>
 

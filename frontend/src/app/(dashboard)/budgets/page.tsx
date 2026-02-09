@@ -103,7 +103,7 @@ export default function BudgetsPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">Orcamentos</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48" />)}
         </div>
       </div>
@@ -111,12 +111,17 @@ export default function BudgetsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Orcamentos</h1>
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Orcamentos</h1>
+          <p className="text-muted-foreground mt-2">
+            Controle seus gastos por categoria
+          </p>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Novo Orcamento</Button>
+            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Novo Orcamento</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -181,7 +186,7 @@ export default function BudgetsPage() {
       {budgets.length === 0 ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum orcamento criado</CardContent></Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {budgets.map((budget) => {
             const spent = parseFloat(budget.spent_amount);
             const total = parseFloat(budget.amount);

@@ -119,12 +119,17 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Contas</h1>
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Contas Bancarias</h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie suas contas e acompanhe seus saldos
+          </p>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Conta</Button>
+            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Conta</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -168,16 +173,17 @@ export default function AccountsPage() {
         </Dialog>
       </div>
 
-      <Card>
+      <Card className="border-2">
         <CardHeader>
-          <CardTitle className="text-lg">Saldo Total</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">Saldo Total</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-bold">{formatCurrency(totalBalance)}</p>
+          <p className="text-4xl font-bold tracking-tight">{formatCurrency(totalBalance)}</p>
+          <p className="text-sm text-muted-foreground mt-2">{accounts.length} contas ativas</p>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {accounts.map((account) => (
           <Card key={account.id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

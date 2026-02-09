@@ -99,12 +99,17 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Transacoes</h1>
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Transacoes</h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie todas as suas transacoes
+          </p>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Nova Transacao</Button>
+            <Button size="lg"><Plus className="h-4 w-4 mr-2" />Nova Transacao</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>

@@ -111,7 +111,7 @@ export default function GoalsPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">Metas</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-56" />)}
         </div>
       </div>
@@ -119,12 +119,17 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Metas</h1>
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Metas Financeiras</h1>
+          <p className="text-muted-foreground mt-2">
+            Defina e acompanhe suas metas de economia
+          </p>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Meta</Button>
+            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Meta</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing ? "Editar Meta" : "Nova Meta"}</DialogTitle></DialogHeader>
@@ -144,10 +149,10 @@ export default function GoalsPage() {
       </div>
 
       {summary && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Total em Metas</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatCurrency(summary.total_target_amount)}</p></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Total Economizado</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatCurrency(summary.total_saved_amount)}</p></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Progresso Geral</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{formatPercentage(summary.overall_progress)}</p></CardContent></Card>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="hover:shadow-md transition-shadow"><CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Total em Metas</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold tracking-tight">{formatCurrency(summary.total_target_amount)}</p></CardContent></Card>
+          <Card className="hover:shadow-md transition-shadow"><CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Total Economizado</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold tracking-tight text-green-600 dark:text-green-500">{formatCurrency(summary.total_saved_amount)}</p></CardContent></Card>
+          <Card className="hover:shadow-md transition-shadow"><CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Progresso Geral</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold tracking-tight">{formatPercentage(summary.overall_progress)}</p></CardContent></Card>
         </div>
       )}
 
@@ -176,7 +181,7 @@ export default function GoalsPage() {
       {goals.length === 0 ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhuma meta criada</CardContent></Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {goals.map((goal) => {
             const current = parseFloat(goal.current_amount);
             const target = parseFloat(goal.target_amount);

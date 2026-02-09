@@ -83,12 +83,17 @@ export default function CategoriesPage() {
   const expenseCategories = categories.filter((c) => c.type === "expense");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Categorias</h1>
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Categorias</h1>
+          <p className="text-muted-foreground mt-2">
+            Organize suas transacoes por categoria
+          </p>
+        </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Categoria</Button>
+            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Categoria</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing ? "Editar Categoria" : "Nova Categoria"}</DialogTitle></DialogHeader>
@@ -115,18 +120,18 @@ export default function CategoriesPage() {
       </div>
 
       {[
-        { title: "Receita", items: incomeCategories },
-        { title: "Despesa", items: expenseCategories },
+        { title: "Receitas", items: incomeCategories },
+        { title: "Despesas", items: expenseCategories },
       ].map((section) => (
-        <div key={section.title} className="space-y-3">
-          <h2 className="text-xl font-semibold">{section.title}</h2>
+        <div key={section.title} className="space-y-4">
+          <h2 className="text-2xl font-semibold tracking-tight">{section.title}</h2>
           {section.items.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhuma categoria</p>
           ) : (
-            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
               {section.items.map((cat) => (
-                <Card key={cat.id}>
-                  <CardContent className="flex items-center justify-between p-4">
+                <Card key={cat.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="flex items-center justify-between p-5">
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: cat.color + "20", color: cat.color }}>
                         <Tags className="h-4 w-4" />

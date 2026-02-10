@@ -309,19 +309,19 @@ export default function SettingsPage() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle>Transacoes</CardTitle>
+                  <CardTitle>Transações</CardTitle>
                   <CardDescription>
-                    Configure o comportamento das transacoes
+                    Configure o comportamento das Transações
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">
-                        Permitir transacoes manuais
+                        Permitir Transações manuais
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Quando desativado, voce so podera ter transacoes
+                        Quando desativado, voce so podera ter Transações
                         automaticas do banco
                       </p>
                     </div>

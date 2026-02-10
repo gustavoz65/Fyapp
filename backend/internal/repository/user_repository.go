@@ -412,8 +412,8 @@ func (r *UserRepository) GetSettings(ctx context.Context, userID uuid.UUID) (*mo
 	query := `
 		SELECT id, user_id, notification_email, notification_push, notification_sms,
 			budget_alerts, bill_reminders, bill_reminder_days, weekly_summary,
-			monthly_report, low_balance_alert, low_balance_threshold, theme,
-			dashboard_layout, created_at, updated_at
+			monthly_report, low_balance_alert, low_balance_threshold, allow_manual_transactions,
+			theme, dashboard_layout, created_at, updated_at
 		FROM user_settings
 		WHERE user_id = ?
 	`
@@ -434,6 +434,7 @@ func (r *UserRepository) GetSettings(ctx context.Context, userID uuid.UUID) (*mo
 		&settings.MonthlyReport,
 		&settings.LowBalanceAlert,
 		&settings.LowBalanceThreshold,
+		&settings.AllowManualTransactions,
 		&settings.Theme,
 		&dashboardLayout,
 		&settings.CreatedAt,
@@ -455,30 +456,31 @@ func (r *UserRepository) GetSettings(ctx context.Context, userID uuid.UUID) (*mo
 // CreateDefaultSettings creates default settings for a user
 func (r *UserRepository) CreateDefaultSettings(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error) {
 	settings := &model.UserSettings{
-		ID:                  uuid.New(),
-		UserID:              userID,
-		NotificationEmail:   true,
-		NotificationPush:    true,
-		NotificationSMS:     false,
-		BudgetAlerts:        true,
-		BillReminders:       true,
-		BillReminderDays:    3,
-		WeeklySummary:       true,
-		MonthlyReport:       true,
-		LowBalanceAlert:     true,
-		LowBalanceThreshold: 100.00,
-		Theme:               "system",
-		CreatedAt:           time.Now(),
-		UpdatedAt:           time.Now(),
+		ID:                      uuid.New(),
+		UserID:                  userID,
+		NotificationEmail:       true,
+		NotificationPush:        true,
+		NotificationSMS:         false,
+		BudgetAlerts:            true,
+		BillReminders:           true,
+		BillReminderDays:        3,
+		WeeklySummary:           true,
+		MonthlyReport:           true,
+		LowBalanceAlert:         true,
+		LowBalanceThreshold:     100.00,
+		AllowManualTransactions: true,
+		Theme:                   "system",
+		CreatedAt:               time.Now(),
+		UpdatedAt:               time.Now(),
 	}
 
 	query := `
 		INSERT INTO user_settings (
 			id, user_id, notification_email, notification_push, notification_sms,
 			budget_alerts, bill_reminders, bill_reminder_days, weekly_summary,
-			monthly_report, low_balance_alert, low_balance_threshold, theme,
-			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			monthly_report, low_balance_alert, low_balance_threshold, allow_manual_transactions,
+			theme, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := r.ExecContext(ctx, query,
@@ -494,6 +496,7 @@ func (r *UserRepository) CreateDefaultSettings(ctx context.Context, userID uuid.
 		settings.MonthlyReport,
 		settings.LowBalanceAlert,
 		settings.LowBalanceThreshold,
+		settings.AllowManualTransactions,
 		settings.Theme,
 		settings.CreatedAt,
 		settings.UpdatedAt,

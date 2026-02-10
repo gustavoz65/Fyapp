@@ -1,18 +1,6 @@
 "use client";
 
-import {
-  LayoutDashboard,
-  Landmark,
-  ArrowLeftRight,
-  PiggyBank,
-  Target,
-  Tags,
-  Bell,
-  Settings,
-  LogOut,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sidebar,
   SidebarContent,
@@ -26,12 +14,24 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/providers/auth-provider";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  ArrowLeftRight,
+  Bell,
+  Landmark,
+  LayoutDashboard,
+  LogOut,
+  PiggyBank,
+  Settings,
+  Tags,
+  Target,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Contas", href: "/accounts", icon: Landmark },
-  { title: "Transacoes", href: "/transactions", icon: ArrowLeftRight },
+  { title: "Transações", href: "/transactions", icon: ArrowLeftRight },
   { title: "Orcamentos", href: "/budgets", icon: PiggyBank },
   { title: "Metas", href: "/goals", icon: Target },
   { title: "Categorias", href: "/categories", icon: Tags },

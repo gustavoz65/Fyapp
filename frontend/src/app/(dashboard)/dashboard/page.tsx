@@ -1,17 +1,45 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, DollarSign, CreditCard, Wallet, TrendingUpIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import type { DashboardSummary, MonthlyIncomeExpense } from "@/types";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  CreditCard,
+  DollarSign,
+  TrendingDown,
+  TrendingUp,
+  TrendingUpIcon,
+  Wallet,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -22,7 +50,9 @@ export default function DashboardPage() {
     try {
       const [summaryData, monthly] = await Promise.all([
         api.get<DashboardSummary>("/dashboard"),
-        api.get<MonthlyIncomeExpense[]>("/dashboard/monthly-comparison?months=6"),
+        api.get<MonthlyIncomeExpense[]>(
+          "/dashboard/monthly-comparison?months=6",
+        ),
       ]);
       setSummary(summaryData);
       setMonthlyData(monthly ?? []);
@@ -42,7 +72,9 @@ export default function DashboardPage() {
       <div className="space-y-8 pb-8">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Visao geral das suas financas</p>
+          <p className="text-muted-foreground mt-2">
+            Visao geral das suas financas
+          </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -86,46 +118,97 @@ export default function DashboardPage() {
     {
       title: "Receitas do Mes",
       value: formatCurrency(data.month_income),
-      change: data.income_change ? `${parseFloat(data.income_change) > 0 ? '+' : ''}${parseFloat(data.income_change).toFixed(1)}%` : "+0%",
-      trend: parseFloat(data.income_change || "0") > 0 ? "up" as const : "down" as const,
+      change: data.income_change
+        ? `${parseFloat(data.income_change) > 0 ? "+" : ""}${parseFloat(data.income_change).toFixed(1)}%`
+        : "+0%",
+      trend:
+        parseFloat(data.income_change || "0") > 0
+          ? ("up" as const)
+          : ("down" as const),
       icon: TrendingUpIcon,
     },
     {
       title: "Despesas do Mes",
       value: formatCurrency(data.month_expense),
-      change: data.expense_change ? `${parseFloat(data.expense_change) > 0 ? '+' : ''}${parseFloat(data.expense_change).toFixed(1)}%` : "+0%",
-      trend: parseFloat(data.expense_change || "0") > 0 ? "down" as const : "up" as const,
+      change: data.expense_change
+        ? `${parseFloat(data.expense_change) > 0 ? "+" : ""}${parseFloat(data.expense_change).toFixed(1)}%`
+        : "+0%",
+      trend:
+        parseFloat(data.expense_change || "0") > 0
+          ? ("down" as const)
+          : ("up" as const),
       icon: CreditCard,
     },
     {
       title: "Metas Ativas",
       value: data.active_goals.toString(),
       change: `${data.goals_progress}% concluido`,
-      trend: parseFloat(data.goals_progress || "0") > 50 ? "up" as const : "down" as const,
+      trend:
+        parseFloat(data.goals_progress || "0") > 50
+          ? ("up" as const)
+          : ("down" as const),
       icon: DollarSign,
     },
   ];
 
   // Transform monthly data for the chart
-  const chartData = monthlyData.map(item => ({
-    month: new Date(item.month).toLocaleDateString('pt-BR', { month: 'short' }),
-    income: parseFloat(item.income || "0"),
-    expense: parseFloat(item.expense || "0"),
-  })).reverse();
+  const chartData = monthlyData
+    .map((item) => ({
+      month: new Date(item.month).toLocaleDateString("pt-BR", {
+        month: "short",
+      }),
+      income: parseFloat(item.income || "0"),
+      expense: parseFloat(item.expense || "0"),
+    }))
+    .reverse();
 
   // Sample table data - in production this would come from API
   const tableData = [
-    { id: "1", header: "Supermercado", section: "Despesa", status: "Pago", target: formatCurrency(500), limit: formatCurrency(600), reviewer: "Voce" },
-    { id: "2", header: "Salario", section: "Receita", status: "Recebido", target: formatCurrency(5000), limit: "-", reviewer: "Sistema" },
-    { id: "3", header: "Aluguel", section: "Despesa", status: "Pendente", target: formatCurrency(1200), limit: formatCurrency(1200), reviewer: "Voce" },
-    { id: "4", header: "Freelance", section: "Receita", status: "Recebido", target: formatCurrency(1500), limit: "-", reviewer: "Sistema" },
+    {
+      id: "1",
+      header: "Supermercado",
+      section: "Despesa",
+      status: "Pago",
+      target: formatCurrency(500),
+      limit: formatCurrency(600),
+      reviewer: "Voce",
+    },
+    {
+      id: "2",
+      header: "Salario",
+      section: "Receita",
+      status: "Recebido",
+      target: formatCurrency(5000),
+      limit: "-",
+      reviewer: "Sistema",
+    },
+    {
+      id: "3",
+      header: "Aluguel",
+      section: "Despesa",
+      status: "Pendente",
+      target: formatCurrency(1200),
+      limit: formatCurrency(1200),
+      reviewer: "Voce",
+    },
+    {
+      id: "4",
+      header: "Freelance",
+      section: "Receita",
+      status: "Recebido",
+      target: formatCurrency(1500),
+      limit: "-",
+      reviewer: "Sistema",
+    },
   ];
 
   return (
     <div className="space-y-8 pb-8">
       <div>
         <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Visao geral das suas financas</p>
+        <p className="text-muted-foreground mt-2">
+          Visao geral das suas financas
+        </p>
       </div>
 
       {/* Metric Cards */}
@@ -135,7 +218,9 @@ export default function DashboardPage() {
           return (
             <Card key={index} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{metric.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {metric.title}
+                </CardTitle>
                 <Icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -146,7 +231,11 @@ export default function DashboardPage() {
                   ) : (
                     <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
                   )}
-                  <span className={metric.trend === "up" ? "text-green-500" : "text-red-500"}>
+                  <span
+                    className={
+                      metric.trend === "up" ? "text-green-500" : "text-red-500"
+                    }
+                  >
                     {metric.change}
                   </span>
                   <span className="ml-1">do mes anterior</span>
@@ -161,36 +250,54 @@ export default function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Fluxo Financeiro</CardTitle>
-          <CardDescription>Receitas e despesas dos ultimos 6 meses</CardDescription>
+          <CardDescription>
+            Receitas e despesas dos ultimos 6 meses
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop
+                    offset="5%"
+                    stopColor="hsl(var(--primary))"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="hsl(var(--primary))"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
                 <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                  <stop
+                    offset="5%"
+                    stopColor="hsl(var(--destructive))"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="hsl(var(--destructive))"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis
                 dataKey="month"
                 className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fill: "hsl(var(--muted-foreground))" }}
               />
               <YAxis
                 className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fill: "hsl(var(--muted-foreground))" }}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '0.5rem',
+                  backgroundColor: "hsl(var(--popover))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "0.5rem",
                 }}
                 formatter={(value: number) => formatCurrency(value)}
               />
@@ -229,8 +336,10 @@ export default function DashboardPage() {
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Transacoes Recentes</CardTitle>
-              <CardDescription>Ultimas movimentacoes financeiras</CardDescription>
+              <CardTitle>Transações Recentes</CardTitle>
+              <CardDescription>
+                Ultimas movimentacoes financeiras
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -253,20 +362,36 @@ export default function DashboardPage() {
                       <TableCell>
                         <Checkbox />
                       </TableCell>
-                      <TableCell className="font-medium">{row.header}</TableCell>
+                      <TableCell className="font-medium">
+                        {row.header}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant={row.section === "Receita" ? "default" : "secondary"}>
+                        <Badge
+                          variant={
+                            row.section === "Receita" ? "default" : "secondary"
+                          }
+                        >
                           {row.section}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={row.status === "Pago" || row.status === "Recebido" ? "outline" : "secondary"}>
+                        <Badge
+                          variant={
+                            row.status === "Pago" || row.status === "Recebido"
+                              ? "outline"
+                              : "secondary"
+                          }
+                        >
                           {row.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{row.target}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.limit}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.reviewer}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {row.limit}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {row.reviewer}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -279,7 +404,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Desempenho Mensal</CardTitle>
-              <CardDescription>Analise do desempenho financeiro mensal</CardDescription>
+              <CardDescription>
+                Analise do desempenho financeiro mensal
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-8 text-center">
@@ -293,7 +420,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Categorias Principais</CardTitle>
-              <CardDescription>Distribuicao de gastos por categoria</CardDescription>
+              <CardDescription>
+                Distribuicao de gastos por categoria
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-8 text-center">
@@ -307,7 +436,9 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Relatorios</CardTitle>
-              <CardDescription>Relatorios financeiros detalhados</CardDescription>
+              <CardDescription>
+                Relatorios financeiros detalhados
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-8 text-center">

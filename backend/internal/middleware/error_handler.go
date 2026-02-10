@@ -103,7 +103,7 @@ func mapServiceError(err error) (int, string) {
 
 	// Erros de servico
 	case errors.Is(err, service.ErrCategoryInUse):
-		return http.StatusConflict, "Categoria esta em uso por transacoes"
+		return http.StatusConflict, "Categoria esta em uso por Transações"
 
 	// Erros de sessao
 	case errors.Is(err, repository.ErrSessionNotFound),

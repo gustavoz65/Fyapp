@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,7 @@ export default function TransactionsPage() {
   const [filterPaid, setFilterPaid] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
 
-  const [form, setForm] = useState({
+  const initialFormState = {
     bank_account_id: "",
     category_id: "",
     type: "expense" as string,
@@ -66,8 +67,10 @@ export default function TransactionsPage() {
     description: "",
     transaction_date: new Date().toISOString().split("T")[0],
     due_date: "",
-    is_paid: true,
-  });
+    is_paid: false,
+  };
+
+  const [form, setForm] = useState(initialFormState);
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,6 +99,13 @@ export default function TransactionsPage() {
     fetchData();
   }, [fetchData]);
 
+  function resetForm() {
+    setForm({
+      ...initialFormState,
+      transaction_date: new Date().toISOString().split("T")[0],
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -113,6 +123,7 @@ export default function TransactionsPage() {
       };
       await api.post("/transactions", body);
       toast.success("Transacao criada");
+      resetForm();
       setDialogOpen(false);
       fetchData();
     } catch {
@@ -143,12 +154,18 @@ export default function TransactionsPage() {
     <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Transacoes</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Transações</h1>
           <p className="text-muted-foreground mt-2">
             Gerencie todas as suas transações
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog
+          open={dialogOpen}
+          onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button size="lg">
               <Plus className="h-4 w-4 mr-2" />
@@ -258,6 +275,21 @@ export default function TransactionsPage() {
                     }
                   />
                 </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_paid"
+                  checked={form.is_paid}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, is_paid: checked === true })
+                  }
+                />
+                <Label
+                  htmlFor="is_paid"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Marcar como pago
+                </Label>
               </div>
               <Button type="submit" className="w-full">
                 Criar Transacao

@@ -110,6 +110,7 @@ function AlertDialogTitle({
         "text-lg font-semibold sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
         className
       )}
+      style={{ fontFamily: 'var(--font-inclusive-sans, var(--font-geist-sans))' }}
       {...props}
     />
   )

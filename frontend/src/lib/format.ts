@@ -47,6 +47,15 @@ export function getTransactionTypeLabel(type: string): string {
   return labels[type] || type;
 }
 
+export function getTransactionSourceLabel(source: string): string {
+  const labels: Record<string, string> = {
+    manual: "Manual",
+    bank_sync: "Banco",
+    recurring: "Recorrente",
+  };
+  return labels[source] || source;
+}
+
 export function getBudgetPeriodLabel(type: string): string {
   const labels: Record<string, string> = {
     monthly: "Mensal",

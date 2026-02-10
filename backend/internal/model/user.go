@@ -68,20 +68,21 @@ func (s *UserSession) IsValid() bool {
 }
 
 type UserSettings struct {
-	ID                   uuid.UUID  `json:"id" db:"id"`
-	UserID               uuid.UUID  `json:"user_id" db:"user_id"`
-	NotificationEmail    bool       `json:"notification_email" db:"notification_email"`
-	NotificationPush     bool       `json:"notification_push" db:"notification_push"`
-	NotificationSMS      bool       `json:"notification_sms" db:"notification_sms"`
-	BudgetAlerts         bool       `json:"budget_alerts" db:"budget_alerts"`
-	BillReminders        bool       `json:"bill_reminders" db:"bill_reminders"`
-	BillReminderDays     int        `json:"bill_reminder_days" db:"bill_reminder_days"`
-	WeeklySummary        bool       `json:"weekly_summary" db:"weekly_summary"`
-	MonthlyReport        bool       `json:"monthly_report" db:"monthly_report"`
-	LowBalanceAlert      bool       `json:"low_balance_alert" db:"low_balance_alert"`
-	LowBalanceThreshold  float64    `json:"low_balance_threshold" db:"low_balance_threshold"`
-	Theme                string     `json:"theme" db:"theme"`
-	DashboardLayout      *string    `json:"dashboard_layout,omitempty" db:"dashboard_layout"`
-	CreatedAt            time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt            time.Time  `json:"updated_at" db:"updated_at"`
+	ID                      uuid.UUID  `json:"id" db:"id"`
+	UserID                  uuid.UUID  `json:"user_id" db:"user_id"`
+	NotificationEmail       bool       `json:"notification_email" db:"notification_email"`
+	NotificationPush        bool       `json:"notification_push" db:"notification_push"`
+	NotificationSMS         bool       `json:"notification_sms" db:"notification_sms"`
+	BudgetAlerts            bool       `json:"budget_alerts" db:"budget_alerts"`
+	BillReminders           bool       `json:"bill_reminders" db:"bill_reminders"`
+	BillReminderDays        int        `json:"bill_reminder_days" db:"bill_reminder_days"`
+	WeeklySummary           bool       `json:"weekly_summary" db:"weekly_summary"`
+	MonthlyReport           bool       `json:"monthly_report" db:"monthly_report"`
+	LowBalanceAlert         bool       `json:"low_balance_alert" db:"low_balance_alert"`
+	LowBalanceThreshold     float64    `json:"low_balance_threshold" db:"low_balance_threshold"`
+	AllowManualTransactions bool       `json:"allow_manual_transactions" db:"allow_manual_transactions"`
+	Theme                   string     `json:"theme" db:"theme"`
+	DashboardLayout         *string    `json:"dashboard_layout,omitempty" db:"dashboard_layout"`
+	CreatedAt               time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt               time.Time  `json:"updated_at" db:"updated_at"`
 }

@@ -41,7 +41,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// Services
 	authService := service.NewAuthService(userRepo, cfg, logger)
 	userService := service.NewUserService(userRepo, logger)
-	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, logger)
+	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, logger)
 	accountService := service.NewBankAccountService(accountRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)
 	budgetService := service.NewBudgetService(budgetRepo, notificationRepo, logger)

@@ -69,17 +69,18 @@ type UpdateUserRequest struct {
 }
 
 type UpdateUserSettingsRequest struct {
-	NotificationEmail   *bool    `json:"notification_email,omitempty"`
-	NotificationPush    *bool    `json:"notification_push,omitempty"`
-	NotificationSMS     *bool    `json:"notification_sms,omitempty"`
-	BudgetAlerts        *bool    `json:"budget_alerts,omitempty"`
-	BillReminders       *bool    `json:"bill_reminders,omitempty"`
-	BillReminderDays    *int     `json:"bill_reminder_days,omitempty" validate:"omitempty,min=1,max=30"`
-	WeeklySummary       *bool    `json:"weekly_summary,omitempty"`
-	MonthlyReport       *bool    `json:"monthly_report,omitempty"`
-	LowBalanceAlert     *bool    `json:"low_balance_alert,omitempty"`
-	LowBalanceThreshold *float64 `json:"low_balance_threshold,omitempty" validate:"omitempty,gte=0"`
-	Theme               *string  `json:"theme,omitempty" validate:"omitempty,oneof=light dark system"`
+	NotificationEmail       *bool    `json:"notification_email,omitempty"`
+	NotificationPush        *bool    `json:"notification_push,omitempty"`
+	NotificationSMS         *bool    `json:"notification_sms,omitempty"`
+	BudgetAlerts            *bool    `json:"budget_alerts,omitempty"`
+	BillReminders           *bool    `json:"bill_reminders,omitempty"`
+	BillReminderDays        *int     `json:"bill_reminder_days,omitempty" validate:"omitempty,min=1,max=30"`
+	WeeklySummary           *bool    `json:"weekly_summary,omitempty"`
+	MonthlyReport           *bool    `json:"monthly_report,omitempty"`
+	LowBalanceAlert         *bool    `json:"low_balance_alert,omitempty"`
+	LowBalanceThreshold     *float64 `json:"low_balance_threshold,omitempty" validate:"omitempty,gte=0"`
+	AllowManualTransactions *bool    `json:"allow_manual_transactions,omitempty"`
+	Theme                   *string  `json:"theme,omitempty" validate:"omitempty,oneof=light dark system"`
 }
 
 // ========================================
@@ -168,22 +169,23 @@ type UpdateTransactionRequest struct {
 }
 
 type TransactionFilter struct {
-	UserID        uuid.UUID        `json:"-"`
-	AccountID     *uuid.UUID       `json:"account_id,omitempty"`
-	CategoryID    *uuid.UUID       `json:"category_id,omitempty"`
-	Type          *TransactionType `json:"type,omitempty"`
-	StartDate     *time.Time       `json:"start_date,omitempty"`
-	EndDate       *time.Time       `json:"end_date,omitempty"`
-	IsPaid        *bool            `json:"is_paid,omitempty"`
-	IsRecurring   *bool            `json:"is_recurring,omitempty"`
-	MinAmount     *decimal.Decimal `json:"min_amount,omitempty"`
-	MaxAmount     *decimal.Decimal `json:"max_amount,omitempty"`
-	SearchTerm    string           `json:"search_term,omitempty"`
-	Tags          []string         `json:"tags,omitempty"`
-	Page          int              `json:"page,omitempty"`
-	PageSize      int              `json:"page_size,omitempty"`
-	SortBy        string           `json:"sort_by,omitempty"`
-	SortDirection string           `json:"sort_direction,omitempty"`
+	UserID        uuid.UUID         `json:"-"`
+	AccountID     *uuid.UUID        `json:"account_id,omitempty"`
+	CategoryID    *uuid.UUID        `json:"category_id,omitempty"`
+	Type          *TransactionType  `json:"type,omitempty"`
+	Source        *TransactionSource `json:"source,omitempty"`
+	StartDate     *time.Time        `json:"start_date,omitempty"`
+	EndDate       *time.Time        `json:"end_date,omitempty"`
+	IsPaid        *bool             `json:"is_paid,omitempty"`
+	IsRecurring   *bool             `json:"is_recurring,omitempty"`
+	MinAmount     *decimal.Decimal  `json:"min_amount,omitempty"`
+	MaxAmount     *decimal.Decimal  `json:"max_amount,omitempty"`
+	SearchTerm    string            `json:"search_term,omitempty"`
+	Tags          []string          `json:"tags,omitempty"`
+	Page          int               `json:"page,omitempty"`
+	PageSize      int               `json:"page_size,omitempty"`
+	SortBy        string            `json:"sort_by,omitempty"`
+	SortDirection string            `json:"sort_direction,omitempty"`
 }
 
 // ========================================

@@ -15,29 +15,38 @@ const (
 	TransactionTypeTransfer TransactionType = "transfer"
 )
 
+type TransactionSource string
+
+const (
+	TransactionSourceManual    TransactionSource = "manual"
+	TransactionSourceBankSync  TransactionSource = "bank_sync"
+	TransactionSourceRecurring TransactionSource = "recurring"
+)
+
 type Transaction struct {
-	ID                 uuid.UUID       `json:"id" db:"id"`
-	UserID             uuid.UUID       `json:"user_id" db:"user_id"`
-	BankAccountID      uuid.UUID       `json:"bank_account_id" db:"bank_account_id"`
-	CategoryID         *uuid.UUID      `json:"category_id,omitempty" db:"category_id"`
-	Type               TransactionType `json:"type" db:"type"`
-	Amount             decimal.Decimal `json:"amount" db:"amount"`
-	Description        string          `json:"description" db:"description"`
-	Notes              *string         `json:"notes,omitempty" db:"notes"`
-	TransactionDate    time.Time       `json:"transaction_date" db:"transaction_date"`
-	DueDate            *time.Time      `json:"due_date,omitempty" db:"due_date"`
-	PaymentDate        *time.Time      `json:"payment_date,omitempty" db:"payment_date"`
-	IsPaid             bool            `json:"is_paid" db:"is_paid"`
-	IsRecurring        bool            `json:"is_recurring" db:"is_recurring"`
-	RecurringID        *uuid.UUID      `json:"recurring_id,omitempty" db:"recurring_id"`
-	InstallmentNumber  *int            `json:"installment_number,omitempty" db:"installment_number"`
-	TotalInstallments  *int            `json:"total_installments,omitempty" db:"total_installments"`
-	InstallmentGroupID *uuid.UUID      `json:"installment_group_id,omitempty" db:"installment_group_id"`
-	Tags               []string        `json:"tags,omitempty" db:"tags"`
-	AttachmentURL      *string         `json:"attachment_url,omitempty" db:"attachment_url"`
-	ExternalID         *string         `json:"external_id,omitempty" db:"external_id"`
-	CreatedAt          time.Time       `json:"created_at" db:"created_at"`
-	UpdatedAt          time.Time       `json:"updated_at" db:"updated_at"`
+	ID                 uuid.UUID         `json:"id" db:"id"`
+	UserID             uuid.UUID         `json:"user_id" db:"user_id"`
+	BankAccountID      uuid.UUID         `json:"bank_account_id" db:"bank_account_id"`
+	CategoryID         *uuid.UUID        `json:"category_id,omitempty" db:"category_id"`
+	Type               TransactionType   `json:"type" db:"type"`
+	Amount             decimal.Decimal   `json:"amount" db:"amount"`
+	Description        string            `json:"description" db:"description"`
+	Notes              *string           `json:"notes,omitempty" db:"notes"`
+	Source             TransactionSource `json:"source" db:"source"`
+	TransactionDate    time.Time         `json:"transaction_date" db:"transaction_date"`
+	DueDate            *time.Time        `json:"due_date,omitempty" db:"due_date"`
+	PaymentDate        *time.Time        `json:"payment_date,omitempty" db:"payment_date"`
+	IsPaid             bool              `json:"is_paid" db:"is_paid"`
+	IsRecurring        bool              `json:"is_recurring" db:"is_recurring"`
+	RecurringID        *uuid.UUID        `json:"recurring_id,omitempty" db:"recurring_id"`
+	InstallmentNumber  *int              `json:"installment_number,omitempty" db:"installment_number"`
+	TotalInstallments  *int              `json:"total_installments,omitempty" db:"total_installments"`
+	InstallmentGroupID *uuid.UUID        `json:"installment_group_id,omitempty" db:"installment_group_id"`
+	Tags               []string          `json:"tags,omitempty" db:"tags"`
+	AttachmentURL      *string           `json:"attachment_url,omitempty" db:"attachment_url"`
+	ExternalID         *string           `json:"external_id,omitempty" db:"external_id"`
+	CreatedAt          time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time         `json:"updated_at" db:"updated_at"`
 
 	// Relationships (populated by joins)
 	Category    *Category    `json:"category,omitempty" db:"-"`
@@ -61,6 +70,14 @@ func (t *Transaction) DaysUntilDue() int {
 	}
 	duration := time.Until(*t.DueDate)
 	return int(duration.Hours() / 24)
+}
+
+func (t *Transaction) CanBeDeleted() bool {
+	return t.Source == TransactionSourceManual
+}
+
+func (t *Transaction) IsFromBank() bool {
+	return t.Source == TransactionSourceBankSync
 }
 
 type RecurringFrequency string

@@ -126,6 +126,7 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn("text-lg leading-none font-semibold", className)}
+      style={{ fontFamily: 'var(--font-inclusive-sans, var(--font-geist-sans))' }}
       {...props}
     />
   )

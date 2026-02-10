@@ -16,6 +16,7 @@ type TransactionService struct {
 	txRepo      *repository.TransactionRepository
 	accountRepo *repository.BankAccountRepository
 	budgetRepo  *repository.BudgetRepository
+	userRepo    *repository.UserRepository
 	logger      *zerolog.Logger
 }
 
@@ -23,18 +24,29 @@ func NewTransactionService(
 	txRepo *repository.TransactionRepository,
 	accountRepo *repository.BankAccountRepository,
 	budgetRepo *repository.BudgetRepository,
+	userRepo *repository.UserRepository,
 	logger *zerolog.Logger,
 ) *TransactionService {
 	return &TransactionService{
 		txRepo:      txRepo,
 		accountRepo: accountRepo,
 		budgetRepo:  budgetRepo,
+		userRepo:    userRepo,
 		logger:      logger,
 	}
 }
 
 // Create creates a new transaction
 func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *model.CreateTransactionRequest) (*model.Transaction, error) {
+	// Check if user allows manual transactions
+	settings, err := s.userRepo.GetSettings(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user settings: %w", err)
+	}
+	if !settings.AllowManualTransactions {
+		return nil, fmt.Errorf("manual transactions are disabled in your settings")
+	}
+
 	// Validate account belongs to user
 	account, err := s.accountRepo.GetByIDAndUser(ctx, req.BankAccountID, userID)
 	if err != nil {
@@ -48,6 +60,7 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 		Type:            req.Type,
 		Amount:          req.Amount,
 		Description:     req.Description,
+		Source:          model.TransactionSourceManual,
 		TransactionDate: req.TransactionDate,
 		DueDate:         req.DueDate,
 		IsPaid:          req.IsPaid,
@@ -105,6 +118,7 @@ func (s *TransactionService) createInstallments(ctx context.Context, userID uuid
 			Type:               baseTx.Type,
 			Amount:             installmentAmount,
 			Description:        fmt.Sprintf("%s (%d/%d)", baseTx.Description, i, totalInstallments),
+			Source:             model.TransactionSourceManual,
 			TransactionDate:    currentDate,
 			IsPaid:             i == 1 && baseTx.IsPaid,
 			InstallmentNumber:  &installmentNum,
@@ -345,6 +359,11 @@ func (s *TransactionService) Delete(ctx context.Context, userID, txID uuid.UUID)
 		return err
 	}
 
+	// Validate if transaction can be deleted
+	if !tx.CanBeDeleted() {
+		return fmt.Errorf("cannot delete transaction from source: %s (only manual transactions can be deleted)", tx.Source)
+	}
+
 	if err := s.txRepo.Delete(ctx, txID, userID); err != nil {
 		return fmt.Errorf("failed to delete transaction: %w", err)
 	}
@@ -361,6 +380,7 @@ func (s *TransactionService) Delete(ctx context.Context, userID, txID uuid.UUID)
 	s.logger.Info().
 		Str("user_id", userID.String()).
 		Str("transaction_id", txID.String()).
+		Str("source", string(tx.Source)).
 		Msg("transaction deleted")
 
 	return nil

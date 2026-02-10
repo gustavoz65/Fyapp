@@ -138,6 +138,9 @@ func (s *UserService) UpdateSettings(ctx context.Context, userID uuid.UUID, req 
 	if req.LowBalanceThreshold != nil {
 		settings.LowBalanceThreshold = *req.LowBalanceThreshold
 	}
+	if req.AllowManualTransactions != nil {
+		settings.AllowManualTransactions = *req.AllowManualTransactions
+	}
 	if req.Theme != nil {
 		settings.Theme = *req.Theme
 	}

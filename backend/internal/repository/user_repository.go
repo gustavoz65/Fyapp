@@ -515,8 +515,8 @@ func (r *UserRepository) UpdateSettings(ctx context.Context, settings *model.Use
 			notification_email = ?, notification_push = ?, notification_sms = ?,
 			budget_alerts = ?, bill_reminders = ?, bill_reminder_days = ?,
 			weekly_summary = ?, monthly_report = ?, low_balance_alert = ?,
-			low_balance_threshold = ?, theme = ?, dashboard_layout = ?,
-			updated_at = ?
+			low_balance_threshold = ?, allow_manual_transactions = ?, theme = ?,
+			dashboard_layout = ?, updated_at = ?
 		WHERE user_id = ?
 	`
 
@@ -531,6 +531,7 @@ func (r *UserRepository) UpdateSettings(ctx context.Context, settings *model.Use
 		settings.MonthlyReport,
 		settings.LowBalanceAlert,
 		settings.LowBalanceThreshold,
+		settings.AllowManualTransactions,
 		settings.Theme,
 		NullString(settings.DashboardLayout),
 		settings.UpdatedAt,

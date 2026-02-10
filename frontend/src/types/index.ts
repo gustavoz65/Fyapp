@@ -4,6 +4,7 @@
 
 export type UserRole = "user" | "admin" | "premium";
 export type TransactionType = "income" | "expense" | "transfer";
+export type TransactionSource = "manual" | "bank_sync" | "recurring";
 export type AccountType = "checking" | "savings" | "credit_card" | "investment" | "cash" | "other";
 export type CategoryType = "income" | "expense";
 export type BudgetPeriodType = "monthly" | "quarterly" | "yearly" | "custom";
@@ -47,6 +48,7 @@ export interface UserSettings {
   monthly_report: boolean;
   low_balance_alert: boolean;
   low_balance_threshold: number;
+  allow_manual_transactions: boolean;
   theme: "light" | "dark" | "system";
   dashboard_layout?: string;
   created_at: string;
@@ -112,6 +114,7 @@ export interface Transaction {
   amount: string;
   description: string;
   notes?: string;
+  source: TransactionSource;
   transaction_date: string;
   due_date?: string;
   payment_date?: string;

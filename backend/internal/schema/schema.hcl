@@ -400,6 +400,10 @@ table "transactions" {
     type = text
     null = true
   }
+  column "source" {
+    type    = enum("manual", "bank_sync", "recurring")
+    default = "manual"
+  }
   column "transaction_date" {
     type = date
     null = false
@@ -1178,6 +1182,10 @@ table "user_settings" {
   column "low_balance_threshold" {
     type    = decimal(15, 2)
     default = 100.00
+  }
+  column "allow_manual_transactions" {
+    type    = bool
+    default = true
   }
   column "theme" {
     type    = enum("light", "dark", "system")

@@ -39,11 +39,11 @@ func (r *TransactionRepository) Create(ctx context.Context, tx *model.Transactio
 	query := `
 		INSERT INTO transactions (
 			id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	var categoryID sql.NullString
@@ -81,6 +81,7 @@ func (r *TransactionRepository) Create(ctx context.Context, tx *model.Transactio
 		tx.Amount.String(),
 		tx.Description,
 		NullString(tx.Notes),
+		tx.Source,
 		tx.TransactionDate,
 		dueDate,
 		paymentDate,
@@ -108,7 +109,7 @@ func (r *TransactionRepository) Create(ctx context.Context, tx *model.Transactio
 func (r *TransactionRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Transaction, error) {
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
@@ -123,7 +124,7 @@ func (r *TransactionRepository) GetByID(ctx context.Context, id uuid.UUID) (*mod
 func (r *TransactionRepository) GetByIDAndUser(ctx context.Context, id, userID uuid.UUID) (*model.Transaction, error) {
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
@@ -153,6 +154,11 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	if filter.Type != nil {
 		conditions = append(conditions, "type = ?")
 		args = append(args, *filter.Type)
+	}
+
+	if filter.Source != nil {
+		conditions = append(conditions, "source = ?")
+		args = append(args, *filter.Source)
 	}
 
 	if filter.StartDate != nil {
@@ -213,7 +219,7 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	// Get data
 	query := fmt.Sprintf(`
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
@@ -241,7 +247,7 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 func (r *TransactionRepository) GetByDateRange(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]*model.Transaction, error) {
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
@@ -263,7 +269,7 @@ func (r *TransactionRepository) GetByDateRange(ctx context.Context, userID uuid.
 func (r *TransactionRepository) GetUpcomingBills(ctx context.Context, userID uuid.UUID, days int) ([]*model.Transaction, error) {
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
@@ -286,7 +292,7 @@ func (r *TransactionRepository) GetUpcomingBills(ctx context.Context, userID uui
 func (r *TransactionRepository) GetRecentTransactions(ctx context.Context, userID uuid.UUID, limit int) ([]*model.Transaction, error) {
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, transaction_date, due_date, payment_date,
+			description, notes, source, transaction_date, due_date, payment_date,
 			is_paid, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
@@ -495,6 +501,7 @@ func (r *TransactionRepository) scanTransaction(row *sql.Row) (*model.Transactio
 		&amount,
 		&tx.Description,
 		&notes,
+		&tx.Source,
 		&tx.TransactionDate,
 		&dueDate,
 		&paymentDate,
@@ -573,6 +580,7 @@ func (r *TransactionRepository) scanTransactions(rows *sql.Rows) ([]*model.Trans
 			&amount,
 			&tx.Description,
 			&notes,
+			&tx.Source,
 			&tx.TransactionDate,
 			&dueDate,
 			&paymentDate,

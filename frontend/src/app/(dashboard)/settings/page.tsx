@@ -171,21 +171,44 @@ export default function SettingsPage() {
           </Card>
 
           {settings && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tema</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select value={settings.theme} onValueChange={handleThemeChange}>
-                  <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Claro</SelectItem>
-                    <SelectItem value="dark">Escuro</SelectItem>
-                    <SelectItem value="system">Sistema</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transacoes</CardTitle>
+                  <CardDescription>Configure o comportamento das transacoes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Permitir transacoes manuais</p>
+                      <p className="text-xs text-muted-foreground">
+                        Quando desativado, voce so podera ter transacoes automaticas do banco
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.allow_manual_transactions}
+                      onCheckedChange={(checked) => handleSettingToggle("allow_manual_transactions", checked)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tema</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select value={settings.theme} onValueChange={handleThemeChange}>
+                    <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Claro</SelectItem>
+                      <SelectItem value="dark">Escuro</SelectItem>
+                      <SelectItem value="system">Sistema</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
 

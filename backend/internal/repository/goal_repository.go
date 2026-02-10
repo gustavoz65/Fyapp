@@ -326,8 +326,8 @@ func (r *GoalRepository) GetGoalSummary(ctx context.Context, userID uuid.UUID) (
 	query := `
 		SELECT
 			COUNT(*) as total_goals,
-			SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_goals,
-			SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_goals,
+			COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as completed_goals,
+			COALESCE(SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END), 0) as in_progress_goals,
 			COALESCE(SUM(target_amount), 0) as total_target,
 			COALESCE(SUM(current_amount), 0) as total_saved
 		FROM goals

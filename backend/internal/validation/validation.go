@@ -2,17 +2,31 @@ package validation
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gustavoz65/Cashing-go/internal/errs"
 	"github.com/labstack/echo/v4"
+	"github.com/shopspring/decimal"
 )
 
 var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
+	registerDecimalValidations(validate)
+}
+
+// registerDecimalValidations registra validações customizadas para o tipo decimal.Decimal
+// O validator padrão não suporta decimal.Decimal para tags como gt, gte, lt, lte
+func registerDecimalValidations(v *validator.Validate) {
+	v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if valuer, ok := field.Interface().(decimal.Decimal); ok {
+			return valuer.InexactFloat64()
+		}
+		return nil
+	}, decimal.Decimal{})
 }
 
 type Validatable interface {

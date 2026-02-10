@@ -21,7 +21,12 @@ export default function NotificationsPage() {
       const endpoint = showUnreadOnly ? "/notifications/unread" : "/notifications";
       const data = await api.get<Notification[]>(endpoint);
       setNotifications(data || []);
-    } catch {} finally { setIsLoading(false); }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [showUnreadOnly]);
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
@@ -29,24 +34,34 @@ export default function NotificationsPage() {
   async function markAsRead(id: string) {
     try {
       await api.patch(`/notifications/${id}/read`);
-      fetchNotifications();
-    } catch { toast.error("Erro ao marcar como lida"); }
+      await fetchNotifications();
+      toast.success("Marcada como lida");
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      toast.error("Erro ao marcar como lida");
+    }
   }
 
   async function markAllAsRead() {
     try {
       await api.patch("/notifications/read-all");
       toast.success("Todas marcadas como lidas");
-      fetchNotifications();
-    } catch { toast.error("Erro"); }
+      await fetchNotifications();
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      toast.error("Erro ao marcar todas como lidas");
+    }
   }
 
   async function deleteNotification(id: string) {
     try {
       await api.delete(`/notifications/${id}`);
       toast.success("Notificacao removida");
-      fetchNotifications();
-    } catch { toast.error("Erro ao remover"); }
+      await fetchNotifications();
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      toast.error("Erro ao remover notificacao");
+    }
   }
 
   const notificationIcon: Record<string, string> = {

@@ -21,10 +21,12 @@ import {
   LayoutDashboard,
   LogOut,
   PiggyBank,
+  Repeat,
   Settings,
   Tags,
   Target,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -32,6 +34,7 @@ const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Contas", href: "/accounts", icon: Landmark },
   { title: "Transações", href: "/transactions", icon: ArrowLeftRight },
+  { title: "Recorrentes", href: "/recurring", icon: Repeat },
   { title: "Orcamentos", href: "/budgets", icon: PiggyBank },
   { title: "Metas", href: "/goals", icon: Target },
   { title: "Categorias", href: "/categories", icon: Tags },
@@ -50,13 +53,15 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="px-4 py-6">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Cashing
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Gestao Financeira
-          </p>
+        <div className="px-4 py-6 flex items-center justify-center">
+          <Image
+            src="/logo_cash_no_dark_mode.png"
+            alt="Cashing"
+            width={120}
+            height={40}
+            className="object-contain"
+            priority
+          />
         </div>
       </SidebarHeader>
 

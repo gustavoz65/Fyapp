@@ -4,6 +4,7 @@ import (
 	"github.com/gustavoz65/Cashing-go/internal/config"
 	"github.com/gustavoz65/Cashing-go/internal/database"
 	"github.com/gustavoz65/Cashing-go/internal/handler"
+	"github.com/gustavoz65/Cashing-go/internal/lib/utils/validator"
 	"github.com/gustavoz65/Cashing-go/internal/middleware"
 	"github.com/gustavoz65/Cashing-go/internal/repository"
 	"github.com/gustavoz65/Cashing-go/internal/server"
@@ -18,6 +19,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+	e.Validator = validator.New()
 
 	// Error handler global
 	e.HTTPErrorHandler = middleware.ErrorHandler(logger)
@@ -37,6 +39,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goalRepo := repository.NewGoalRepository(db, logger)
 	notificationRepo := repository.NewNotificationRepository(db, logger)
 	auditLogRepo := repository.NewAuditLogRepository(db, logger)
+	recurringRepo := repository.NewRecurringTransactionRepository(db, logger)
 
 	// Services
 	authService := service.NewAuthService(userRepo, cfg, logger)
@@ -48,6 +51,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goalService := service.NewGoalService(goalRepo, notificationRepo, logger)
 	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
 	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger)
+	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -59,6 +63,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goalHandler := handler.NewGoalHandler(goalService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
+	recurringHandler := handler.NewRecurringTransactionHandler(recurringService)
 
 	// Health check
 	healthHandler := handler.NewHealthHandler(srv)
@@ -123,6 +128,17 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.DELETE("/:id", transactionHandler.Delete)
 	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid)
 
+	// Recurring Transactions
+	recurring := api.Group("/recurring-transactions", authMiddleware, auditMiddleware.Handler())
+	recurring.GET("", recurringHandler.GetAll)
+	recurring.GET("/stats", recurringHandler.GetStats)
+	recurring.GET("/upcoming", recurringHandler.GetUpcoming)
+	recurring.GET("/:id", recurringHandler.GetByID)
+	recurring.POST("", recurringHandler.Create)
+	recurring.PUT("/:id", recurringHandler.Update)
+	recurring.DELETE("/:id", recurringHandler.Delete)
+	recurring.PATCH("/:id/toggle", recurringHandler.ToggleActive)
+
 	// Budgets
 	budgets := api.Group("/budgets", authMiddleware, auditMiddleware.Handler())
 	budgets.GET("", budgetHandler.GetAll)
@@ -159,6 +175,8 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	notifications.PATCH("/:id/read", notificationHandler.MarkAsRead)
 	notifications.PATCH("/read-all", notificationHandler.MarkAllAsRead)
 	notifications.DELETE("/:id", notificationHandler.Delete)
+
+	srv.Job.SetRecurringService(recurringService)
 
 	return e
 }

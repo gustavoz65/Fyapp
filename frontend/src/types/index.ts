@@ -132,6 +132,29 @@ export interface Transaction {
   bank_account?: BankAccount;
 }
 
+export interface RecurringTransaction {
+  id: string;
+  user_id: string;
+  bank_account_id: string;
+  category_id?: string;
+  type: TransactionType;
+  amount: string;
+  description: string;
+  frequency: RecurringFrequency;
+  day_of_month?: number;
+  day_of_week?: number;
+  start_date: string;
+  end_date?: string;
+  next_occurrence: string;
+  last_generated_at?: string;
+  is_active: boolean;
+  auto_confirm: boolean;
+  created_at: string;
+  updated_at: string;
+  category?: Category;
+  bank_account?: BankAccount;
+}
+
 // ========================================
 // Budget
 // ========================================

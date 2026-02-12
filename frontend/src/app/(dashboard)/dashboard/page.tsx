@@ -162,45 +162,7 @@ export default function DashboardPage() {
     }))
     .reverse();
 
-  // Sample table data - in production this would come from API
-  const tableData = [
-    {
-      id: "1",
-      header: "Supermercado",
-      section: "Despesa",
-      status: "Pago",
-      target: formatCurrency(500),
-      limit: formatCurrency(600),
-      reviewer: "Voce",
-    },
-    {
-      id: "2",
-      header: "Salario",
-      section: "Receita",
-      status: "Recebido",
-      target: formatCurrency(5000),
-      limit: "-",
-      reviewer: "Sistema",
-    },
-    {
-      id: "3",
-      header: "Aluguel",
-      section: "Despesa",
-      status: "Pendente",
-      target: formatCurrency(1200),
-      limit: formatCurrency(1200),
-      reviewer: "Voce",
-    },
-    {
-      id: "4",
-      header: "Freelance",
-      section: "Receita",
-      status: "Recebido",
-      target: formatCurrency(1500),
-      limit: "-",
-      reviewer: "Sistema",
-    },
-  ];
+  const recentTransactions = data.recent_transactions || [];
 
   return (
     <div className="space-y-8 pb-8">
@@ -352,48 +314,73 @@ export default function DashboardPage() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Valor</TableHead>
-                    <TableHead>Limite</TableHead>
-                    <TableHead>Responsavel</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Conta</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tableData.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <Checkbox />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {row.header}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            row.section === "Receita" ? "default" : "secondary"
-                          }
-                        >
-                          {row.section}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            row.status === "Pago" || row.status === "Recebido"
-                              ? "outline"
-                              : "secondary"
-                          }
-                        >
-                          {row.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{row.target}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {row.limit}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {row.reviewer}
+                  {recentTransactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        Nenhuma transacao recente
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    recentTransactions.map((transaction) => (
+                      <TableRow
+                        key={transaction.id}
+                        className="hover:bg-muted/50"
+                      >
+                        <TableCell>
+                          <Checkbox />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {transaction.description}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              transaction.type === "income"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {transaction.type === "income"
+                              ? "Receita"
+                              : "Despesa"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              transaction.is_paid ? "outline" : "secondary"
+                            }
+                          >
+                            {transaction.is_paid ? "Pago" : "Pendente"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className={
+                            transaction.type === "income"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {transaction.type === "income" ? "+" : "-"}
+                          {formatCurrency(transaction.amount)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {transaction.category?.name || "-"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {transaction.bank_account?.name || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

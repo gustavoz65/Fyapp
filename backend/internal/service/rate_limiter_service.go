@@ -1,28 +1,37 @@
 package service
 
 import (
+	"time"
+
+	"github.com/gofiber/fiber/v2"
 	"github.com/gustavoz65/Cashing-go/internal/repository"
-	"golang.org/x/time/rate"
 )
 
 type RateLimiterService struct {
-	defaultLimiter repository.RateLimiter
+	defaultConfig repository.RateLimiter
 }
 
-func NewRateLimiterService(requestsPerSecond float64, burst int) *RateLimiterService {
-	limiter := rate.NewLimiter(rate.Limit(requestsPerSecond), burst)
-	wrapper := repository.NewLimiterWrapper(limiter)
-
+func NewRateLimiterService(max int, duration time.Duration, endpoint string) *RateLimiterService {
 	return &RateLimiterService{
-		defaultLimiter: wrapper,
+		defaultConfig: repository.RateLimiter{
+			Max:         max,
+			Duration:    duration,
+			Endpoint:    endpoint,
+			SkipOnerror: true,
+		},
 	}
 }
 
-func (s *RateLimiterService) GetDefaultLimiter() repository.RateLimiter {
-	return s.defaultLimiter
+func (s *RateLimiterService) GetDefaultConfig() repository.RateLimiter {
+	return s.defaultConfig
 }
 
-func (s *RateLimiterService) CreateLimiter(requestsPerSecond float64, burst int) repository.RateLimiter {
-	limiter := rate.NewLimiter(rate.Limit(requestsPerSecond), burst)
-	return repository.NewLimiterWrapper(limiter)
+func (s *RateLimiterService) CreateConfig(max int, duration time.Duration, endpoint string, keyFunc func(*fiber.Ctx) string) repository.RateLimiter {
+	return repository.RateLimiter{
+		Max:         max,
+		Duration:    duration,
+		Endpoint:    endpoint,
+		KeyFunc:     keyFunc,
+		SkipOnerror: true,
+	}
 }

@@ -1,28 +1,15 @@
 package repository
 
 import (
-	"context"
+	"time"
 
-	"golang.org/x/time/rate"
+	"github.com/gofiber/fiber/v2"
 )
 
-type RateLimiter interface {
-	Allow() bool
-	Wait(ctx context.Context) error
-}
-
-type LimiterWrapper struct {
-	limiter *rate.Limiter
-}
-
-func NewLimiterWrapper(limiter *rate.Limiter) *LimiterWrapper {
-	return &LimiterWrapper{limiter: limiter}
-}
-
-func (l *LimiterWrapper) Allow() bool {
-	return l.limiter.Allow()
-}
-
-func (l *LimiterWrapper) Wait(ctx context.Context) error {
-	return l.limiter.Wait(ctx)
+type RateLimiter struct {
+	Max         int
+	Duration    time.Duration
+	KeyFunc     func(r *fiber.Ctx) string
+	Endpoint    string
+	SkipOnerror bool
 }

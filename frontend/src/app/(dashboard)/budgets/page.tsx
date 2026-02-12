@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Budget, Category, CreateBudgetRequest, UpdateBudgetRequest } from "@/types";
 import { formatCurrency, formatPercentage, getBudgetPeriodLabel } from "@/lib/format";
+import { createBudgetSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -76,19 +78,38 @@ export default function BudgetsPage() {
         await api.put(`/budgets/${editing.id}`, body);
         toast.success("Orcamento atualizado");
       } else {
+        // Validar com Zod
+        const validated = createBudgetSchema.parse({
+          name: form.name,
+          category_id: form.category_id || "",
+          amount: form.amount,
+          period_type: form.period_type,
+          start_date: form.start_date,
+          end_date: form.end_date,
+          alert_threshold: form.alert_threshold || "",
+        });
+
         const body: CreateBudgetRequest = {
-          name: form.name, category_id: form.category_id || undefined,
-          amount: form.amount, period_type: form.period_type as CreateBudgetRequest["period_type"],
-          start_date: new Date(form.start_date).toISOString(),
-          end_date: new Date(form.end_date).toISOString(),
-          alert_threshold: form.alert_threshold,
+          name: validated.name,
+          category_id: validated.category_id || undefined,
+          amount: validated.amount,
+          period_type: validated.period_type as CreateBudgetRequest["period_type"],
+          start_date: new Date(validated.start_date).toISOString(),
+          end_date: new Date(validated.end_date).toISOString(),
+          alert_threshold: validated.alert_threshold,
         };
         await api.post("/budgets", body);
         toast.success("Orcamento criado");
       }
       setDialogOpen(false);
       fetchData();
-    } catch { toast.error("Erro ao salvar orcamento"); }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Erro ao salvar orcamento");
+      }
+    }
   }
 
   async function handleDelete(id: string) {

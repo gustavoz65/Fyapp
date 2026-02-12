@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { User } from "@/types";
 import { getCurrentUser, login as loginFn, logout as logoutFn, register as registerFn } from "@/lib/auth";
-import { api } from "@/lib/api";
 import type { LoginRequest, RegisterRequest } from "@/types";
 
 interface AuthContextType {
@@ -28,17 +27,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
     } catch {
       setUser(null);
-      api.clearTokens();
+      // Cookies são gerenciados pelo backend
     }
   }, []);
 
   useEffect(() => {
-    const token = api.getAccessToken();
-    if (token) {
-      refreshUser().finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    // Tentar buscar usuário - cookie será enviado automaticamente
+    refreshUser()
+      .catch(() => {
+        // Se falhar, usuário não está autenticado
+      })
+      .finally(() => setIsLoading(false));
   }, [refreshUser]);
 
   const login = async (data: LoginRequest) => {

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/gustavoz65/Cashing-go/internal/config"
 	"github.com/gustavoz65/Cashing-go/internal/middleware"
 	"github.com/gustavoz65/Cashing-go/internal/model"
 	"github.com/gustavoz65/Cashing-go/internal/service"
@@ -12,10 +13,57 @@ import (
 
 type AuthHandler struct {
 	authService *service.AuthService
+	config      *config.Config
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *service.AuthService, cfg *config.Config) *AuthHandler {
+	return &AuthHandler{authService: authService, config: cfg}
+}
+
+// setAuthCookies seta os cookies httpOnly de autenticação
+func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken string) {
+	isProduction := h.config.Primary.Env == "production"
+
+	// Access token cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isProduction, // HTTPS only em produção
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   h.config.Auth.AccessTokenDuration * 60, // converter minutos para segundos
+	})
+
+	// Refresh token cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/api/v1/auth",
+		HttpOnly: true,
+		Secure:   isProduction,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   h.config.Auth.RefreshTokenDuration * 3600, // converter horas para segundos
+	})
+}
+
+// clearAuthCookies limpa os cookies de autenticação
+func (h *AuthHandler) clearAuthCookies(c echo.Context) {
+	c.SetCookie(&http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+
+	c.SetCookie(&http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/api/v1/auth",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
 }
 
 func (h *AuthHandler) Register(c echo.Context) error {
@@ -24,12 +72,19 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return err
 	}
 
-	user, err := h.authService.Register(c.Request().Context(), &req)
+	response, err := h.authService.Register(c.Request().Context(), &req)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusCreated, user)
+	// Setar cookies httpOnly
+	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
+
+	// Retornar response SEM tokens (por segurança)
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"user":       response.User,
+		"expires_at": response.ExpiresAt,
+	})
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
@@ -46,32 +101,66 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, response)
+	// Setar cookies httpOnly
+	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
+
+	// Retornar response SEM tokens (por segurança)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"user":       response.User,
+		"expires_at": response.ExpiresAt,
+	})
 }
 
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
-	var req model.RefreshTokenRequest
-	if err := validation.BindAndValidate(c, &req); err != nil {
-		return err
+	// Tentar ler refresh_token do cookie primeiro
+	var refreshToken string
+	cookie, err := c.Cookie("refresh_token")
+	if err == nil && cookie.Value != "" {
+		refreshToken = cookie.Value
+	} else {
+		// Fallback para body (backward compatibility)
+		var req model.RefreshTokenRequest
+		if err := validation.BindAndValidate(c, &req); err != nil {
+			return err
+		}
+		refreshToken = req.RefreshToken
 	}
 
-	response, err := h.authService.RefreshToken(c.Request().Context(), req.RefreshToken)
+	response, err := h.authService.RefreshToken(c.Request().Context(), refreshToken)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, response)
+	// Setar novos cookies httpOnly
+	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
+
+	// Retornar response SEM tokens (por segurança)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"expires_at": response.ExpiresAt,
+	})
 }
 
 func (h *AuthHandler) Logout(c echo.Context) error {
-	var req model.RefreshTokenRequest
-	if err := validation.BindAndValidate(c, &req); err != nil {
+	// Tentar ler refresh_token do cookie primeiro
+	var refreshToken string
+	cookie, err := c.Cookie("refresh_token")
+	if err == nil && cookie.Value != "" {
+		refreshToken = cookie.Value
+	} else {
+		// Fallback para body (backward compatibility)
+		var req model.RefreshTokenRequest
+		if err := validation.BindAndValidate(c, &req); err != nil {
+			return err
+		}
+		refreshToken = req.RefreshToken
+	}
+
+	if err := h.authService.Logout(c.Request().Context(), refreshToken); err != nil {
 		return err
 	}
 
-	if err := h.authService.Logout(c.Request().Context(), req.RefreshToken); err != nil {
-		return err
-	}
+	// Limpar cookies
+	h.clearAuthCookies(c)
 
 	return c.NoContent(http.StatusNoContent)
 }

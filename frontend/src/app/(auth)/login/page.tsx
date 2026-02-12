@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { z } from "zod";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { loginSchema } from "@/lib/schemas";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -21,10 +23,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
+      // Validar com Zod
+      const validated = loginSchema.parse({ email, password });
+      await login(validated);
       router.push("/dashboard");
-    } catch {
-      toast.error("Email ou senha invalidos");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Email ou senha invalidos");
+      }
     } finally {
       setIsLoading(false);
     }

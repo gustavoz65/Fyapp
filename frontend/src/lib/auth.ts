@@ -11,23 +11,18 @@ import type {
 } from "@/types";
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const response = await api.post<LoginResponse>("/auth/login", data);
-  api.setTokens(response.access_token, response.refresh_token);
-  return response;
+  // Cookies são setados automaticamente pelo backend (httpOnly)
+  return api.post<LoginResponse>("/auth/login", data);
 }
 
 export async function register(data: RegisterRequest): Promise<LoginResponse> {
-  const response = await api.post<LoginResponse>("/auth/register", data);
-  api.setTokens(response.access_token, response.refresh_token);
-  return response;
+  // Cookies são setados automaticamente pelo backend (httpOnly)
+  return api.post<LoginResponse>("/auth/register", data);
 }
 
 export async function logout(): Promise<void> {
-  try {
-    await api.post("/auth/logout");
-  } finally {
-    api.clearTokens();
-  }
+  // Backend limpa os cookies automaticamente
+  await api.post("/auth/logout");
 }
 
 export async function getCurrentUser(): Promise<User> {

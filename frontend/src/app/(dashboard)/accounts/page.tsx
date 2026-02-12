@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
 import { Plus, Pencil, Trash2, Landmark } from "lucide-react";
 import { api } from "@/lib/api";
 import type { BankAccount, CreateBankAccountRequest, UpdateBankAccountRequest } from "@/types";
 import { formatCurrency, getAccountTypeLabel } from "@/lib/format";
+import { createAccountSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,18 +82,35 @@ export default function AccountsPage() {
         await api.put(`/accounts/${editing.id}`, body);
         toast.success("Conta atualizada");
       } else {
+        // Validar com Zod
+        const validated = createAccountSchema.parse({
+          name: form.name,
+          bank_name: form.bank_name || undefined,
+          account_type: form.account_type,
+          initial_balance: form.initial_balance,
+          color: form.color,
+          icon: form.icon,
+        });
+
         const body: CreateBankAccountRequest = {
-          name: form.name, bank_name: form.bank_name || undefined,
-          account_type: form.account_type as CreateBankAccountRequest["account_type"],
-          initial_balance: form.initial_balance, color: form.color, icon: form.icon,
+          name: validated.name,
+          bank_name: validated.bank_name,
+          account_type: validated.account_type as CreateBankAccountRequest["account_type"],
+          initial_balance: validated.initial_balance,
+          color: validated.color,
+          icon: validated.icon,
         };
         await api.post("/accounts", body);
         toast.success("Conta criada");
       }
       setDialogOpen(false);
       fetchAccounts();
-    } catch {
-      toast.error("Erro ao salvar conta");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Erro ao salvar conta");
+      }
     }
   }
 

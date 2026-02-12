@@ -10,7 +10,18 @@ import (
 // CORSMiddleware configura CORS baseado nas origens permitidas
 func CORSMiddleware(allowedOrigins []string) echo.MiddlewareFunc {
 	if len(allowedOrigins) == 0 {
-		allowedOrigins = []string{"*"}
+		// Default para desenvolvimento - NÃO usar "*" em produção com credentials!
+		allowedOrigins = []string{"http://localhost:3000"}
+	}
+
+	// IMPORTANTE: Quando AllowCredentials=true, não pode usar "*"
+	// Precisa ser lista específica de origens
+	allowCredentials := true
+	for _, origin := range allowedOrigins {
+		if origin == "*" {
+			allowCredentials = false
+			break
+		}
 	}
 
 	return echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
@@ -30,7 +41,7 @@ func CORSMiddleware(allowedOrigins []string) echo.MiddlewareFunc {
 			echo.HeaderAuthorization,
 			"X-Requested-With",
 		},
-		AllowCredentials: true,
+		AllowCredentials: allowCredentials,
 		MaxAge:           86400,
 	})
 }

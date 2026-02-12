@@ -103,3 +103,41 @@ func AuthRateLimit(rdb *redis.Client) echo.MiddlewareFunc {
 		SkipOnerror: true,
 	})
 }
+
+// MutationRateLimit aplica rate limiting para operações de escrita (POST/PUT/PATCH/DELETE)
+func MutationRateLimit(rdb *redis.Client) echo.MiddlewareFunc {
+	return RateLimit(rdb, repository.RateLimiter{
+		Max:      100, // 100 mutations por minuto
+		Duration: time.Minute,
+		KeyFunc: func(c echo.Context) string {
+			// Usar user_id se autenticado, senão IP
+			if userID := c.Get("user_id"); userID != nil {
+				if uid, ok := userID.(uuid.UUID); ok {
+					return fmt.Sprintf("mutations:user:%s", uid.String())
+				}
+			}
+			return fmt.Sprintf("mutations:ip:%s", c.RealIP())
+		},
+		Endpoint:    "mutations",
+		SkipOnerror: true,
+	})
+}
+
+// ReadRateLimit aplica rate limiting para operações de leitura (GET)
+func ReadRateLimit(rdb *redis.Client) echo.MiddlewareFunc {
+	return RateLimit(rdb, repository.RateLimiter{
+		Max:      500, // 500 reads por minuto
+		Duration: time.Minute,
+		KeyFunc: func(c echo.Context) string {
+			// Usar user_id se autenticado, senão IP
+			if userID := c.Get("user_id"); userID != nil {
+				if uid, ok := userID.(uuid.UUID); ok {
+					return fmt.Sprintf("reads:user:%s", uid.String())
+				}
+			}
+			return fmt.Sprintf("reads:ip:%s", c.RealIP())
+		},
+		Endpoint:    "reads",
+		SkipOnerror: true,
+	})
+}

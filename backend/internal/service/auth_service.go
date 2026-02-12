@@ -49,8 +49,8 @@ func NewAuthService(userRepo *repository.UserRepository, cfg *config.Config, log
 	}
 }
 
-// Register creates a new user account
-func (s *AuthService) Register(ctx context.Context, req *model.RegisterRequest) (*model.User, error) {
+// Register creates a new user account and returns authentication tokens
+func (s *AuthService) Register(ctx context.Context, req *model.RegisterRequest) (*model.LoginResponse, error) {
 	// Hash password
 	passwordHash, err := s.hashPassword(req.Password)
 	if err != nil {
@@ -86,12 +86,39 @@ func (s *AuthService) Register(ctx context.Context, req *model.RegisterRequest) 
 		s.logger.Warn().Err(err).Msg("failed to create default settings for user")
 	}
 
+	// Generate tokens for auto-login after registration
+	accessToken, expiresAt, err := s.generateAccessToken(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	refreshToken, refreshTokenHash, err := s.generateRefreshToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+
+	// Create session
+	session := &model.UserSession{
+		UserID:           user.ID,
+		RefreshTokenHash: refreshTokenHash,
+		ExpiresAt:        time.Now().Add(time.Duration(s.config.Auth.RefreshTokenDuration) * time.Hour),
+	}
+
+	if err := s.userRepo.CreateSession(ctx, session); err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
 	s.logger.Info().
 		Str("user_id", user.ID.String()).
 		Str("email", user.Email).
 		Msg("new user registered")
 
-	return user, nil
+	return &model.LoginResponse{
+		User:         user,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresAt:    expiresAt,
+	}, nil
 }
 
 // Login authenticates a user and returns tokens

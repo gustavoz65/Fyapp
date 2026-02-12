@@ -20,18 +20,27 @@ const (
 func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			authHeader := c.Request().Header.Get("Authorization")
-			if authHeader == "" {
-				return errs.NewUnauthorizedError("Token de autenticacao nao fornecido", false)
+			var tokenString string
+
+			// Tentar ler de cookie primeiro (método preferido com httpOnly)
+			cookie, err := c.Cookie("access_token")
+			if err == nil && cookie.Value != "" {
+				tokenString = cookie.Value
+			} else {
+				// Fallback para Authorization header (backward compatibility)
+				authHeader := c.Request().Header.Get("Authorization")
+				if authHeader == "" {
+					return errs.NewUnauthorizedError("Token de autenticacao nao fornecido", false)
+				}
+
+				parts := strings.SplitN(authHeader, " ", 2)
+				if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+					return errs.NewUnauthorizedError("Formato de token invalido", false)
+				}
+				tokenString = parts[1]
 			}
 
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				return errs.NewUnauthorizedError("Formato de token invalido", false)
-			}
-
-			tokenString := parts[1]
-
+			// Validar token
 			claims, err := authService.ValidateAccessToken(tokenString)
 			if err != nil {
 				if err == service.ErrTokenExpired {

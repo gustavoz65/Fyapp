@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { z } from "zod";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { registerSchema } from "@/lib/schemas";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -35,22 +37,24 @@ export default function RegisterPage() {
       return;
     }
 
-    if (form.password.length < 8) {
-      toast.error("A senha deve ter pelo menos 8 caracteres");
-      return;
-    }
-
     setIsLoading(true);
     try {
-      await register({
+      // Validar com Zod
+      const validated = registerSchema.parse({
         first_name: form.first_name,
         last_name: form.last_name,
         email: form.email,
         password: form.password,
       });
+
+      await register(validated);
       router.push("/dashboard");
-    } catch {
-      toast.error("Erro ao criar conta. Tente novamente.");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Erro ao criar conta. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }

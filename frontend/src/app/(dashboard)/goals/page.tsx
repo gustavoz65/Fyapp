@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
 import { Plus, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Goal, GoalContribution, GoalSummary, CreateGoalRequest, CreateGoalContributionRequest, UpdateGoalRequest } from "@/types";
 import { formatCurrency, formatPercentage, formatDate, getGoalStatusLabel } from "@/lib/format";
+import { createGoalSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -77,14 +79,36 @@ export default function GoalsPage() {
         await api.put(`/goals/${editing.id}`, body);
         toast.success("Meta atualizada");
       } else {
-        const body: CreateGoalRequest = { name: form.name, description: form.description || undefined, target_amount: form.target_amount, color: form.color, priority: parseInt(form.priority) };
-        if (form.target_date) body.target_date = new Date(form.target_date).toISOString();
+        // Validar com Zod
+        const validated = createGoalSchema.parse({
+          name: form.name,
+          description: form.description || "",
+          target_amount: form.target_amount,
+          target_date: form.target_date || "",
+          color: form.color,
+          priority: parseInt(form.priority),
+        });
+
+        const body: CreateGoalRequest = {
+          name: validated.name,
+          description: validated.description || undefined,
+          target_amount: validated.target_amount,
+          color: validated.color,
+          priority: validated.priority,
+        };
+        if (validated.target_date) body.target_date = new Date(validated.target_date).toISOString();
         await api.post("/goals", body);
         toast.success("Meta criada");
       }
       setDialogOpen(false);
       fetchData();
-    } catch { toast.error("Erro ao salvar meta"); }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Erro ao salvar meta");
+      }
+    }
   }
 
   async function handleContribution(e: React.FormEvent) {

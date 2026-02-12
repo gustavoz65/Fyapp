@@ -1,5 +1,6 @@
 "use client";
 
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -36,6 +37,7 @@ import {
   getTransactionSourceLabel,
   getTransactionTypeLabel,
 } from "@/lib/format";
+import { createTransactionSchema } from "@/lib/schemas";
 import type {
   BankAccount,
   Category,
@@ -109,25 +111,42 @@ export default function TransactionsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const body: CreateTransactionRequest = {
+      // Validar com Zod
+      const validated = createTransactionSchema.parse({
         bank_account_id: form.bank_account_id,
-        category_id: form.category_id || undefined,
-        type: form.type as CreateTransactionRequest["type"],
+        category_id: form.category_id || "",
+        type: form.type,
         amount: form.amount,
         description: form.description,
-        transaction_date: new Date(form.transaction_date).toISOString(),
-        due_date: form.due_date
-          ? new Date(form.due_date).toISOString()
-          : undefined,
+        notes: form.notes || "",
+        transaction_date: form.transaction_date,
+        due_date: form.due_date || "",
         is_paid: form.is_paid,
+      });
+
+      const body: CreateTransactionRequest = {
+        bank_account_id: validated.bank_account_id,
+        category_id: validated.category_id || undefined,
+        type: validated.type as CreateTransactionRequest["type"],
+        amount: validated.amount,
+        description: validated.description,
+        transaction_date: new Date(validated.transaction_date).toISOString(),
+        due_date: validated.due_date
+          ? new Date(validated.due_date).toISOString()
+          : undefined,
+        is_paid: validated.is_paid,
       };
       await api.post("/transactions", body);
       toast.success("Transacao criada");
       resetForm();
       setDialogOpen(false);
       fetchData();
-    } catch {
-      toast.error("Erro ao criar transacao");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Erro ao criar transacao");
+      }
     }
   }
 

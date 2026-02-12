@@ -3,16 +3,15 @@ package handler
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/gustavoz65/Cashing-go/internal/errs"
 	"github.com/gustavoz65/Cashing-go/internal/middleware"
 	"github.com/gustavoz65/Cashing-go/internal/model"
 	"github.com/gustavoz65/Cashing-go/internal/service"
+	"github.com/gustavoz65/Cashing-go/internal/utils"
 	"github.com/gustavoz65/Cashing-go/internal/validation"
 	"github.com/labstack/echo/v4"
-	"github.com/shopspring/decimal"
 )
 
 type TransactionHandler struct {
@@ -25,72 +24,89 @@ func NewTransactionHandler(transactionService *service.TransactionService) *Tran
 
 func (h *TransactionHandler) GetAll(c echo.Context) error {
 	userID := middleware.GetUserID(c)
+	qv := utils.NewQueryValidator(c)
 
 	filter := &model.TransactionFilter{
 		UserID: userID,
 	}
 
-	// Parse query params
-	if accountID := c.QueryParam("account_id"); accountID != "" {
-		id, err := uuid.Parse(accountID)
-		if err == nil {
-			filter.AccountID = &id
-		}
+	var err error
+
+	// Validar UUID params
+	filter.AccountID, err = qv.GetUUID("account_id", false)
+	if err != nil {
+		return err
 	}
 
-	if categoryID := c.QueryParam("category_id"); categoryID != "" {
-		id, err := uuid.Parse(categoryID)
-		if err == nil {
-			filter.CategoryID = &id
-		}
+	filter.CategoryID, err = qv.GetUUID("category_id", false)
+	if err != nil {
+		return err
 	}
 
-	if txType := c.QueryParam("type"); txType != "" {
-		t := model.TransactionType(txType)
+	// Validar enum params
+	typeVal, err := qv.GetEnum("type", false, []string{"income", "expense"})
+	if err != nil {
+		return err
+	}
+	if typeVal != nil {
+		t := model.TransactionType(*typeVal)
 		filter.Type = &t
 	}
 
-	if startDate := c.QueryParam("start_date"); startDate != "" {
-		if t, err := time.Parse("2006-01-02", startDate); err == nil {
-			filter.StartDate = &t
-		}
+	// Validar date params
+	filter.StartDate, err = qv.GetDate("start_date", false)
+	if err != nil {
+		return err
 	}
 
-	if endDate := c.QueryParam("end_date"); endDate != "" {
-		if t, err := time.Parse("2006-01-02", endDate); err == nil {
-			filter.EndDate = &t
-		}
+	filter.EndDate, err = qv.GetDate("end_date", false)
+	if err != nil {
+		return err
 	}
 
-	if isPaid := c.QueryParam("is_paid"); isPaid != "" {
-		paid := isPaid == "true"
-		filter.IsPaid = &paid
+	// Bool params
+	filter.IsPaid = qv.GetBool("is_paid")
+	filter.IsRecurring = qv.GetBool("is_recurring")
+
+	// Decimal params
+	filter.MinAmount, err = qv.GetDecimal("min_amount", false)
+	if err != nil {
+		return err
 	}
 
-	if isRecurring := c.QueryParam("is_recurring"); isRecurring != "" {
-		recurring := isRecurring == "true"
-		filter.IsRecurring = &recurring
+	filter.MaxAmount, err = qv.GetDecimal("max_amount", false)
+	if err != nil {
+		return err
 	}
 
-	if minAmount := c.QueryParam("min_amount"); minAmount != "" {
-		if amount, err := decimal.NewFromString(minAmount); err == nil {
-			filter.MinAmount = &amount
-		}
+	// String search (sem validação especial)
+	searchTerm, _ := qv.GetString("search", false, 255)
+	if searchTerm != nil {
+		filter.SearchTerm = *searchTerm
 	}
 
-	if maxAmount := c.QueryParam("max_amount"); maxAmount != "" {
-		if amount, err := decimal.NewFromString(maxAmount); err == nil {
-			filter.MaxAmount = &amount
-		}
+	// Paginação com limites (máximo 100 por página)
+	filter.Page, filter.PageSize, err = qv.GetPagination()
+	if err != nil {
+		return err
 	}
 
-	filter.SearchTerm = c.QueryParam("search")
+	// Sorting
+	sortBy, err := qv.GetEnum("sort_by", false, []string{"date", "amount", "description", "created_at"})
+	if err != nil {
+		return err
+	}
+	if sortBy != nil {
+		filter.SortBy = *sortBy
+	}
 
-	// Paginacao
-	filter.Page, _ = strconv.Atoi(c.QueryParam("page"))
-	filter.PageSize, _ = strconv.Atoi(c.QueryParam("page_size"))
-	filter.SortBy = c.QueryParam("sort_by")
-	filter.SortDirection = c.QueryParam("sort_dir")
+	sortDir, err := qv.GetEnum("sort_dir", false, []string{"asc", "desc"})
+	if err != nil {
+		return err
+	}
+	if sortDir != nil {
+		filter.SortDirection = *sortDir
+	}
 
 	result, err := h.transactionService.GetByFilter(c.Request().Context(), filter)
 	if err != nil {

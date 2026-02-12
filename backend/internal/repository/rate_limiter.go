@@ -3,13 +3,13 @@ package repository
 import (
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
 )
 
 type RateLimiter struct {
 	Max         int
 	Duration    time.Duration
-	KeyFunc     func(r *fiber.Ctx) string
+	KeyFunc     func(c echo.Context) string
 	Endpoint    string
 	SkipOnerror bool
 }

@@ -68,9 +68,13 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	api := e.Group("/api/v1")
 
 	//  Rotas publicas (sem autenticacao)
+	authRateLimiter := middleware.AuthRateLimit(srv.Redis)
+
 	auth := api.Group("/auth")
-	auth.POST("/register", authHandler.Register)
-	auth.POST("/login", authHandler.Login)
+	authWithRL := api.Group("/auth", authRateLimiter)
+
+	authWithRL.POST("/register", authHandler.Register)
+	authWithRL.POST("/login", authHandler.Login)
 	auth.POST("/refresh", authHandler.RefreshToken)
 	auth.POST("/logout", authHandler.Logout)
 

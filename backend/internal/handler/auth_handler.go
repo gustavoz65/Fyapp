@@ -20,22 +20,19 @@ func NewAuthHandler(authService *service.AuthService, cfg *config.Config) *AuthH
 	return &AuthHandler{authService: authService, config: cfg}
 }
 
-// setAuthCookies seta os cookies httpOnly de autenticação
 func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	isProduction := h.config.Primary.Env == "production"
 
-	// Access token cookie
 	c.SetCookie(&http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   isProduction, // HTTPS only em produção
+		Secure:   isProduction,
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   h.config.Auth.AccessTokenDuration * 60, // converter minutos para segundos
+		MaxAge:   h.config.Auth.AccessTokenDuration * 60,
 	})
 
-	// Refresh token cookie
 	c.SetCookie(&http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
@@ -43,11 +40,10 @@ func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken s
 		HttpOnly: true,
 		Secure:   isProduction,
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   h.config.Auth.RefreshTokenDuration * 3600, // converter horas para segundos
+		MaxAge:   h.config.Auth.RefreshTokenDuration * 3600,
 	})
 }
 
-// clearAuthCookies limpa os cookies de autenticação
 func (h *AuthHandler) clearAuthCookies(c echo.Context) {
 	c.SetCookie(&http.Cookie{
 		Name:     "access_token",
@@ -77,10 +73,8 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return err
 	}
 
-	// Setar cookies httpOnly
 	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
 
-	// Retornar response SEM tokens (por segurança)
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"user":       response.User,
 		"expires_at": response.ExpiresAt,

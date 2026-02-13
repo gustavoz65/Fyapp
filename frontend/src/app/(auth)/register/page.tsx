@@ -51,7 +51,7 @@ export default function RegisterPage() {
       router.push("/dashboard");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        toast.error(error.issues[0].message);
       } else {
         toast.error("Erro ao criar conta. Tente novamente.");
       }

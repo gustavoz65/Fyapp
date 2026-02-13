@@ -1,6 +1,12 @@
 import type { APIError } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const API_BASE_URL = "http://localhost:8080/api/v1";
+
+let redirectToLogin: (() => void) | null = null;
+
+export function setRedirectCallback(callback: () => void) {
+  redirectToLogin = callback;
+}
 
 class ApiClient {
   private refreshPromise: Promise<void> | null = null;
@@ -8,7 +14,7 @@ class ApiClient {
   private async refreshAccessToken(): Promise<void> {
     const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
-      credentials: "include", // Enviar cookies httpOnly
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -16,10 +22,7 @@ class ApiClient {
     }
   }
 
-  async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
@@ -28,10 +31,9 @@ class ApiClient {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
-      credentials: "include", // CRÍTICO: enviar cookies httpOnly
+      credentials: "include",
     });
 
-    // Se 401, tentar refresh automático
     if (res.status === 401) {
       try {
         // Evitar múltiplos refreshes simultâneos
@@ -57,9 +59,8 @@ class ApiClient {
         if (retryRes.status === 204) return undefined as T;
         return retryRes.json();
       } catch {
-        // Redirect para login se refresh falhar
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
+        if (redirectToLogin) {
+          redirectToLogin();
         }
         throw new Error("Session expired");
       }

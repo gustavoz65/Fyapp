@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -9,13 +10,23 @@ import (
 
 // CORSMiddleware configura CORS baseado nas origens permitidas
 func CORSMiddleware(allowedOrigins []string) echo.MiddlewareFunc {
-	if len(allowedOrigins) == 0 {
-		// Default para desenvolvimento - NÃO usar "*" em produção com credentials!
-		allowedOrigins = []string{"http://localhost:3000"}
+	var parsedOrigins []string
+	for _, origin := range allowedOrigins {
+		if strings.Contains(origin, ",") || strings.Contains(origin, " ") {
+			parts := strings.FieldsFunc(origin, func(r rune) bool {
+				return r == ',' || r == ' '
+			})
+			parsedOrigins = append(parsedOrigins, parts...)
+		} else if strings.TrimSpace(origin) != "" {
+			parsedOrigins = append(parsedOrigins, strings.TrimSpace(origin))
+		}
 	}
 
-	// IMPORTANTE: Quando AllowCredentials=true, não pode usar "*"
-	// Precisa ser lista específica de origens
+	if len(parsedOrigins) == 0 {
+		parsedOrigins = []string{"http://localhost:3000", "http://localhost:4000"}
+	}
+
+	allowedOrigins = parsedOrigins
 	allowCredentials := true
 	for _, origin := range allowedOrigins {
 		if origin == "*" {

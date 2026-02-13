@@ -142,7 +142,6 @@ func LoadConfig() (*Config, error) {
 		logger.Fatal().Err(err).Msg("could not unmarshal config into struct")
 	}
 
-	// Define valores padrão
 	setDefaults(mainConfig)
 
 	validate := validator.New()
@@ -152,12 +151,10 @@ func LoadConfig() (*Config, error) {
 		logger.Fatal().Err(err).Msg("config validation failed")
 	}
 
-	// Define configuração de observabilidade padrão se não estiver definida
 	if mainConfig.Observability == nil {
 		mainConfig.Observability = DefaultObservabilityConfig()
 	}
 
-	// Sobrescreve nome do serviço e ambiente com valores primários
 	mainConfig.Observability.ServiceName = "cashing-api"
 	mainConfig.Observability.Environment = mainConfig.Primary.Env
 
@@ -169,7 +166,6 @@ func LoadConfig() (*Config, error) {
 }
 
 func setDefaults(cfg *Config) {
-	// Padrões do servidor
 	if cfg.Server.ReadTimeout == 0 {
 		cfg.Server.ReadTimeout = 30
 	}
@@ -180,7 +176,6 @@ func setDefaults(cfg *Config) {
 		cfg.Server.IdleTimeout = 60
 	}
 
-	// Padrões do banco de dados
 	if cfg.Database.MaxOpenConns == 0 {
 		cfg.Database.MaxOpenConns = 25
 	}
@@ -194,7 +189,6 @@ func setDefaults(cfg *Config) {
 		cfg.Database.ConnMaxIdleTime = 60
 	}
 
-	// Padrões de autenticação
 	if cfg.Auth.AccessTokenDuration == 0 {
 		cfg.Auth.AccessTokenDuration = 15
 	}
@@ -206,17 +200,8 @@ func setDefaults(cfg *Config) {
 	}
 }
 
-// func debugEnvVariables() {
-// 	for _, envVar := range os.Environ() {
-// 		log.Println(envVar)
-// 	}
-// }
-
 func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Error loading .env file: %v", err)
 	}
-
-	// descomente se quiser debugar as variaveis de ambiente
-	//debugEnvVariables()
 }

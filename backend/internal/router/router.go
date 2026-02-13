@@ -69,31 +69,24 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	healthHandler := handler.NewHealthHandler(srv)
 	e.GET("/health", healthHandler.CheckHandler)
 
-	// API v1
 	api := e.Group("/api/v1")
 
-	//  Rotas publicas (sem autenticacao)
 	authRateLimiter := middleware.AuthRateLimit(srv.Redis)
+	refreshRateLimiter := middleware.RefreshRateLimit(srv.Redis)
 
-	auth := api.Group("/auth")
 	authWithRL := api.Group("/auth", authRateLimiter)
+	authRefresh := api.Group("/auth", refreshRateLimiter)
 
 	authWithRL.POST("/register", authHandler.Register)
 	authWithRL.POST("/login", authHandler.Login)
-	auth.POST("/refresh", authHandler.RefreshToken)
-	auth.POST("/logout", authHandler.Logout)
+	authRefresh.POST("/refresh", authHandler.RefreshToken)
+	authRefresh.POST("/logout", authHandler.Logout)
 
-	// --- Rotas autenticadas ---
 	authMiddleware := middleware.AuthMiddleware(authService)
-
-	// Audit middleware (deve vir DEPOIS do AuthMiddleware para ter acesso ao user_id)
 	auditMiddleware := middleware.NewAuditMiddleware(auditLogRepo, logger)
-
-	// Rate limiters para operações autenticadas
 	mutationRL := middleware.MutationRateLimit(srv.Redis)
 	readRL := middleware.ReadRateLimit(srv.Redis)
 
-	// Auth (requer autenticacao)
 	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
 	authProtected.POST("/change-password", authHandler.ChangePassword, mutationRL)
 

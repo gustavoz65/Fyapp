@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { User } from "@/types";
+import { useRouter, usePathname } from "next/navigation";
+import type { User, LoginRequest, RegisterRequest } from "@/types";
 import { getCurrentUser, login as loginFn, logout as logoutFn, register as registerFn } from "@/lib/auth";
-import type { LoginRequest, RegisterRequest } from "@/types";
+import { setRedirectCallback } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +21,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setRedirectCallback(() => {
+      if (!pathname?.startsWith("/login") && !pathname?.startsWith("/register")) {
+        router.push("/login");
+      }
+    });
+  }, [router, pathname]);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -27,17 +38,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
     } catch {
       setUser(null);
-      // Cookies são gerenciados pelo backend
     }
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     // Tentar buscar usuário - cookie será enviado automaticamente
-    refreshUser()
-      .catch(() => {
+    const loadUser = async () => {
+      try {
+        if (mounted) {
+          await refreshUser();
+        }
+      } catch {
         // Se falhar, usuário não está autenticado
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadUser();
+
+    return () => {
+      mounted = false;
+    };
   }, [refreshUser]);
 
   const login = async (data: LoginRequest) => {

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -91,14 +92,26 @@ func GetActionFromRequest(r *http.Request) string {
 	method := r.Method
 	path := r.URL.Path
 
-	// Remove /api/v1/ do path para simplificar
 	path = strings.TrimPrefix(path, "/api/v1/")
 	path = strings.TrimPrefix(path, "/api/")
 
-	// Converte para uppercase e substitui / por _
-	action := strings.ToUpper(strings.ReplaceAll(path, "/", "_"))
+	segments := strings.Split(path, "/")
+	var cleanSegments []string
 
-	// Mapeia métodos HTTP para ações
+	uuidPattern := regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+	for _, seg := range segments {
+		if seg == "" {
+			continue
+		}
+		if uuidPattern.MatchString(seg) {
+			continue
+		}
+		cleanSegments = append(cleanSegments, seg)
+	}
+
+	action := strings.ToUpper(strings.Join(cleanSegments, "_"))
+
 	switch method {
 	case http.MethodPost:
 		return "CREATE_" + action

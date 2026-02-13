@@ -23,9 +23,25 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
+    let mounted = true;
+
+    const loadUnread = async () => {
+      if (mounted) {
+        await fetchUnread();
+      }
+    };
+
+    loadUnread();
+    const interval = setInterval(() => {
+      if (mounted) {
+        fetchUnread();
+      }
+    }, 30000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [fetchUnread]);
 
   return (

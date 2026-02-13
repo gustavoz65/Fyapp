@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { Notification } from "@/types";
 import { formatRelativeDate, getNotificationTypeLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -18,9 +18,13 @@ export default function NotificationsPage() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const endpoint = showUnreadOnly ? "/notifications/unread" : "/notifications";
-      const data = await api.get<Notification[]>(endpoint);
-      setNotifications(data || []);
+      if (showUnreadOnly) {
+        const data = await api.get<Notification[]>("/notifications/unread");
+        setNotifications(data || []);
+      } else {
+        const response = await api.get<{ data: Notification[] }>("/notifications");
+        setNotifications(response?.data || []);
+      }
     } catch (error) {
       console.error("Error fetching notifications:", error);
       setNotifications([]);

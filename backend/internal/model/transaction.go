@@ -48,7 +48,6 @@ type Transaction struct {
 	CreatedAt          time.Time         `json:"created_at" db:"created_at"`
 	UpdatedAt          time.Time         `json:"updated_at" db:"updated_at"`
 
-	// Relationships (populated by joins)
 	Category    *Category    `json:"category,omitempty" db:"-"`
 	BankAccount *BankAccount `json:"bank_account,omitempty" db:"-"`
 }
@@ -111,7 +110,6 @@ type RecurringTransaction struct {
 	CreatedAt       time.Time          `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at" db:"updated_at"`
 
-	// Relationships
 	Category    *Category    `json:"category,omitempty" db:"-"`
 	BankAccount *BankAccount `json:"bank_account,omitempty" db:"-"`
 }
@@ -158,7 +156,6 @@ type Transfer struct {
 	ToTransactionID   *uuid.UUID      `json:"to_transaction_id,omitempty" db:"to_transaction_id"`
 	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
 
-	// Relationships
 	FromAccount *BankAccount `json:"from_account,omitempty" db:"-"`
 	ToAccount   *BankAccount `json:"to_account,omitempty" db:"-"`
 }
@@ -178,7 +175,6 @@ type Installment struct {
 	CreatedAt          time.Time       `json:"created_at" db:"created_at"`
 	UpdatedAt          time.Time       `json:"updated_at" db:"updated_at"`
 
-	// Relationships
 	Category    *Category    `json:"category,omitempty" db:"-"`
 	BankAccount *BankAccount `json:"bank_account,omitempty" db:"-"`
 }

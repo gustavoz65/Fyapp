@@ -26,5 +26,4 @@ go-boilerplate/
 GUIA_ARQUITECTURA.md
 README.md
 ANALISE_BACKEND.md
-backend/internal/database/migrations/*.sql
 *.sql

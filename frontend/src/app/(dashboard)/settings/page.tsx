@@ -120,7 +120,7 @@ export default function SettingsPage() {
       const updated = await updateUserSettings(body);
       setSettings(updated);
     } catch {
-      toast.error("Erro ao atualizar configuracao");
+      toast.error("Erro ao atualizar configuração");
     }
   }
 
@@ -138,7 +138,7 @@ export default function SettingsPage() {
   async function handlePasswordChange(e: React.FormEvent) {
     e.preventDefault();
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      toast.error("Senhas nao coincidem");
+      toast.error("Senhas não coincidem");
       return;
     }
     try {
@@ -170,7 +170,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Configuracoes</h1>
+        <h1 className="text-3xl font-bold">Configurações</h1>
         <Skeleton className="h-[400px]" />
       </div>
     );
@@ -179,23 +179,23 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8 pb-8">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Configuracoes</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Configurações</h1>
         <p className="text-muted-foreground mt-2">
-          Gerencie suas preferencias e configuracoes
+          Gerencie suas preferências e configurações
         </p>
       </div>
 
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Perfil</TabsTrigger>
-          <TabsTrigger value="notifications">Notificacoes</TabsTrigger>
-          <TabsTrigger value="security">Seguranca</TabsTrigger>
+          <TabsTrigger value="notifications">Notificações</TabsTrigger>
+          <TabsTrigger value="security">Segurança</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Informacoes Pessoais</CardTitle>
+              <CardTitle>Informações Pessoais</CardTitle>
               <CardDescription>Atualize seus dados</CardDescription>
             </CardHeader>
             <CardContent>
@@ -272,7 +272,7 @@ export default function SettingsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pt-BR">Portugues</SelectItem>
+                        <SelectItem value="pt-BR">Português</SelectItem>
                         <SelectItem value="en-US">English</SelectItem>
                       </SelectContent>
                     </Select>
@@ -290,7 +290,7 @@ export default function SettingsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="America/Sao_Paulo">
-                          Sao Paulo
+                          São Paulo
                         </SelectItem>
                         <SelectItem value="America/New_York">
                           New York
@@ -321,8 +321,8 @@ export default function SettingsPage() {
                         Permitir Transações manuais
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Quando desativado, voce so podera ter Transações
-                        automaticas do banco
+                        Quando desativado, você só poderá ter Transações
+                        automáticas do banco
                       </p>
                     </div>
                     <Switch
@@ -366,9 +366,9 @@ export default function SettingsPage() {
           {settings && (
             <Card>
               <CardHeader>
-                <CardTitle>Preferencias de Notificacao</CardTitle>
+                <CardTitle>Preferências de Notificação</CardTitle>
                 <CardDescription>
-                  Configure como deseja receber notificacoes
+                  Configure como deseja receber notificações
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -376,27 +376,27 @@ export default function SettingsPage() {
                   {
                     key: "notification_email" as const,
                     label: "Email",
-                    desc: "Receber notificacoes por email",
+                    desc: "Receber notificações por email",
                   },
                   {
                     key: "notification_push" as const,
                     label: "Push",
-                    desc: "Receber notificacoes push",
+                    desc: "Receber notificações push",
                   },
                   {
                     key: "notification_sms" as const,
                     label: "SMS",
-                    desc: "Receber notificacoes por SMS",
+                    desc: "Receber notificações por SMS",
                   },
                   {
                     key: "budget_alerts" as const,
-                    label: "Alertas de Orcamento",
-                    desc: "Quando atingir o limite do orcamento",
+                    label: "Alertas de Orçamento",
+                    desc: "Quando atingir o limite do orçamento",
                   },
                   {
                     key: "bill_reminders" as const,
                     label: "Lembretes de Contas",
-                    desc: "Quando uma conta estiver proxima do vencimento",
+                    desc: "Quando uma conta estiver próxima do vencimento",
                   },
                   {
                     key: "weekly_summary" as const,
@@ -405,7 +405,7 @@ export default function SettingsPage() {
                   },
                   {
                     key: "monthly_report" as const,
-                    label: "Relatorio Mensal",
+                    label: "Relatório Mensal",
                     desc: "Receber relatorio mensal por email",
                   },
                   {
@@ -496,7 +496,7 @@ export default function SettingsPage() {
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
-              <CardDescription>Acoes irreversiveis</CardDescription>
+              <CardDescription>Ações irreversíveis</CardDescription>
             </CardHeader>
             <CardContent>
               <AlertDialog>
@@ -507,8 +507,8 @@ export default function SettingsPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Desativar sua conta?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Sua conta sera desativada e voce perdera acesso. Essa acao
-                      pode ser irreversivel.
+                      Sua conta será desativada e você perderá acesso. Essa ação
+                      pode ser irreversível.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

@@ -180,7 +180,7 @@ export default function TransactionsPage() {
         auto_pay: form.auto_pay,
       };
       await api.post("/transactions", body);
-      toast.success("Transacao criada");
+      toast.success("Transação criada");
       resetForm();
       setDialogOpen(false);
       fetchData();
@@ -188,7 +188,7 @@ export default function TransactionsPage() {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
       } else {
-        toast.error("Erro ao criar transacao");
+        toast.error("Erro ao criar transação");
       }
     }
   }
@@ -235,12 +235,12 @@ export default function TransactionsPage() {
           <DialogTrigger asChild>
             <Button size="lg">
               <Plus className="h-4 w-4 mr-2" />
-              Nova Transacao
+              Nova Transação
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Nova Transacao</DialogTitle>
+              <DialogTitle>Nova Transação</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -279,7 +279,7 @@ export default function TransactionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Descricao</Label>
+                <Label>Descrição</Label>
                 <Input
                   value={form.description}
                   onChange={(e) => handleDescriptionChange(e.target.value)}
@@ -398,7 +398,7 @@ export default function TransactionsPage() {
                 </Label>
               </div>
               <Button type="submit" className="w-full">
-                Criar Transacao
+                Criar Transação
               </Button>
             </form>
           </DialogContent>
@@ -464,7 +464,7 @@ export default function TransactionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
-                <TableHead>Descricao</TableHead>
+                <TableHead>Descrição</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Origem</TableHead>
@@ -480,7 +480,7 @@ export default function TransactionsPage() {
                     colSpan={8}
                     className="text-center text-muted-foreground"
                   >
-                    Nenhuma transacao encontrada
+                    Nenhuma transação encontrada
                   </TableCell>
                 </TableRow>
               ) : (
@@ -562,7 +562,7 @@ export default function TransactionsPage() {
                 Anterior
               </Button>
               <span className="text-sm text-muted-foreground">
-                Pagina {page} de {totalPages}
+                Página {page} de {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -570,7 +570,7 @@ export default function TransactionsPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
               >
-                Proxima
+                Próxima
               </Button>
             </div>
           )}

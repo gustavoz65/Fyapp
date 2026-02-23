@@ -304,6 +304,18 @@ type CreateScheduledReportRequest struct {
 }
 
 // ========================================
+// Category Suggestion DTOs
+// ========================================
+
+type SuggestCategoryRequest struct {
+	Description string `json:"description" validate:"required,min=1,max=255"`
+}
+
+type SuggestCategoryResponse struct {
+	Suggestions []CategorySuggestion `json:"suggestions"`
+}
+
+// ========================================
 // Pagination & Response DTOs
 // ========================================
 

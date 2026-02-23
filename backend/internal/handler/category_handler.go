@@ -13,11 +13,15 @@ import (
 )
 
 type CategoryHandler struct {
-	categoryService *service.CategoryService
+	categoryService     *service.CategoryService
+	categorizationSvc   *service.CategorizationService
 }
 
-func NewCategoryHandler(categoryService *service.CategoryService) *CategoryHandler {
-	return &CategoryHandler{categoryService: categoryService}
+func NewCategoryHandler(categoryService *service.CategoryService, categorizationSvc *service.CategorizationService) *CategoryHandler {
+	return &CategoryHandler{
+		categoryService:   categoryService,
+		categorizationSvc: categorizationSvc,
+	}
 }
 
 func (h *CategoryHandler) GetAll(c echo.Context) error {
@@ -107,4 +111,21 @@ func (h *CategoryHandler) Delete(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+// SuggestCategory sugere categorias baseado na descricao fornecida
+func (h *CategoryHandler) SuggestCategory(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	description := c.QueryParam("description")
+	if description == "" {
+		return errs.NewBadRequestError("descricao e obrigatoria", false, nil, nil, nil)
+	}
+
+	result, err := h.categorizationSvc.SuggestCategory(c.Request().Context(), userID, description)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, result)
 }

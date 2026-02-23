@@ -35,11 +35,11 @@ const navItems = [
   { title: "Contas", href: "/accounts", icon: Landmark },
   { title: "Transações", href: "/transactions", icon: ArrowLeftRight },
   { title: "Recorrentes", href: "/recurring", icon: Repeat },
-  { title: "Orcamentos", href: "/budgets", icon: PiggyBank },
+  { title: "Orçamentos", href: "/budgets", icon: PiggyBank },
   { title: "Metas", href: "/goals", icon: Target },
   { title: "Categorias", href: "/categories", icon: Tags },
-  { title: "Notificacoes", href: "/notifications", icon: Bell },
-  { title: "Configuracoes", href: "/settings", icon: Settings },
+  { title: "Notificações", href: "/notifications", icon: Bell },
+  { title: "Configurações", href: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -53,13 +53,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="px-4 py-6 flex items-center justify-center">
+        <div className="px-4 py-6 flex items-center justify-center border-b border-sidebar-border/50">
           <Image
             src="/logo_cash_no_dark_mode.png"
             alt="Cashing"
             width={120}
             height={40}
-            className="object-contain"
+            className="object-contain brightness-0 invert"
             priority
           />
         </div>

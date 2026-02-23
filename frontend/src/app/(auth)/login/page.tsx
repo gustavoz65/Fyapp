@@ -52,11 +52,11 @@ export default function LoginPage() {
             Cashing
           </h1>
           <p className="text-xl text-muted-foreground">
-            Gerencie suas financas pessoais de forma inteligente e eficiente
+            Gerencie suas finanças pessoais de forma inteligente e eficiente
           </p>
           <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground">
             &quot;Esta plataforma transformou completamente a forma como gerencio meu dinheiro.&quot;
-            <footer className="mt-2 text-sm font-semibold">- Usuario Satisfeito</footer>
+            <footer className="mt-2 text-sm font-semibold">- Usuário Satisfeito</footer>
           </blockquote>
         </div>
       </div>
@@ -136,20 +136,20 @@ export default function LoginPage() {
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Nao tem uma conta?{" "}
+            Não tem uma conta?{" "}
             <Link href="/register" className="font-semibold text-primary hover:underline">
               Criar conta
             </Link>
           </p>
 
           <p className="text-center text-xs text-muted-foreground">
-            Ao continuar, voce concorda com nossos{" "}
+            Ao continuar, você concorda com nossos{" "}
             <Link href="#" className="underline underline-offset-4 hover:text-primary">
-              Termos de Servico
+              Termos de Serviço
             </Link>{" "}
             e{" "}
             <Link href="#" className="underline underline-offset-4 hover:text-primary">
-              Politica de Privacidade
+              Política de Privacidade
             </Link>
             .
           </p>

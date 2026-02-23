@@ -10,11 +10,12 @@ import (
 )
 
 type JobService struct {
-	Client           *asynq.Client
-	Server           *asynq.Server
-	Scheduler        *asynq.Scheduler
-	logger           *zerolog.Logger
-	recurringService *service.RecurringTransactionService
+	Client             *asynq.Client
+	Server             *asynq.Server
+	Scheduler          *asynq.Scheduler
+	logger             *zerolog.Logger
+	recurringService   *service.RecurringTransactionService
+	transactionService *service.TransactionService
 }
 
 func NewJobService(logger *zerolog.Logger, cfg *config.Config) *JobService {
@@ -54,14 +55,24 @@ func (j *JobService) SetRecurringService(svc *service.RecurringTransactionServic
 	j.recurringService = svc
 }
 
+func (j *JobService) SetTransactionService(svc *service.TransactionService) {
+	j.transactionService = svc
+}
+
 func (j *JobService) Start() error {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(TaskWelcome, j.handleWelcomeEmailTask)
 	mux.HandleFunc(TaskProcessRecurrings, j.handleProcessRecurringsTask)
+	mux.HandleFunc(TaskAutoReconcile, j.handleAutoReconcileTask)
 
 	task, _ := NewProcessRecurringsTask()
 	if _, err := j.Scheduler.Register("0 0 * * *", task); err != nil {
 		j.logger.Error().Err(err).Msg("Failed to schedule recurring task")
+	}
+
+	reconcileTask, _ := NewAutoReconcileTask()
+	if _, err := j.Scheduler.Register("5 0 * * *", reconcileTask); err != nil {
+		j.logger.Error().Err(err).Msg("Failed to schedule auto reconcile task")
 	}
 
 	go func() {

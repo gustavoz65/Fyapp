@@ -177,6 +177,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	notifications.DELETE("/:id", notificationHandler.Delete, mutationRL)
 
 	srv.Job.SetRecurringService(recurringService)
+	srv.Job.SetTransactionService(transactionService)
 
 	return e
 }

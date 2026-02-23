@@ -180,7 +180,7 @@ export default function CategoriesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Descricao</Label>
+                <Label>Descrição</Label>
                 <Input
                   value={form.description}
                   onChange={(e) =>
@@ -284,7 +284,7 @@ export default function CategoriesPage() {
                                 Remover categoria?
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Essa acao nao pode ser desfeita.
+                                Essa ação não pode ser desfeita.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

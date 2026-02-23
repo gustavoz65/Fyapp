@@ -60,11 +60,11 @@ export default function NotificationsPage() {
   async function deleteNotification(id: string) {
     try {
       await api.delete(`/notifications/${id}`);
-      toast.success("Notificacao removida");
+      toast.success("Notificação removida");
       await fetchNotifications();
     } catch (error) {
       console.error("Error deleting notification:", error);
-      toast.error("Erro ao remover notificacao");
+      toast.error("Erro ao remover notificação");
     }
   }
 
@@ -81,9 +81,9 @@ export default function NotificationsPage() {
     return (
       <div className="space-y-8 pb-8">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Notificacoes</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Notificações</h1>
           <p className="text-muted-foreground mt-2">
-            Acompanhe suas notificacoes e alertas
+            Acompanhe suas notificações e alertas
           </p>
         </div>
         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
@@ -95,14 +95,14 @@ export default function NotificationsPage() {
     <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Notificacoes</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Notificações</h1>
           <p className="text-muted-foreground mt-2">
-            Acompanhe suas notificacoes e alertas
+            Acompanhe suas notificações e alertas
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant={showUnreadOnly ? "default" : "outline"} size="sm" onClick={() => setShowUnreadOnly(!showUnreadOnly)}>
-            {showUnreadOnly ? "Ver todas" : "Apenas nao lidas"}
+            {showUnreadOnly ? "Ver todas" : "Apenas não lidas"}
           </Button>
           <Button variant="outline" size="sm" onClick={markAllAsRead}>
             <CheckCheck className="h-4 w-4 mr-2" />Marcar todas como lidas
@@ -114,9 +114,9 @@ export default function NotificationsPage() {
         <Card className="border-2">
           <CardContent className="py-16 text-center">
             <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma notificacao</h3>
+            <h3 className="text-lg font-semibold mb-2">Nenhuma notificação</h3>
             <p className="text-sm text-muted-foreground">
-              Voce esta em dia! Nao ha notificacoes no momento
+              Você está em dia! Não há notificações no momento
             </p>
           </CardContent>
         </Card>

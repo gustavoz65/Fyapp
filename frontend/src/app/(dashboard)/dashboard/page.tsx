@@ -73,7 +73,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
-            Visao geral das suas financas
+            Visão geral das suas finanças
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -116,7 +116,7 @@ export default function DashboardPage() {
       icon: Wallet,
     },
     {
-      title: "Receitas do Mes",
+      title: "Receitas do Mês",
       value: formatCurrency(data.month_income),
       change: data.income_change
         ? `${parseFloat(data.income_change) > 0 ? "+" : ""}${parseFloat(data.income_change).toFixed(1)}%`
@@ -128,7 +128,7 @@ export default function DashboardPage() {
       icon: TrendingUpIcon,
     },
     {
-      title: "Despesas do Mes",
+      title: "Despesas do Mês",
       value: formatCurrency(data.month_expense),
       change: data.expense_change
         ? `${parseFloat(data.expense_change) > 0 ? "+" : ""}${parseFloat(data.expense_change).toFixed(1)}%`
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-2">
-          Visao geral das suas financas
+          Visão geral das suas finanças
         </p>
       </div>
 
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                   >
                     {metric.change}
                   </span>
-                  <span className="ml-1">do mes anterior</span>
+                  <span className="ml-1">do mês anterior</span>
                 </div>
               </CardContent>
             </Card>
@@ -213,7 +213,7 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle>Fluxo Financeiro</CardTitle>
           <CardDescription>
-            Receitas e despesas dos ultimos 6 meses
+            Receitas e despesas dos últimos 6 meses
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -223,24 +223,24 @@ export default function DashboardPage() {
                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor="hsl(var(--primary))"
+                    stopColor="#16a34a"
                     stopOpacity={0.3}
                   />
                   <stop
                     offset="95%"
-                    stopColor="hsl(var(--primary))"
+                    stopColor="#16a34a"
                     stopOpacity={0}
                   />
                 </linearGradient>
                 <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor="hsl(var(--destructive))"
+                    stopColor="#ef4444"
                     stopOpacity={0.3}
                   />
                   <stop
                     offset="95%"
-                    stopColor="hsl(var(--destructive))"
+                    stopColor="#ef4444"
                     stopOpacity={0}
                   />
                 </linearGradient>
@@ -266,7 +266,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="income"
-                stroke="hsl(var(--primary))"
+                stroke="#16a34a"
                 fillOpacity={1}
                 fill="url(#colorIncome)"
                 strokeWidth={2}
@@ -275,7 +275,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="expense"
-                stroke="hsl(var(--destructive))"
+                stroke="#ef4444"
                 fillOpacity={1}
                 fill="url(#colorExpense)"
                 strokeWidth={2}
@@ -289,10 +289,10 @@ export default function DashboardPage() {
       {/* Tabs with Table */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">Visao Geral</TabsTrigger>
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="performance">Desempenho</TabsTrigger>
           <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="reports">Relatorios</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -300,7 +300,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Transações Recentes</CardTitle>
               <CardDescription>
-                Ultimas movimentacoes financeiras
+                Últimas movimentações financeiras
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -310,7 +310,7 @@ export default function DashboardPage() {
                     <TableHead className="w-12">
                       <Checkbox />
                     </TableHead>
-                    <TableHead>Descricao</TableHead>
+                    <TableHead>Descrição</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Valor</TableHead>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                         colSpan={7}
                         className="text-center text-muted-foreground py-8"
                       >
-                        Nenhuma transacao recente
+                        Nenhuma transação recente
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -392,12 +392,12 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Desempenho Mensal</CardTitle>
               <CardDescription>
-                Analise do desempenho financeiro mensal
+                Análise do desempenho financeiro mensal
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-8 text-center">
-                Dados de desempenho serao exibidos aqui
+                Dados de desempenho serão exibidos aqui
               </div>
             </CardContent>
           </Card>
@@ -408,12 +408,12 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Categorias Principais</CardTitle>
               <CardDescription>
-                Distribuicao de gastos por categoria
+                Distribuição de gastos por categoria
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-8 text-center">
-                Dados de categorias serao exibidos aqui
+                Dados de categorias serão exibidos aqui
               </div>
             </CardContent>
           </Card>
@@ -422,14 +422,14 @@ export default function DashboardPage() {
         <TabsContent value="reports" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Relatorios</CardTitle>
+              <CardTitle>Relatórios</CardTitle>
               <CardDescription>
-                Relatorios financeiros detalhados
+                Relatórios financeiros detalhados
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-8 text-center">
-                Relatorios serao exibidos aqui
+                Relatórios serão exibidos aqui
               </div>
             </CardContent>
           </Card>

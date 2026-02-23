@@ -20,8 +20,8 @@ import { toast } from "sonner";
 
 const accountTypes = [
   { value: "checking", label: "Conta Corrente" },
-  { value: "savings", label: "Poupanca" },
-  { value: "credit_card", label: "Cartao de Credito" },
+  { value: "savings", label: "Poupança" },
+  { value: "credit_card", label: "Cartão de Crédito" },
   { value: "investment", label: "Investimento" },
   { value: "cash", label: "Dinheiro" },
   { value: "other", label: "Outro" },
@@ -141,7 +141,7 @@ export default function AccountsPage() {
     <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Contas Bancarias</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Contas Bancárias</h1>
           <p className="text-muted-foreground mt-2">
             Gerencie suas contas e acompanhe seus saldos
           </p>
@@ -233,7 +233,7 @@ export default function AccountsPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Remover conta?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Essa acao nao pode ser desfeita. A conta &quot;{account.name}&quot; sera removida.
+                        Essa ação não pode ser desfeita. A conta &quot;{account.name}&quot; será removida.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

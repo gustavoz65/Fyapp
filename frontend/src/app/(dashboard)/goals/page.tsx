@@ -117,10 +117,10 @@ export default function GoalsPage() {
     try {
       const body: CreateGoalContributionRequest = { amount: contribForm.amount, note: contribForm.note || undefined };
       await api.post(`/goals/${selectedGoal.id}/contributions`, body);
-      toast.success("Contribuicao adicionada");
+      toast.success("Contribuição adicionada");
       setContribDialogOpen(false);
       fetchData();
-    } catch { toast.error("Erro ao adicionar contribuicao"); }
+    } catch { toast.error("Erro ao adicionar contribuição"); }
   }
 
   async function handleDelete(id: string) {
@@ -159,7 +159,7 @@ export default function GoalsPage() {
             <DialogHeader><DialogTitle>{editing ? "Editar Meta" : "Nova Meta"}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2"><Label>Nome</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-              <div className="space-y-2"><Label>Descricao</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Descrição</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
               <div className="space-y-2"><Label>Valor Alvo</Label><Input type="number" step="0.01" min="0.01" value={form.target_amount} onChange={(e) => setForm({ ...form, target_amount: e.target.value })} required /></div>
               <div className="space-y-2"><Label>Data Alvo</Label><Input type="date" value={form.target_date} onChange={(e) => setForm({ ...form, target_date: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-4">
@@ -186,11 +186,11 @@ export default function GoalsPage() {
           <form onSubmit={handleContribution} className="space-y-4">
             <div className="space-y-2"><Label>Valor</Label><Input type="number" step="0.01" min="0.01" value={contribForm.amount} onChange={(e) => setContribForm({ ...contribForm, amount: e.target.value })} required /></div>
             <div className="space-y-2"><Label>Nota</Label><Input value={contribForm.note} onChange={(e) => setContribForm({ ...contribForm, note: e.target.value })} /></div>
-            <Button type="submit" className="w-full">Adicionar Contribuicao</Button>
+            <Button type="submit" className="w-full">Adicionar Contribuição</Button>
           </form>
           {contributions.length > 0 && (
             <div className="mt-4 space-y-2">
-              <h4 className="text-sm font-medium">Historico</h4>
+              <h4 className="text-sm font-medium">Histórico</h4>
               {contributions.map((c) => (
                 <div key={c.id} className="flex justify-between text-sm">
                   <span>{formatDate(c.contribution_date)}{c.note && ` - ${c.note}`}</span>
@@ -228,7 +228,7 @@ export default function GoalsPage() {
                     <span className="text-muted-foreground">{formatCurrency(goal.target_amount)}</span>
                   </div>
                   <Progress value={Math.min(percentage, 100)} className="h-2" />
-                  <p className="text-xs text-muted-foreground">{formatPercentage(percentage)} concluido</p>
+                  <p className="text-xs text-muted-foreground">{formatPercentage(percentage)} concluído</p>
                   {goal.target_date && <p className="text-xs text-muted-foreground">Prazo: {formatDate(goal.target_date)}</p>}
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={() => openContributions(goal)}>
@@ -242,7 +242,7 @@ export default function GoalsPage() {
                         <Button variant="ghost" size="sm" className="text-destructive"><Trash2 className="h-3 w-3" /></Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Remover meta?</AlertDialogTitle><AlertDialogDescription>Essa acao nao pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogHeader><AlertDialogTitle>Remover meta?</AlertDialogTitle><AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
                         <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(goal.id)}>Remover</AlertDialogAction></AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>

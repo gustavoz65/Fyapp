@@ -6,10 +6,8 @@ import Link from "next/link";
 import { z } from "zod";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { registerSchema } from "@/lib/schemas";
 
@@ -39,7 +37,6 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      // Validar com Zod
       const validated = registerSchema.parse({
         first_name: form.first_name,
         last_name: form.last_name,
@@ -61,19 +58,44 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground mb-4">
-            <DollarSign className="h-7 w-7" />
+    <div className="flex min-h-screen">
+      {/* Left side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background items-center justify-center p-12">
+        <div className="max-w-md space-y-6">
+          <h1 className="text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Cashing
+          </h1>
+          <p className="text-xl text-muted-foreground">
+            Comece hoje a transformar sua relação com o dinheiro
+          </p>
+          <ul className="space-y-3 text-muted-foreground">
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Controle total das suas finanças
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Metas e orçamentos personalizados
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Relatórios e insights automáticos
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Right side - Register Form */}
+      <div className="flex w-full lg:w-1/2 items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight">Criar Conta</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Comece a gerenciar suas finanças agora
+            </p>
           </div>
-          <CardTitle className="text-2xl">Criar Conta</CardTitle>
-          <CardDescription>
-            Comece a gerenciar suas financas agora
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="first_name">Nome</Label>
@@ -83,6 +105,7 @@ export default function RegisterPage() {
                   value={form.first_name}
                   onChange={(e) => updateField("first_name", e.target.value)}
                   required
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -93,6 +116,7 @@ export default function RegisterPage() {
                   value={form.last_name}
                   onChange={(e) => updateField("last_name", e.target.value)}
                   required
+                  className="h-11"
                 />
               </div>
             </div>
@@ -105,6 +129,7 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={(e) => updateField("email", e.target.value)}
                 required
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
@@ -116,6 +141,7 @@ export default function RegisterPage() {
                 value={form.password}
                 onChange={(e) => updateField("password", e.target.value)}
                 required
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
@@ -127,22 +153,34 @@ export default function RegisterPage() {
                 value={form.confirmPassword}
                 onChange={(e) => updateField("confirmPassword", e.target.value)}
                 required
+                className="h-11"
               />
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full h-11" disabled={isLoading}>
               {isLoading ? "Criando conta..." : "Criar Conta"}
             </Button>
-            <p className="text-sm text-muted-foreground">
-              Ja tem conta?{" "}
-              <Link href="/login" className="text-primary hover:underline">
-                Entrar
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Já tem conta?{" "}
+            <Link href="/login" className="font-semibold text-primary hover:underline">
+              Entrar
+            </Link>
+          </p>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Ao criar sua conta, você concorda com nossos{" "}
+            <Link href="#" className="underline underline-offset-4 hover:text-primary">
+              Termos de Serviço
+            </Link>{" "}
+            e{" "}
+            <Link href="#" className="underline underline-offset-4 hover:text-primary">
+              Política de Privacidade
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

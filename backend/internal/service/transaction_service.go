@@ -13,11 +13,12 @@ import (
 )
 
 type TransactionService struct {
-	txRepo      *repository.TransactionRepository
-	accountRepo *repository.BankAccountRepository
-	budgetRepo  *repository.BudgetRepository
-	userRepo    *repository.UserRepository
-	logger      *zerolog.Logger
+	txRepo              *repository.TransactionRepository
+	accountRepo         *repository.BankAccountRepository
+	budgetRepo          *repository.BudgetRepository
+	userRepo            *repository.UserRepository
+	categorizationSvc   *CategorizationService
+	logger              *zerolog.Logger
 }
 
 func NewTransactionService(
@@ -25,14 +26,16 @@ func NewTransactionService(
 	accountRepo *repository.BankAccountRepository,
 	budgetRepo *repository.BudgetRepository,
 	userRepo *repository.UserRepository,
+	categorizationSvc *CategorizationService,
 	logger *zerolog.Logger,
 ) *TransactionService {
 	return &TransactionService{
-		txRepo:      txRepo,
-		accountRepo: accountRepo,
-		budgetRepo:  budgetRepo,
-		userRepo:    userRepo,
-		logger:      logger,
+		txRepo:              txRepo,
+		accountRepo:         accountRepo,
+		budgetRepo:          budgetRepo,
+		userRepo:            userRepo,
+		categorizationSvc:   categorizationSvc,
+		logger:              logger,
 	}
 }
 
@@ -73,11 +76,24 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 
 	// Handle installments
 	if req.TotalInstallments != nil && *req.TotalInstallments > 1 {
-		return s.createInstallments(ctx, userID, tx, *req.TotalInstallments)
+		firstTx, err := s.createInstallments(ctx, userID, tx, *req.TotalInstallments)
+		if err != nil {
+			return nil, err
+		}
+		// Aprende padrao de categorizacao para parcelas tambem
+		if tx.CategoryID != nil && s.categorizationSvc != nil {
+			s.categorizationSvc.LearnFromTransaction(ctx, userID, req.Description, *tx.CategoryID, "manual")
+		}
+		return firstTx, nil
 	}
 
 	if err := s.txRepo.Create(ctx, tx); err != nil {
 		return nil, fmt.Errorf("failed to create transaction: %w", err)
+	}
+
+	// Aprende padrao de categorizacao
+	if tx.CategoryID != nil && s.categorizationSvc != nil {
+		s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, string(tx.Source))
 	}
 
 	// Update account balance if paid
@@ -272,6 +288,11 @@ func (s *TransactionService) Update(ctx context.Context, userID, txID uuid.UUID,
 
 	if err := s.txRepo.Update(ctx, tx); err != nil {
 		return nil, fmt.Errorf("failed to update transaction: %w", err)
+	}
+
+	// Aprende padrao de categorizacao quando usuario altera/define a categoria
+	if req.CategoryID != nil && tx.CategoryID != nil && s.categorizationSvc != nil {
+		s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, string(tx.Source))
 	}
 
 	// Handle balance adjustments

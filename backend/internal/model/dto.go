@@ -153,6 +153,7 @@ type CreateTransactionRequest struct {
 	TransactionDate   time.Time       `json:"transaction_date" validate:"required"`
 	DueDate           *time.Time      `json:"due_date,omitempty"`
 	IsPaid            bool            `json:"is_paid"`
+	AutoPay           bool            `json:"auto_pay"`
 	Tags              []string        `json:"tags,omitempty" validate:"omitempty,dive,max=50"`
 	TotalInstallments *int            `json:"total_installments,omitempty" validate:"omitempty,min=2,max=120"`
 }

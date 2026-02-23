@@ -45,9 +45,16 @@ import type {
   PaginatedResponse,
   Transaction,
 } from "@/types";
-import { ArrowDownLeft, ArrowUpRight, Check, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { ArrowDownLeft, ArrowUpRight, Check, Plus, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+interface CategorySuggestion {
+  category_id: string;
+  category_name: string;
+  confidence: number;
+  match_count: number;
+}
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -60,6 +67,8 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterPaid, setFilterPaid] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
+  const [categorySuggestions, setCategorySuggestions] = useState<CategorySuggestion[]>([]);
+  const suggestDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const initialFormState = {
     bank_account_id: "",
@@ -70,6 +79,7 @@ export default function TransactionsPage() {
     transaction_date: new Date().toISOString().split("T")[0],
     due_date: "",
     is_paid: false,
+    auto_pay: false,
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -106,12 +116,44 @@ export default function TransactionsPage() {
       ...initialFormState,
       transaction_date: new Date().toISOString().split("T")[0],
     });
+    setCategorySuggestions([]);
+  }
+
+  function handleDescriptionChange(value: string) {
+    setForm((prev) => ({ ...prev, description: value }));
+
+    if (suggestDebounceRef.current) {
+      clearTimeout(suggestDebounceRef.current);
+    }
+
+    if (value.trim().length < 3) {
+      setCategorySuggestions([]);
+      return;
+    }
+
+    suggestDebounceRef.current = setTimeout(async () => {
+      try {
+        const result = await api.get<{ suggestions: CategorySuggestion[] }>(
+          `/categories/suggest?description=${encodeURIComponent(value)}`
+        );
+        const suggestions = result?.suggestions || [];
+        setCategorySuggestions(suggestions);
+
+        if (suggestions.length > 0 && !form.category_id) {
+          setForm((prev) => ({
+            ...prev,
+            category_id: suggestions[0].category_id,
+          }));
+        }
+      } catch {
+        // silencia erros de sugestão
+      }
+    }, 500);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      // Validar com Zod
       const validated = createTransactionSchema.parse({
         bank_account_id: form.bank_account_id,
         category_id: form.category_id || "",
@@ -124,7 +166,7 @@ export default function TransactionsPage() {
         is_paid: form.is_paid,
       });
 
-      const body: CreateTransactionRequest = {
+      const body: CreateTransactionRequest & { auto_pay: boolean } = {
         bank_account_id: validated.bank_account_id,
         category_id: validated.category_id || undefined,
         type: validated.type as CreateTransactionRequest["type"],
@@ -135,6 +177,7 @@ export default function TransactionsPage() {
           ? new Date(validated.due_date).toISOString()
           : undefined,
         is_paid: validated.is_paid,
+        auto_pay: form.auto_pay,
       };
       await api.post("/transactions", body);
       toast.success("Transacao criada");
@@ -158,6 +201,10 @@ export default function TransactionsPage() {
     } catch {
       toast.error("Erro ao marcar como pago");
     }
+  }
+
+  function isSuggested(categoryId: string): boolean {
+    return categorySuggestions.some((s) => s.category_id === categoryId);
   }
 
   if (isLoading) {
@@ -232,7 +279,23 @@ export default function TransactionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Categoria</Label>
+                <Label>Descricao</Label>
+                <Input
+                  value={form.description}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label>Categoria</Label>
+                  {categorySuggestions.length > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Sparkles className="h-3 w-3 text-yellow-500" />
+                      sugestão automática
+                    </span>
+                  )}
+                </div>
                 <Select
                   value={form.category_id}
                   onValueChange={(v) => setForm({ ...form, category_id: v })}
@@ -241,25 +304,34 @@ export default function TransactionsPage() {
                     <SelectValue placeholder="Opcional" />
                   </SelectTrigger>
                   <SelectContent>
+                    {categorySuggestions.length > 0 && (
+                      <>
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-yellow-500" />
+                          Sugestões
+                        </div>
+                        {categorySuggestions.map((s) => (
+                          <SelectItem
+                            key={`sug-${s.category_id}`}
+                            value={s.category_id}
+                          >
+                            ✨ {s.category_name}
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1 pt-1">
+                          Todas as categorias
+                        </div>
+                      </>
+                    )}
                     {categories
                       .filter((c) => c.type === form.type)
                       .map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.name}
+                          {isSuggested(c.id) ? `✨ ${c.name}` : c.name}
                         </SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Descricao</Label>
-                <Input
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                  required
-                />
               </div>
               <div className="space-y-2">
                 <Label>Valor</Label>
@@ -308,6 +380,21 @@ export default function TransactionsPage() {
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Marcar como pago
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="auto_pay"
+                  checked={form.auto_pay}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, auto_pay: checked === true })
+                  }
+                />
+                <Label
+                  htmlFor="auto_pay"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Pagamento automático no vencimento
                 </Label>
               </div>
               <Button type="submit" className="w-full">

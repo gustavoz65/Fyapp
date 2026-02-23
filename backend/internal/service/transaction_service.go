@@ -67,6 +67,7 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 		TransactionDate: req.TransactionDate,
 		DueDate:         req.DueDate,
 		IsPaid:          req.IsPaid,
+		AutoPay:         req.AutoPay,
 		Tags:            req.Tags,
 	}
 
@@ -428,4 +429,67 @@ func (s *TransactionService) GetMonthlyTotals(ctx context.Context, userID uuid.U
 // GetExpensesByCategory returns expenses grouped by category
 func (s *TransactionService) GetExpensesByCategory(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]model.CategoryAmount, error) {
 	return s.txRepo.GetSumByCategory(ctx, userID, startDate, endDate)
+}
+
+// AutoReconcile processa transações vencidas com auto_pay=true, aplica categorização automática
+// se a transação não tiver categoria, e marca como pagas atualizando o saldo da conta.
+func (s *TransactionService) AutoReconcile(ctx context.Context) error {
+	today := time.Now()
+	transactions, err := s.txRepo.GetDueForAutoReconcile(ctx, today)
+	if err != nil {
+		return fmt.Errorf("failed to fetch due transactions for auto reconcile: %w", err)
+	}
+
+	s.logger.Info().Msgf("Auto-reconciling %d due transactions", len(transactions))
+
+	for _, tx := range transactions {
+		// Aplica categorização automática se a transação não tiver categoria
+		if tx.CategoryID == nil && s.categorizationSvc != nil {
+			suggestion, err := s.categorizationSvc.SuggestCategory(ctx, tx.UserID, tx.Description)
+			if err == nil && len(suggestion.Suggestions) > 0 && suggestion.Suggestions[0].Confidence >= 1 {
+				catID := suggestion.Suggestions[0].CategoryID
+				tx.CategoryID = &catID
+
+				// Persiste a categoria sugerida na transação
+				if updateErr := s.txRepo.Update(ctx, tx); updateErr != nil {
+					s.logger.Error().Err(updateErr).
+						Str("transaction_id", tx.ID.String()).
+						Msg("Failed to update category during auto reconcile")
+				} else {
+					s.logger.Debug().
+						Str("transaction_id", tx.ID.String()).
+						Str("category_id", catID.String()).
+						Str("category_name", suggestion.Suggestions[0].CategoryName).
+						Msg("Auto-categorized transaction during reconciliation")
+				}
+			}
+		}
+
+		// Marca como paga
+		if err := s.txRepo.MarkAsPaid(ctx, tx.ID, tx.UserID); err != nil {
+			s.logger.Error().Err(err).
+				Str("transaction_id", tx.ID.String()).
+				Msg("Failed to mark transaction as paid during auto reconcile")
+			continue
+		}
+
+		// Atualiza saldo da conta
+		delta := tx.Amount
+		if tx.Type == model.TransactionTypeExpense {
+			delta = delta.Neg()
+		}
+		if err := s.accountRepo.AdjustBalance(ctx, tx.BankAccountID, delta); err != nil {
+			s.logger.Error().Err(err).
+				Str("transaction_id", tx.ID.String()).
+				Msg("Failed to adjust balance during auto reconcile")
+		}
+
+		s.logger.Info().
+			Str("transaction_id", tx.ID.String()).
+			Str("description", tx.Description).
+			Str("amount", tx.Amount.String()).
+			Msg("Auto-reconciled transaction")
+	}
+
+	return nil
 }

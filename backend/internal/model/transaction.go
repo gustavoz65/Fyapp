@@ -37,6 +37,7 @@ type Transaction struct {
 	DueDate            *time.Time        `json:"due_date,omitempty" db:"due_date"`
 	PaymentDate        *time.Time        `json:"payment_date,omitempty" db:"payment_date"`
 	IsPaid             bool              `json:"is_paid" db:"is_paid"`
+	AutoPay            bool              `json:"auto_pay" db:"auto_pay"`
 	IsRecurring        bool              `json:"is_recurring" db:"is_recurring"`
 	RecurringID        *uuid.UUID        `json:"recurring_id,omitempty" db:"recurring_id"`
 	InstallmentNumber  *int              `json:"installment_number,omitempty" db:"installment_number"`

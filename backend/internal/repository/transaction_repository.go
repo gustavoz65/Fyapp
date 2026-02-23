@@ -40,10 +40,10 @@ func (r *TransactionRepository) Create(ctx context.Context, tx *model.Transactio
 		INSERT INTO transactions (
 			id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	var categoryID sql.NullString
@@ -86,6 +86,7 @@ func (r *TransactionRepository) Create(ctx context.Context, tx *model.Transactio
 		dueDate,
 		paymentDate,
 		tx.IsPaid,
+		tx.AutoPay,
 		tx.IsRecurring,
 		recurringID,
 		NullInt32(tx.InstallmentNumber),
@@ -110,7 +111,7 @@ func (r *TransactionRepository) GetByID(ctx context.Context, id uuid.UUID) (*mod
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
 		FROM transactions
@@ -125,7 +126,7 @@ func (r *TransactionRepository) GetByIDAndUser(ctx context.Context, id, userID u
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
 		FROM transactions
@@ -220,7 +221,7 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	query := fmt.Sprintf(`
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
 		FROM transactions
@@ -248,7 +249,7 @@ func (r *TransactionRepository) GetByDateRange(ctx context.Context, userID uuid.
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
 		FROM transactions
@@ -270,7 +271,7 @@ func (r *TransactionRepository) GetUpcomingBills(ctx context.Context, userID uui
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
 		FROM transactions
@@ -293,7 +294,7 @@ func (r *TransactionRepository) GetRecentTransactions(ctx context.Context, userI
 	query := `
 		SELECT id, user_id, bank_account_id, category_id, type, amount,
 			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, is_recurring, recurring_id, installment_number,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
 			total_installments, installment_group_id, tags, attachment_url,
 			external_id, created_at, updated_at
 		FROM transactions
@@ -506,6 +507,7 @@ func (r *TransactionRepository) scanTransaction(row *sql.Row) (*model.Transactio
 		&dueDate,
 		&paymentDate,
 		&tx.IsPaid,
+		&tx.AutoPay,
 		&tx.IsRecurring,
 		&recurringID,
 		&installmentNumber,
@@ -585,6 +587,7 @@ func (r *TransactionRepository) scanTransactions(rows *sql.Rows) ([]*model.Trans
 			&dueDate,
 			&paymentDate,
 			&tx.IsPaid,
+			&tx.AutoPay,
 			&tx.IsRecurring,
 			&recurringID,
 			&installmentNumber,
@@ -641,4 +644,26 @@ func (r *TransactionRepository) scanTransactions(rows *sql.Rows) ([]*model.Trans
 	}
 
 	return transactions, nil
+}
+
+// GetDueForAutoReconcile busca transações com auto_pay=true que estão vencidas e não pagas
+func (r *TransactionRepository) GetDueForAutoReconcile(ctx context.Context, today time.Time) ([]*model.Transaction, error) {
+	query := `
+		SELECT id, user_id, bank_account_id, category_id, type, amount,
+			description, notes, source, transaction_date, due_date, payment_date,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
+			total_installments, installment_group_id, tags, attachment_url,
+			external_id, created_at, updated_at
+		FROM transactions
+		WHERE is_paid = FALSE AND auto_pay = TRUE AND due_date IS NOT NULL AND due_date <= ?
+		ORDER BY due_date ASC
+	`
+
+	rows, err := r.QueryContext(ctx, query, today)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get due transactions for auto reconcile: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanTransactions(rows)
 }

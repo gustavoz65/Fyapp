@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { loginSchema } from "@/lib/schemas";
@@ -31,7 +32,7 @@ export default function LoginPage() {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
       } else {
-        toast.error("Email ou senha invalidos");
+        toast.error("Email ou senha inválidos");
       }
     } finally {
       setIsLoading(false);
@@ -39,7 +40,7 @@ export default function LoginPage() {
   }
 
   function handleGoogleLogin() {
-    toast.info("Integracao com Google em breve!");
+    toast.info("Integração com Google em breve!");
     // TODO: Implementar Firebase Google Auth
   }
 
@@ -73,7 +74,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
               <Input
+                id="email"
                 type="email"
                 placeholder="nome@exemplo.com"
                 value={email}
@@ -83,7 +86,9 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
               <Input
+                id="password"
                 type="password"
                 placeholder="Sua senha"
                 value={password}

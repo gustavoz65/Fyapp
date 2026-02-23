@@ -76,7 +76,7 @@ export default function BudgetsPage() {
       if (editing) {
         const body: UpdateBudgetRequest = { name: form.name, amount: form.amount, alert_threshold: form.alert_threshold };
         await api.put(`/budgets/${editing.id}`, body);
-        toast.success("Orcamento atualizado");
+        toast.success("Orçamento atualizado");
       } else {
         // Validar com Zod
         const validated = createBudgetSchema.parse({
@@ -99,7 +99,7 @@ export default function BudgetsPage() {
           alert_threshold: validated.alert_threshold,
         };
         await api.post("/budgets", body);
-        toast.success("Orcamento criado");
+        toast.success("Orçamento criado");
       }
       setDialogOpen(false);
       fetchData();
@@ -107,7 +107,7 @@ export default function BudgetsPage() {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
       } else {
-        toast.error("Erro ao salvar orcamento");
+        toast.error("Erro ao salvar orçamento");
       }
     }
   }
@@ -115,15 +115,15 @@ export default function BudgetsPage() {
   async function handleDelete(id: string) {
     try {
       await api.delete(`/budgets/${id}`);
-      toast.success("Orcamento removido");
+      toast.success("Orçamento removido");
       fetchData();
-    } catch { toast.error("Erro ao remover"); }
+    } catch { toast.error("Erro ao remover orçamento"); }
   }
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Orcamentos</h1>
+        <h1 className="text-3xl font-bold">Orçamentos</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48" />)}
         </div>
@@ -135,18 +135,18 @@ export default function BudgetsPage() {
     <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Orcamentos</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Orçamentos</h1>
           <p className="text-muted-foreground mt-2">
             Controle seus gastos por categoria
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Novo Orcamento</Button>
+            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Novo Orçamento</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing ? "Editar Orcamento" : "Novo Orcamento"}</DialogTitle>
+              <DialogTitle>{editing ? "Editar Orçamento" : "Novo Orçamento"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -205,7 +205,7 @@ export default function BudgetsPage() {
       </div>
 
       {budgets.length === 0 ? (
-        <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum orcamento criado</CardContent></Card>
+        <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhum orçamento criado</CardContent></Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {budgets.map((budget) => {
@@ -249,8 +249,8 @@ export default function BudgetsPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Remover orcamento?</AlertDialogTitle>
-                          <AlertDialogDescription>Essa acao nao pode ser desfeita.</AlertDialogDescription>
+                          <AlertDialogTitle>Remover orçamento?</AlertDialogTitle>
+                          <AlertDialogDescription>Essa ação não pode ser desfeita.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>

@@ -4,6 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -118,8 +129,6 @@ export default function RecurringPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Excluir esta recorrência?")) return;
-
     try {
       await api.delete(`/recurring-transactions/${id}`);
       toast.success("Excluída");
@@ -142,14 +151,26 @@ export default function RecurringPage() {
   };
 
   if (isLoading) {
-    return <div className="p-8">Carregando...</div>;
+    return (
+      <div className="space-y-6 pb-8">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Transações Recorrentes</h1>
+          <p className="text-muted-foreground mt-2">Carregando...</p>
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="space-y-8 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Transações Recorrentes</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Transações Recorrentes</h1>
           <p className="text-muted-foreground mt-1">
             {recurrings.filter((r) => r.is_active).length} ativas
           </p>
@@ -157,7 +178,7 @@ export default function RecurringPage() {
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button size="lg">
               <Plus className="w-4 h-4 mr-2" />
               Nova Recorrência
             </Button>
@@ -375,13 +396,27 @@ export default function RecurringPage() {
                             <Power className="w-4 h-4" />
                           )}
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDelete(rec.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir recorrência?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Essa ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(rec.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>

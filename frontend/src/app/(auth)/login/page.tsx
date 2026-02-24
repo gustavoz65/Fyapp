@@ -47,17 +47,52 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background items-center justify-center p-12">
-        <div className="max-w-md space-y-6">
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Cashing
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Gerencie suas finanças pessoais de forma inteligente e eficiente
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background items-center justify-center p-12 relative overflow-hidden">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
+
+        <div className="max-w-md space-y-8 relative z-10">
+          <div className="space-y-2">
+            <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              FiNext
+            </h1>
+            <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
+              Financial Next Generation
+            </p>
+          </div>
+          <p className="text-xl text-foreground/80 leading-relaxed">
+            Transforme a forma como você gerencia suas finanças. Simplicidade, segurança e controle total em uma plataforma moderna.
           </p>
-          <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground">
-            &quot;Esta plataforma transformou completamente a forma como gerencio meu dinheiro.&quot;
-            <footer className="mt-2 text-sm font-semibold">- Usuário Satisfeito</footer>
+          <div className="space-y-4 pt-4">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <p className="text-foreground/70">Dashboard intuitivo com insights em tempo real</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <p className="text-foreground/70">Segurança bancária para proteger seus dados</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <p className="text-foreground/70">Controle total sobre orçamentos e metas</p>
+            </div>
+          </div>
+          <blockquote className="border-l-4 border-primary/50 pl-6 py-4 bg-primary/5 rounded-r-lg">
+            <p className="italic text-foreground/80">
+              &quot;FiNext mudou completamente minha relação com o dinheiro. Finalmente tenho controle real das minhas finanças.&quot;
+            </p>
+            <footer className="mt-3 text-sm font-semibold text-primary">
+              - Maria Silva, Usuária Premium
+            </footer>
           </blockquote>
         </div>
       </div>

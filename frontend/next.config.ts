@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' http://localhost:8080 https:",
+              "connect-src 'self' http://localhost:3000 https:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

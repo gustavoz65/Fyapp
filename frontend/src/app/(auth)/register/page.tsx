@@ -60,28 +60,45 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background items-center justify-center p-12">
-        <div className="max-w-md space-y-6">
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Cashing
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Comece hoje a transformar sua relação com o dinheiro
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background items-center justify-center p-12 relative overflow-hidden">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid-register" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-register)" />
+          </svg>
+        </div>
+
+        <div className="max-w-md space-y-8 relative z-10">
+          <div className="space-y-2">
+            <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+              FiNext
+            </h1>
+            <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
+              Financial Next Generation
+            </p>
+          </div>
+          <p className="text-xl text-foreground/80 leading-relaxed">
+            Comece hoje a transformar sua relação com o dinheiro. Controle total, insights inteligentes e segurança garantida.
           </p>
-          <ul className="space-y-3 text-muted-foreground">
-            <li className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              Controle total das suas finanças
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              Metas e orçamentos personalizados
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              Relatórios e insights automáticos
-            </li>
-          </ul>
+          <div className="space-y-4 pt-4">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <p className="text-foreground/70">Controle total das suas finanças em tempo real</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <p className="text-foreground/70">Metas e orçamentos personalizados automaticamente</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+              <p className="text-foreground/70">Relatórios e insights inteligentes</p>
+            </div>
+          </div>
         </div>
       </div>
 

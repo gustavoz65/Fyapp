@@ -7,23 +7,16 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, Lock, Zap, TrendingUp, Smartphone, BarChart3, Shield } from "lucide-react";
 import Link from "next/link";
 
-/**
- * FiNext Landing Page
- * Design: Modern Financial Minimalism
- * Palette: Sage Green (#7E8C54) + Warm Beige (#F5F1E8)
- */
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Show loading spinner while checking auth
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -34,7 +27,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
@@ -51,7 +43,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      
       <section className="relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-40"
@@ -86,7 +78,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Problem Statement */}
+      
       <section className="py-16 md:py-24 bg-card">
         <div className="container">
           <div className="max-w-2xl">
@@ -113,7 +105,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
+      
       <section id="features" className="py-16 md:py-24 bg-background">
         <div className="container">
           <div className="text-center mb-16">
@@ -164,7 +156,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works */}
+      
       <section id="how-it-works" className="py-16 md:py-24 bg-card">
         <div className="container">
           <div className="text-center mb-16">
@@ -211,7 +203,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Security & Trust */}
+      
       <section id="security" className="py-16 md:py-24 bg-background">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
@@ -265,7 +257,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      
       <section className="py-16 md:py-24 bg-primary text-primary-foreground relative overflow-hidden">
         <div
           className="absolute inset-0 opacity-20"
@@ -293,7 +285,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
+      
       <footer className="bg-card border-t border-border py-12">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">

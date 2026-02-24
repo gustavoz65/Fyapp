@@ -54,14 +54,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="px-4 py-6 flex items-center justify-center border-b border-sidebar-border/50">
-          <Image
-            src="/logo_cash_no_dark_mode.png"
-            alt="Cashing"
-            width={120}
-            height={40}
-            className="object-contain brightness-0 invert"
-            priority
-          />
+          <span className="text-2xl font-bold text-sidebar-primary">FiNext</span>
         </div>
       </SidebarHeader>
 

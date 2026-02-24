@@ -26,7 +26,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setRedirectCallback(() => {
-      if (!pathname?.startsWith("/login") && !pathname?.startsWith("/register")) {
+      // Rotas públicas que não devem redirecionar
+      const publicRoutes = ["/", "/login", "/register"];
+      const isPublicRoute = publicRoutes.some(route => pathname === route || pathname?.startsWith(route));
+
+      if (!isPublicRoute) {
         router.push("/login");
       }
     });

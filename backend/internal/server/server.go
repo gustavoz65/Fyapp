@@ -8,6 +8,7 @@ import (
 
 	"github.com/gustavoz65/Cashing-go/internal/config"
 	"github.com/gustavoz65/Cashing-go/internal/database"
+	"github.com/gustavoz65/Cashing-go/internal/lib/firebase"
 	"github.com/gustavoz65/Cashing-go/internal/lib/utils/job"
 	"github.com/gustavoz65/Cashing-go/internal/logger"
 	"github.com/redis/go-redis/v9"
@@ -15,13 +16,14 @@ import (
 )
 
 type Server struct {
-	Config        *config.Config
-	Logger        *zerolog.Logger
-	LoggerService *logger.LoggerService
-	DB            *database.Database
-	Redis         *redis.Client
-	httpServer    *http.Server
-	Job           *job.JobService
+	Config         *config.Config
+	Logger         *zerolog.Logger
+	LoggerService  *logger.LoggerService
+	DB             *database.Database
+	Redis          *redis.Client
+	FirebaseClient *firebase.Client
+	httpServer     *http.Server
+	Job            *job.JobService
 }
 
 func New(cfg *config.Config, log *zerolog.Logger, loggerService *logger.LoggerService) (*Server, error) {
@@ -47,6 +49,17 @@ func New(cfg *config.Config, log *zerolog.Logger, loggerService *logger.LoggerSe
 		log.Info().Msg("connected to Redis")
 	}
 
+	// Initialize Firebase
+	var firebaseClient *firebase.Client
+	if cfg.Firebase.Enabled {
+		firebaseClient, err = firebase.NewClient(&cfg.Firebase)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to initialize Firebase, continuing without Firebase")
+		} else {
+			log.Info().Msg("Firebase initialized successfully")
+		}
+	}
+
 	// job service
 	jobService := job.NewJobService(log, cfg)
 	jobService.InitHandlers(cfg, log)
@@ -57,12 +70,13 @@ func New(cfg *config.Config, log *zerolog.Logger, loggerService *logger.LoggerSe
 	}
 
 	server := &Server{
-		Config:        cfg,
-		Logger:        log,
-		LoggerService: loggerService,
-		DB:            db,
-		Redis:         redisClient,
-		Job:           jobService,
+		Config:         cfg,
+		Logger:         log,
+		LoggerService:  loggerService,
+		DB:             db,
+		Redis:          redisClient,
+		FirebaseClient: firebaseClient,
+		Job:            jobService,
 	}
 
 	return server, nil

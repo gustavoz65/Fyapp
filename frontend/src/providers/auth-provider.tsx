@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import type { User, LoginRequest, RegisterRequest } from "@/types";
-import { getCurrentUser, login as loginFn, logout as logoutFn, register as registerFn } from "@/lib/auth";
+import type { User, LoginRequest, RegisterRequest, SocialLoginRequest } from "@/types";
+import { getCurrentUser, login as loginFn, logout as logoutFn, register as registerFn, socialLogin as socialLoginFn } from "@/lib/auth";
 import { setRedirectCallback } from "@/lib/api";
 
 interface AuthContextType {
@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
+  socialLogin: (data: SocialLoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -80,6 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(response.user);
   };
 
+  const socialLogin = async (data: SocialLoginRequest) => {
+    const response = await socialLoginFn(data);
+    setUser(response.user);
+  };
+
   const logout = async () => {
     await logoutFn();
     setUser(null);
@@ -93,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        socialLogin,
         logout,
         refreshUser,
       }}

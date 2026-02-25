@@ -3,6 +3,7 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
+  SocialLoginRequest,
   User,
   UserSettings,
   UpdateUserRequest,
@@ -47,4 +48,9 @@ export async function changePassword(data: ChangePasswordRequest): Promise<void>
 
 export async function deactivateAccount(): Promise<void> {
   return api.delete("/users/me");
+}
+
+export async function socialLogin(data: SocialLoginRequest): Promise<LoginResponse> {
+  // Cookies são setados automaticamente pelo backend (httpOnly)
+  return api.post<LoginResponse>("/auth/social/login", data);
 }

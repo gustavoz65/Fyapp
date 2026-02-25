@@ -32,6 +32,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	// Repositories
 	userRepo := repository.NewUserRepository(db, logger)
+	providerRepo := repository.NewOAuthProviderRepository(db, logger)
 	transactionRepo := repository.NewTransactionRepository(db, logger)
 	accountRepo := repository.NewBankAccountRepository(db, logger)
 	categoryRepo := repository.NewCategoryRepository(db, logger)
@@ -43,7 +44,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	recurringRepo := repository.NewRecurringTransactionRepository(db, logger)
 
 	// Services
-	authService := service.NewAuthService(userRepo, cfg, logger)
+	authService := service.NewAuthService(userRepo, providerRepo, srv.FirebaseClient, cfg, logger)
 	userService := service.NewUserService(userRepo, logger)
 	categorizationService := service.NewCategorizationService(categoryPatternRepo, logger)
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
@@ -81,6 +82,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	authWithRL.POST("/register", authHandler.Register)
 	authWithRL.POST("/login", authHandler.Login)
+	authWithRL.POST("/social/login", authHandler.SocialLogin)
 	authRefresh.POST("/refresh", authHandler.RefreshToken)
 	authRefresh.POST("/logout", authHandler.Logout)
 
@@ -91,6 +93,9 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
 	authProtected.POST("/change-password", authHandler.ChangePassword, mutationRL)
+	authProtected.POST("/social/link", authHandler.LinkProvider, mutationRL)
+	authProtected.DELETE("/social/:provider", authHandler.UnlinkProvider, mutationRL)
+	authProtected.GET("/social/providers", authHandler.GetLinkedProviders, readRL)
 
 	// Users
 	users := api.Group("/users", authMiddleware, auditMiddleware.Handler())

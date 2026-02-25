@@ -1568,3 +1568,102 @@ table "email_verification_tokens" {
     columns = [column.expires_at]
   }
 }
+
+// ============================================================================
+// USER OAUTH PROVIDERS TABLE (for social login - Google)
+// ============================================================================
+table "user_oauth_providers" {
+  schema = schema.cashing
+
+  column "id" {
+    type    = char(36)
+    null    = false
+    default = sql("(UUID())")
+  }
+  column "user_id" {
+    type = char(36)
+    null = false
+  }
+  column "provider" {
+    type = varchar(50)
+    null = false
+    comment = "Provider name: google, facebook, github, etc"
+  }
+  column "provider_user_id" {
+    type = varchar(255)
+    null = false
+    comment = "Unique user ID from provider (Firebase UID)"
+  }
+  column "provider_email" {
+    type = varchar(255)
+    null = true
+    comment = "Email from provider (may differ from user.email)"
+  }
+  column "provider_name" {
+    type = varchar(255)
+    null = true
+    comment = "Display name from provider"
+  }
+  column "provider_avatar_url" {
+    type = varchar(500)
+    null = true
+    comment = "Profile picture URL from provider"
+  }
+  column "is_primary" {
+    type    = bool
+    default = false
+    comment = "True if this provider was used to create the account"
+  }
+  column "metadata" {
+    type = json
+    null = true
+    comment = "Additional provider-specific data"
+  }
+  column "last_login_at" {
+    type = datetime
+    null = true
+    comment = "Last time user logged in via this provider"
+  }
+  column "created_at" {
+    type    = datetime
+    default = sql("CURRENT_TIMESTAMP")
+  }
+  column "updated_at" {
+    type    = datetime
+    default = sql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+  }
+
+  primary_key {
+    columns = [column.id]
+  }
+
+  foreign_key "fk_user_oauth_providers_user" {
+    columns     = [column.user_id]
+    ref_columns = [table.users.column.id]
+    on_delete   = CASCADE
+  }
+
+  // Garante que um usuário só pode vincular cada provider uma vez
+  index "unique_user_provider" {
+    unique  = true
+    columns = [column.user_id, column.provider]
+  }
+
+  // Garante que um UID do provider não pode ser usado em múltiplas contas
+  index "unique_provider_user" {
+    unique  = true
+    columns = [column.provider, column.provider_user_id]
+  }
+
+  index "idx_user_oauth_providers_user_id" {
+    columns = [column.user_id]
+  }
+
+  index "idx_user_oauth_providers_provider" {
+    columns = [column.provider]
+  }
+
+  index "idx_user_oauth_providers_last_login" {
+    columns = [column.last_login_at]
+  }
+}

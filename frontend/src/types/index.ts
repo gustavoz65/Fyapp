@@ -349,6 +349,26 @@ export interface RefreshTokenResponse {
   expires_at: number;
 }
 
+export interface SocialLoginRequest {
+  provider: "google" | "facebook" | "github";
+  id_token: string;
+  device_info?: string;
+}
+
+export interface LinkedProvider {
+  provider: string;
+  email: string;
+  name: string;
+  avatar_url: string;
+  is_primary: boolean;
+  linked_at: string;
+}
+
+export interface ListProvidersResponse {
+  providers: LinkedProvider[];
+  has_password: boolean;
+}
+
 // ========================================
 // Request DTOs
 // ========================================

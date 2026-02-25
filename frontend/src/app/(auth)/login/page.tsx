@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, socialLogin } = useAuth();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -39,9 +41,34 @@ export default function LoginPage() {
     }
   }
 
-  function handleGoogleLogin() {
-    toast.info("Integração com Google em breve!");
-    // TODO: Implementar Firebase Google Auth
+  async function handleGoogleLogin() {
+    setIsLoading(true);
+    try {
+      // 1. Fazer login com Google via Firebase
+      const result = await signInWithPopup(auth, googleProvider);
+
+      // 2. Obter ID token do Firebase
+      const idToken = await result.user.getIdToken();
+
+      // 3. Enviar para o backend
+      await socialLogin({
+        provider: "google",
+        id_token: idToken,
+        device_info: navigator.userAgent,
+      });
+
+      // 4. Redirecionar para dashboard
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Erro no login com Google:", error);
+      if (error instanceof Error) {
+        toast.error(error.message || "Erro ao fazer login com Google");
+      } else {
+        toast.error("Erro ao fazer login com Google. Tente novamente.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

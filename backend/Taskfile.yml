@@ -62,7 +62,7 @@ tasks:
     desc: apply all pending migrations
     cmds:
       - echo 'Running migrations...'
-      - go run ./cmd/go-boilerplate migrate
+      - go run ./cmd migrate
 
   migrations:down:
     desc: rollback last migration

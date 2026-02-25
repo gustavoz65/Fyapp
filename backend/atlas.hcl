@@ -3,27 +3,27 @@
 // Define the environment variables
 variable "db_user" {
   type    = string
-  default = getenv("BOILERPLATE_DATABASE_USER")
+  default = "root"
 }
 
 variable "db_pass" {
   type    = string
-  default = getenv("BOILERPLATE_DATABASE_PASSWORD")
+  default = "senha123"
 }
 
 variable "db_host" {
   type    = string
-  default = getenv("BOILERPLATE_DATABASE_HOST")
+  default = "localhost"
 }
 
 variable "db_port" {
   type    = string
-  default = getenv("BOILERPLATE_DATABASE_PORT")
+  default = "3306"
 }
 
 variable "db_name" {
   type    = string
-  default = getenv("BOILERPLATE_DATABASE_DB_NAME")
+  default = "cashing"
 }
 
 // Main database connection

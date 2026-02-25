@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS user_oauth_providers (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    provider_email VARCHAR(255) NULL,
+    provider_name VARCHAR(255) NULL,
+    provider_avatar_url VARCHAR(500) NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    metadata JSON NULL,
+    last_login_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_provider (user_id, provider),
+    UNIQUE KEY uk_provider_user (provider, provider_user_id),
+    INDEX idx_user_oauth_user_id (user_id),
+    INDEX idx_user_oauth_provider (provider),
+    INDEX idx_user_oauth_last_login (last_login_at),
+    CONSTRAINT fk_user_oauth_providers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

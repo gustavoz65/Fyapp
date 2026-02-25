@@ -172,3 +172,70 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
+// ========================================
+// Social Login Handlers
+// ========================================
+
+func (h *AuthHandler) SocialLogin(c echo.Context) error {
+	var req model.SocialLoginRequest
+	if err := validation.BindAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	ipAddress := c.RealIP()
+	userAgent := c.Request().UserAgent()
+
+	response, err := h.authService.SocialLogin(c.Request().Context(), &req, ipAddress, userAgent)
+	if err != nil {
+		return err
+	}
+
+	// Setar cookies httpOnly
+	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
+
+	// Retornar response SEM tokens (por segurança)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"user":       response.User,
+		"expires_at": response.ExpiresAt,
+	})
+}
+
+func (h *AuthHandler) LinkProvider(c echo.Context) error {
+	var req model.LinkProviderRequest
+	if err := validation.BindAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	userID := middleware.GetUserID(c)
+	if err := h.authService.LinkProvider(c.Request().Context(), userID, &req); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *AuthHandler) UnlinkProvider(c echo.Context) error {
+	provider := c.Param("provider")
+	if provider == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "provider parameter is required")
+	}
+
+	userID := middleware.GetUserID(c)
+	if err := h.authService.UnlinkProvider(c.Request().Context(), userID, provider); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *AuthHandler) GetLinkedProviders(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	response, err := h.authService.GetLinkedProviders(c.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, response)
+}

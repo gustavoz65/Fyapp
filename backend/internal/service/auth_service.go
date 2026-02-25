@@ -8,11 +8,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/gustavoz65/Cashing-go/internal/config"
+	"github.com/gustavoz65/Cashing-go/internal/lib/firebase"
 	"github.com/gustavoz65/Cashing-go/internal/model"
 	"github.com/gustavoz65/Cashing-go/internal/repository"
 	"github.com/rs/zerolog"
@@ -36,16 +38,26 @@ type JWTClaims struct {
 }
 
 type AuthService struct {
-	userRepo *repository.UserRepository
-	config   *config.Config
-	logger   *zerolog.Logger
+	userRepo       *repository.UserRepository
+	providerRepo   *repository.OAuthProviderRepository
+	firebaseClient *firebase.Client
+	config         *config.Config
+	logger         *zerolog.Logger
 }
 
-func NewAuthService(userRepo *repository.UserRepository, cfg *config.Config, logger *zerolog.Logger) *AuthService {
+func NewAuthService(
+	userRepo *repository.UserRepository,
+	providerRepo *repository.OAuthProviderRepository,
+	firebaseClient *firebase.Client,
+	cfg *config.Config,
+	logger *zerolog.Logger,
+) *AuthService {
 	return &AuthService{
-		userRepo: userRepo,
-		config:   cfg,
-		logger:   logger,
+		userRepo:       userRepo,
+		providerRepo:   providerRepo,
+		firebaseClient: firebaseClient,
+		config:         cfg,
+		logger:         logger,
 	}
 }
 
@@ -362,4 +374,312 @@ func (s *AuthService) generateRefreshToken() (string, string, error) {
 func (s *AuthService) hashRefreshToken(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(hash[:])
+}
+
+// ========================================
+// Social Login Methods
+// ========================================
+
+var (
+	ErrFirebaseNotConfigured    = errors.New("firebase is not configured")
+	ErrInvalidIDToken           = errors.New("invalid firebase ID token")
+	ErrCannotUnlinkLastProvider = errors.New("cannot unlink last authentication method")
+)
+
+// SocialLogin autentica usuário via Firebase (cria se não existir)
+func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginRequest, ipAddress, userAgent string) (*model.LoginResponse, error) {
+	if s.firebaseClient == nil {
+		return nil, ErrFirebaseNotConfigured
+	}
+
+	// Validar ID token com Firebase
+	token, err := s.firebaseClient.VerifyIDToken(ctx, req.IDToken)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("failed to verify firebase token")
+		return nil, ErrInvalidIDToken
+	}
+
+	providerUserID := token.GetUID()
+	email := token.GetEmail()
+	name := token.GetName()
+	picture := token.GetPicture()
+
+	// Verificar se provider já existe
+	provider, err := s.providerRepo.GetByProviderAndProviderUserID(ctx, req.Provider, providerUserID)
+	if err != nil && !errors.Is(err, repository.ErrProviderNotFound) {
+		return nil, fmt.Errorf("failed to check provider: %w", err)
+	}
+
+	var user *model.User
+
+	if provider != nil {
+		// Provider já existe, fazer login
+		user, err = s.userRepo.GetByID(ctx, provider.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user: %w", err)
+		}
+
+		if !user.IsActive {
+			return nil, ErrUserNotActive
+		}
+
+		// Atualizar last login do provider
+		_ = s.providerRepo.UpdateLastLogin(ctx, provider.ID)
+	} else {
+		// Provider não existe, criar novo usuário
+		firstName, lastName := splitName(name)
+
+		user = &model.User{
+			Email:             email,
+			PasswordHash:      "", // Sem senha para login social
+			FirstName:         firstName,
+			LastName:          lastName,
+			PreferredCurrency: "BRL",
+			PreferredLanguage: "pt-BR",
+			Timezone:          "America/Sao_Paulo",
+			Role:              model.UserRoleUser,
+			EmailVerified:     true, // Firebase já verificou
+			IsActive:          true,
+		}
+
+		if picture != "" {
+			user.AvatarURL = &picture
+		}
+
+		// Verificar se já existe usuário com esse email
+		existingUser, err := s.userRepo.GetByEmail(ctx, email)
+		if err == nil {
+			// Usuário já existe, vincular provider
+			user = existingUser
+		} else if !errors.Is(err, repository.ErrUserNotFound) {
+			return nil, fmt.Errorf("failed to check existing user: %w", err)
+		} else {
+			// Criar novo usuário
+			if err := s.userRepo.Create(ctx, user); err != nil {
+				return nil, fmt.Errorf("failed to create user: %w", err)
+			}
+
+			// Criar settings padrão
+			_, err = s.userRepo.CreateDefaultSettings(ctx, user.ID)
+			if err != nil {
+				s.logger.Warn().Err(err).Msg("failed to create default settings")
+			}
+		}
+
+		// Criar provider vinculado
+		provider = &model.OAuthProvider{
+			UserID:            user.ID,
+			Provider:          req.Provider,
+			ProviderID:        providerUserID,
+			ProviderEmail:     &email,
+			ProviderName:      name,
+			ProviderAvatarURL: &picture,
+			IsPrimary:         true,
+			LastLoginAt:       time.Now(),
+		}
+
+		if err := s.providerRepo.Create(ctx, provider); err != nil {
+			return nil, fmt.Errorf("failed to create provider: %w", err)
+		}
+
+		s.logger.Info().
+			Str("user_id", user.ID.String()).
+			Str("provider", req.Provider).
+			Msg("new user registered via social login")
+	}
+
+	// Atualizar last login do usuário
+	_ = s.userRepo.UpdateLastLogin(ctx, user.ID)
+
+	// Gerar tokens JWT
+	accessToken, expiresAt, err := s.generateAccessToken(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	refreshToken, refreshTokenHash, err := s.generateRefreshToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+
+	// Criar sessão
+	session := &model.UserSession{
+		UserID:           user.ID,
+		RefreshTokenHash: refreshTokenHash,
+		DeviceInfo:       &req.DeviceInfo,
+		IPAddress:        &ipAddress,
+		UserAgent:        &userAgent,
+		ExpiresAt:        time.Now().Add(time.Duration(s.config.Auth.RefreshTokenDuration) * time.Hour),
+	}
+
+	if err := s.userRepo.CreateSession(ctx, session); err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	s.logger.Info().
+		Str("user_id", user.ID.String()).
+		Str("provider", req.Provider).
+		Msg("user logged in via social")
+
+	return &model.LoginResponse{
+		User:         user,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresAt:    expiresAt,
+	}, nil
+}
+
+// LinkProvider vincula um provider OAuth a uma conta existente
+func (s *AuthService) LinkProvider(ctx context.Context, userID uuid.UUID, req *model.LinkProviderRequest) error {
+	if s.firebaseClient == nil {
+		return ErrFirebaseNotConfigured
+	}
+
+	// Validar ID token com Firebase
+	token, err := s.firebaseClient.VerifyIDToken(ctx, req.IDToken)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("failed to verify firebase token")
+		return ErrInvalidIDToken
+	}
+
+	providerUserID := token.GetUID()
+	email := token.GetEmail()
+	name := token.GetName()
+	picture := token.GetPicture()
+
+	// Verificar se provider já está vinculado a este usuário
+	_, err = s.providerRepo.GetByUserIDAndProvider(ctx, userID, req.Provider)
+	if err == nil {
+		return repository.ErrProviderAlreadyLinked
+	}
+	if !errors.Is(err, repository.ErrProviderNotFound) {
+		return fmt.Errorf("failed to check provider: %w", err)
+	}
+
+	// Verificar se Firebase UID já está vinculado a outra conta
+	existingProvider, err := s.providerRepo.GetByProviderAndProviderUserID(ctx, req.Provider, providerUserID)
+	if err != nil && !errors.Is(err, repository.ErrProviderNotFound) {
+		return fmt.Errorf("failed to check provider user: %w", err)
+	}
+	if existingProvider != nil {
+		return repository.ErrProviderUserExists
+	}
+
+	// Criar registro de provider vinculado
+	provider := &model.OAuthProvider{
+		UserID:            userID,
+		Provider:          req.Provider,
+		ProviderID:        providerUserID,
+		ProviderEmail:     &email,
+		ProviderName:      name,
+		ProviderAvatarURL: &picture,
+		IsPrimary:         false,
+		LastLoginAt:       time.Now(),
+	}
+
+	if err := s.providerRepo.Create(ctx, provider); err != nil {
+		return fmt.Errorf("failed to link provider: %w", err)
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("provider", req.Provider).
+		Msg("provider linked to account")
+
+	return nil
+}
+
+// UnlinkProvider remove vinculo de provider
+func (s *AuthService) UnlinkProvider(ctx context.Context, userID uuid.UUID, provider string) error {
+	// Verificar se provider existe
+	_, err := s.providerRepo.GetByUserIDAndProvider(ctx, userID, provider)
+	if err != nil {
+		if errors.Is(err, repository.ErrProviderNotFound) {
+			return err
+		}
+		return fmt.Errorf("failed to get provider: %w", err)
+	}
+
+	// Verificar se usuário tem senha
+	hasPassword, err := s.providerRepo.CheckUserHasPassword(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to check password: %w", err)
+	}
+
+	// Contar quantos providers o usuário tem
+	providerCount, err := s.providerRepo.CountProvidersByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to count providers: %w", err)
+	}
+
+	// Não permitir desvincular se for o único método de autenticação
+	if !hasPassword && providerCount <= 1 {
+		return ErrCannotUnlinkLastProvider
+	}
+
+	// Deletar provider
+	if err := s.providerRepo.Delete(ctx, userID, provider); err != nil {
+		return fmt.Errorf("failed to unlink provider: %w", err)
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("provider", provider).
+		Msg("provider unlinked from account")
+
+	return nil
+}
+
+// GetLinkedProviders lista providers vinculados
+func (s *AuthService) GetLinkedProviders(ctx context.Context, userID uuid.UUID) (*model.ListProvidersResponse, error) {
+	// Buscar todos os providers do usuário
+	providers, err := s.providerRepo.ListByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list providers: %w", err)
+	}
+
+	// Verificar se tem senha
+	hasPassword, err := s.providerRepo.CheckUserHasPassword(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check password: %w", err)
+	}
+
+	// Converter para DTO
+	linkedProviders := make([]model.LinkedProviderResponse, 0, len(providers))
+	for _, p := range providers {
+		email := ""
+		if p.ProviderEmail != nil {
+			email = *p.ProviderEmail
+		}
+		avatarURL := ""
+		if p.ProviderAvatarURL != nil {
+			avatarURL = *p.ProviderAvatarURL
+		}
+
+		linkedProviders = append(linkedProviders, model.LinkedProviderResponse{
+			Provider:  p.Provider,
+			Email:     email,
+			Name:      p.ProviderName,
+			AvatarURL: avatarURL,
+			IsPrimary: p.IsPrimary,
+			LinkedAt:  p.CreatedAt,
+		})
+	}
+
+	return &model.ListProvidersResponse{
+		Providers:   linkedProviders,
+		HasPassword: hasPassword,
+	}, nil
+}
+
+// Helper function to split full name into first and last name
+func splitName(fullName string) (string, string) {
+	parts := strings.Fields(strings.TrimSpace(fullName))
+	if len(parts) == 0 {
+		return "User", "User"
+	}
+	if len(parts) == 1 {
+		return parts[0], parts[0]
+	}
+	return parts[0], strings.Join(parts[1:], " ")
 }

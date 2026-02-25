@@ -14,13 +14,14 @@ import (
 )
 
 type Config struct {
-	Primary       Primary              `koanf:"primary" validate:"required"`
-	Server        ServerConfig         `koanf:"server" validate:"required"`
-	Database      DatabaseConfig       `koanf:"database" validate:"required"`
-	Auth          AuthConfig           `koanf:"auth" validate:"required"`
-	Redis         RedisConfig          `koanf:"redis" validate:"required"`
-	Observability *ObservabilityConfig `koanf:"observability"`
-	Integration   IntegrationConfig    `koanf:"integration"`
+	Primary        Primary              `koanf:"primary" validate:"required"`
+	Server         ServerConfig         `koanf:"server" validate:"required"`
+	Database       DatabaseConfig       `koanf:"database" validate:"required"`
+	Auth           AuthConfig           `koanf:"auth" validate:"required"`
+	Redis          RedisConfig          `koanf:"redis" validate:"required"`
+	Observability  *ObservabilityConfig `koanf:"observability"`
+	Integration    IntegrationConfig    `koanf:"integration"`
+	Firebase       FirebaseConfig       `koanf:"firebase"`
 }
 
 type Primary struct {
@@ -69,6 +70,13 @@ type RedisConfig struct {
 	DB       int    `koanf:"db"`
 }
 
+type FirebaseConfig struct {
+	Enabled            bool   `koanf:"enabled"`
+	ProjectID          string `koanf:"project_id"`
+	ServiceAccountPath string `koanf:"service_account_path"`
+	ServiceAccountJSON string `koanf:"service_account_json"`
+}
+
 // transformEnvKey converte nomes de variáveis de ambiente para chaves koanf
 // Mapeamentos explícitos preservam underscores nos nomes dos campos
 func transformEnvKey(s string) string {
@@ -100,6 +108,10 @@ func transformEnvKey(s string) string {
 		"redis_address":                                       "redis.address",
 		"redis_password":                                      "redis.password",
 		"redis_db":                                            "redis.db",
+		"firebase_enabled":                                    "firebase.enabled",
+		"firebase_project_id":                                 "firebase.project_id",
+		"firebase_service_account_path":                       "firebase.service_account_path",
+		"firebase_service_account_json":                       "firebase.service_account_json",
 		"integration_resend_api_key":                          "integration.resend_api_key",
 		"observability_service_name":                          "observability.service_name",
 		"observability_environment":                           "observability.environment",

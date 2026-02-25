@@ -55,6 +55,36 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required,min=8,max=72"`
 }
 
+// Social Login/Register DTOs
+type SocialLoginRequest struct {
+	Provider   string `json:"provider" validate:"required,oneof=google facebook github"`
+	IDToken    string `json:"id_token" validate:"required"`
+	DeviceInfo string `json:"device_info,omitempty" validate:"omitempty,max=500"`
+}
+
+type LinkProviderRequest struct {
+	Provider string `json:"provider" validate:"required,oneof=google facebook github"`
+	IDToken  string `json:"id_token" validate:"required"`
+}
+
+type UnlinkProviderRequest struct {
+	Provider string `json:"provider" validate:"required,oneof=google facebook github"`
+}
+
+type LinkedProviderResponse struct {
+	Provider  string    `json:"provider"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	AvatarURL string    `json:"avatar_url"`
+	IsPrimary bool      `json:"is_primary"`
+	LinkedAt  time.Time `json:"linked_at"`
+}
+
+type ListProvidersResponse struct {
+	Providers   []LinkedProviderResponse `json:"providers"`
+	HasPassword bool                     `json:"has_password"`
+}
+
 // ========================================
 // User DTOs
 // ========================================

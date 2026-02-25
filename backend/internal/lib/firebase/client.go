@@ -57,19 +57,79 @@ func NewClient(cfg *config.FirebaseConfig) (*Client, error) {
 }
 
 // VerifyIDToken valida Firebase ID token e retorna claims
-func (c *Client) VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error) {
+func (c *Client) VerifyIDToken(ctx context.Context, idToken string) (TokenAdapter, error) {
 	token, err := c.authClient.VerifyIDToken(ctx, idToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to verify ID token: %w", err)
+		return TokenAdapter{}, fmt.Errorf("failed to verify ID token: %w", err)
 	}
-	return token, nil
+	return TokenAdapter{token: token}, nil
 }
 
 // GetUser busca informações do usuário no Firebase
-func (c *Client) GetUser(ctx context.Context, uid string) (*auth.UserRecord, error) {
+func (c *Client) GetUser(ctx context.Context, uid string) (UserAdapter, error) {
 	user, err := c.authClient.GetUser(ctx, uid)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return UserAdapter{}, fmt.Errorf("failed to get user: %w", err)
 	}
-	return user, nil
+	return UserAdapter{user: user}, nil
+}
+
+// TokenAdapter adapta auth.Token para a interface esperada
+type TokenAdapter struct {
+	token *auth.Token
+}
+
+func (t TokenAdapter) GetUID() string {
+	return t.token.UID
+}
+
+func (t TokenAdapter) GetEmail() string {
+	if email, ok := t.token.Claims["email"].(string); ok {
+		return email
+	}
+	return ""
+}
+
+func (t TokenAdapter) GetName() string {
+	if name, ok := t.token.Claims["name"].(string); ok {
+		return name
+	}
+	return ""
+}
+
+func (t TokenAdapter) GetPicture() string {
+	if picture, ok := t.token.Claims["picture"].(string); ok {
+		return picture
+	}
+	return ""
+}
+
+func (t TokenAdapter) GetProviderID() string {
+	if firebase, ok := t.token.Claims["firebase"].(map[string]interface{}); ok {
+		if signInProvider, ok := firebase["sign_in_provider"].(string); ok {
+			return signInProvider
+		}
+	}
+	return ""
+}
+
+// UserAdapter adapta auth.UserRecord para a interface esperada
+type UserAdapter struct {
+	user *auth.UserRecord
+}
+
+func (u UserAdapter) GetUID() string {
+	return u.user.UID
+}
+
+func (u UserAdapter) GetEmail() string {
+	return u.user.Email
+}
+
+func (u UserAdapter) GetDisplayName() string {
+	return u.user.DisplayName
+}
+
+func (u UserAdapter) GetPhotoURL() string {
+	return u.user.PhotoURL
 }

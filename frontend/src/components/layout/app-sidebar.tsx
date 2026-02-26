@@ -2,6 +2,14 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -17,6 +25,7 @@ import { useAuth } from "@/providers/auth-provider";
 import {
   ArrowLeftRight,
   Bell,
+  ChevronUp,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -26,9 +35,8 @@ import {
   Tags,
   Target,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -39,16 +47,21 @@ const navItems = [
   { title: "Metas", href: "/goals", icon: Target },
   { title: "Categorias", href: "/categories", icon: Tags },
   { title: "Notificações", href: "/notifications", icon: Bell },
-  { title: "Configurações", href: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   const initials = user
     ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
     : "??";
+
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
 
   return (
     <Sidebar>
@@ -81,20 +94,55 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="w-full">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-              </Avatar>
-              <span className="truncate">
-                {user ? `${user.first_name} ${user.last_name}` : "..."}
-              </span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout}>
-              <LogOut className="h-4 w-4" />
-              <span>Sair</span>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="w-full">
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="truncate flex-1 text-left">
+                    {user ? `${user.first_name} ${user.last_name}` : "..."}
+                  </span>
+                  <ChevronUp className="h-4 w-4 ml-auto opacity-50" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                className="w-[--radix-popper-anchor-width] min-w-56"
+              >
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">
+                      {user ? `${user.first_name} ${user.last_name}` : ""}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {user?.email}
+                    </span>
+                  </div>
+                </DropdownMenuLabel>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="cursor-pointer">
+                    <Settings className="h-4 w-4" />
+                    Configurações
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,6 +98,7 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full">
                   <Avatar className="h-6 w-6">
+                    <AvatarImage src={user?.avatar_url ?? undefined} alt={initials} />
                     <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                   </Avatar>
                   <span className="truncate flex-1 text-left">
@@ -113,13 +114,19 @@ export function AppSidebar() {
                 className="w-[--radix-popper-anchor-width] min-w-56"
               >
                 <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium">
-                      {user ? `${user.first_name} ${user.last_name}` : ""}
-                    </span>
-                    <span className="text-xs text-muted-foreground truncate">
-                      {user?.email}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar_url ?? undefined} alt={initials} />
+                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium">
+                        {user ? `${user.first_name} ${user.last_name}` : ""}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {user?.email}
+                      </span>
+                    </div>
                   </div>
                 </DropdownMenuLabel>
 

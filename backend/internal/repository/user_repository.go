@@ -247,6 +247,18 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, p
 	return nil
 }
 
+// puxar a URL do avatar do usuário para atualizar o perfil
+func (r *UserRepository) UpdateAvatarURL(ctx context.Context, userID uuid.UUID, avatarURL string) error {
+	query := `UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?`
+
+	_, err := r.ExecContext(ctx, query, avatarURL, time.Now(), userID.String())
+	if err != nil {
+		return fmt.Errorf("failed to update avatar URL: %w", err)
+	}
+
+	return nil
+}
+
 // UpdateLastLogin updates the last login timestamp
 func (r *UserRepository) UpdateLastLogin(ctx context.Context, userID uuid.UUID) error {
 	query := `UPDATE users SET last_login_at = ? WHERE id = ?`

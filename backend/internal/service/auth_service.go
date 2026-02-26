@@ -451,6 +451,13 @@ func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginReq
 			return nil, ErrUserNotActive
 		}
 
+		// Atualizar avatar se o usuário ainda não tiver um
+		if user.AvatarURL == nil && picture != "" {
+			if err := s.userRepo.UpdateAvatarURL(ctx, user.ID, picture); err == nil {
+				user.AvatarURL = &picture
+			}
+		}
+
 		// Atualizar last login do provider
 		_ = s.providerRepo.UpdateLastLogin(ctx, provider.ID)
 	} else {
@@ -479,6 +486,12 @@ func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginReq
 		if err == nil {
 			// Usuário já existe, vincular provider
 			user = existingUser
+			// Atualizar avatar se ainda não tiver
+			if user.AvatarURL == nil && picture != "" {
+				if err := s.userRepo.UpdateAvatarURL(ctx, user.ID, picture); err == nil {
+					user.AvatarURL = &picture
+				}
+			}
 		} else if !errors.Is(err, repository.ErrUserNotFound) {
 			return nil, fmt.Errorf("failed to check existing user: %w", err)
 		} else {

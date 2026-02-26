@@ -518,6 +518,11 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+export interface SetPasswordRequest {
+  new_password: string;
+  confirm_password: string;
+}
+
 // ========================================
 // Pagination
 // ========================================

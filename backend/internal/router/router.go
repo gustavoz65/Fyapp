@@ -50,10 +50,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
 	accountService := service.NewBankAccountService(accountRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)
-	budgetService := service.NewBudgetService(budgetRepo, notificationRepo, logger)
-	goalService := service.NewGoalService(goalRepo, notificationRepo, logger)
-	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
 	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger)
+	budgetService := service.NewBudgetService(budgetRepo, notificationService, logger)
+	goalService := service.NewGoalService(goalRepo, notificationService, logger)
+	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
 	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
 
 	// Handlers

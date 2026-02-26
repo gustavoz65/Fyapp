@@ -93,6 +93,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
 	authProtected.POST("/change-password", authHandler.ChangePassword, mutationRL)
+	authProtected.POST("/set-password", authHandler.SetPassword, mutationRL)
 	authProtected.POST("/social/link", authHandler.LinkProvider, mutationRL)
 	authProtected.DELETE("/social/:provider", authHandler.UnlinkProvider, mutationRL)
 	authProtected.GET("/social/providers", authHandler.GetLinkedProviders, readRL)

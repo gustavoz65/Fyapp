@@ -13,20 +13,20 @@ import (
 )
 
 type BudgetService struct {
-	budgetRepo       *repository.BudgetRepository
-	notificationRepo *repository.NotificationRepository
-	logger           *zerolog.Logger
+	budgetRepo      *repository.BudgetRepository
+	notificationSvc *NotificationService
+	logger          *zerolog.Logger
 }
 
 func NewBudgetService(
 	budgetRepo *repository.BudgetRepository,
-	notificationRepo *repository.NotificationRepository,
+	notificationSvc *NotificationService,
 	logger *zerolog.Logger,
 ) *BudgetService {
 	return &BudgetService{
-		budgetRepo:       budgetRepo,
-		notificationRepo: notificationRepo,
-		logger:           logger,
+		budgetRepo:      budgetRepo,
+		notificationSvc: notificationSvc,
+		logger:          logger,
 	}
 }
 
@@ -165,18 +165,13 @@ func (s *BudgetService) CheckBudgetAlerts(ctx context.Context) error {
 	}
 
 	for _, budget := range budgets {
-		// Create notification
-		notification := &model.Notification{
-			UserID: budget.UserID,
-			Type:   model.NotificationTypeBudgetAlert,
-			Title:  "Alerta de Orcamento",
-			Message: fmt.Sprintf("Voce atingiu %.0f%% do seu orcamento '%s'. Restam %s.",
-				budget.UsedPercentage().InexactFloat64(),
-				budget.Name,
-				budget.RemainingAmount().StringFixed(2)),
-		}
-
-		if err := s.notificationRepo.Create(ctx, notification); err != nil {
+		if err := s.notificationSvc.SendBudgetAlert(
+			ctx,
+			budget.UserID,
+			budget.Name,
+			budget.UsedPercentage().InexactFloat64(),
+			budget.RemainingAmount().InexactFloat64(),
+		); err != nil {
 			s.logger.Error().Err(err).
 				Str("budget_id", budget.ID.String()).
 				Msg("failed to create budget alert notification")

@@ -173,6 +173,20 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+func (h *AuthHandler) SetPassword(c echo.Context) error {
+	var req model.SetPasswordRequest
+	if err := validation.BindAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	userID := middleware.GetUserID(c)
+	if err := h.authService.SetPassword(c.Request().Context(), userID, &req); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 // ========================================
 // Social Login Handlers
 // ========================================

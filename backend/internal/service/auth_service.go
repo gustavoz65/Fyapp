@@ -28,6 +28,7 @@ var (
 	ErrTokenExpired       = errors.New("token expired")
 	ErrPasswordMismatch   = errors.New("current password is incorrect")
 	ErrWeakPassword       = errors.New("password does not meet requirements")
+	ErrPasswordAlreadySet = errors.New("user already has a password set")
 )
 
 type JWTClaims struct {
@@ -264,6 +265,33 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 // LogoutAll revokes all sessions for a user
 func (s *AuthService) LogoutAll(ctx context.Context, userID uuid.UUID) error {
 	return s.userRepo.RevokeAllUserSessions(ctx, userID)
+}
+
+// SetPassword defines a password for users who logged in via social provider and have no password yet
+func (s *AuthService) SetPassword(ctx context.Context, userID uuid.UUID, req *model.SetPasswordRequest) error {
+	hasPassword, err := s.providerRepo.CheckUserHasPassword(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to check user password: %w", err)
+	}
+
+	if hasPassword {
+		return ErrPasswordAlreadySet
+	}
+
+	newPasswordHash, err := s.hashPassword(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, userID, newPasswordHash); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Msg("user set password for the first time")
+
+	return nil
 }
 
 // ChangePassword changes the user's password

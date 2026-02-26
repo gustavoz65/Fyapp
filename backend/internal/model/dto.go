@@ -46,6 +46,11 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"new_password" validate:"required,min=8,max=72"`
 }
 
+type SetPasswordRequest struct {
+	NewPassword     string `json:"new_password" validate:"required,min=8,max=72"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+}
+
 type ForgotPasswordRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }

@@ -29,7 +29,7 @@ func NewNotificationService(
 	}
 }
 
-// Create creates a new notification
+// cria uma nova notificação para um usuário
 func (s *NotificationService) Create(ctx context.Context, notification *model.Notification) error {
 	if err := s.notificationRepo.Create(ctx, notification); err != nil {
 		return fmt.Errorf("failed to create notification: %w", err)
@@ -44,7 +44,7 @@ func (s *NotificationService) Create(ctx context.Context, notification *model.No
 	return nil
 }
 
-// CreateBulk creates notifications for multiple users
+// cria notificações em massa para uma lista de usuários
 func (s *NotificationService) CreateBulk(ctx context.Context, userIDs []uuid.UUID, notificationType model.NotificationType, title, message string, data interface{}) error {
 	var dataJSON *string
 	if data != nil {

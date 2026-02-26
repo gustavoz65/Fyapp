@@ -201,17 +201,12 @@ export default function RegisterPage() {
                 id="password"
                 type="password"
                 placeholder="Minimo 8 caracteres"
-                value={form.password}
-                onChange={(e) => updateField("password", e.target.value)}
-                required
                 className="h-11"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Senha</Label>
               <Input
-                id="confirmPassword"
-                type="password"
                 placeholder="Repita a senha"
                 value={form.confirmPassword}
                 onChange={(e) => updateField("confirmPassword", e.target.value)}

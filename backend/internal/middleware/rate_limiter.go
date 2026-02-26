@@ -11,6 +11,14 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var rateLimitScript = redis.NewScript(`
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return count
+`)
+
 func RateLimit(rdb *redis.Client, config repository.RateLimiter) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -28,8 +36,10 @@ func RateLimit(rdb *redis.Client, config repository.RateLimiter) echo.Middleware
 			}
 			redisKey := fmt.Sprintf("ratelimit:%s", key)
 
-			count, err := rdb.Get(ctx, redisKey).Int()
-			if err != nil && err != redis.Nil {
+			// Incrementa o contador e define a expiração se for a primeira vez
+			durationSecs := int64(config.Duration.Seconds())
+			count, err := rateLimitScript.Run(ctx, rdb, []string{redisKey}, durationSecs).Int()
+			if err != nil {
 				if config.SkipOnerror {
 					return next(c)
 				}
@@ -39,9 +49,10 @@ func RateLimit(rdb *redis.Client, config repository.RateLimiter) echo.Middleware
 				})
 			}
 
-			if count >= config.Max {
+			c.Response().Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", config.Max))
+
+			if count > config.Max {
 				c.Response().Header().Set("Retry-After", fmt.Sprintf("%.0f", config.Duration.Seconds()))
-				c.Response().Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", config.Max))
 				c.Response().Header().Set("X-RateLimit-Remaining", "0")
 
 				return c.JSON(http.StatusTooManyRequests, map[string]interface{}{
@@ -50,13 +61,8 @@ func RateLimit(rdb *redis.Client, config repository.RateLimiter) echo.Middleware
 				})
 			}
 
-			pipe := rdb.Pipeline()
-			pipe.Incr(ctx, redisKey)
-			pipe.Expire(ctx, redisKey, config.Duration)
-			_, _ = pipe.Exec(ctx)
-
-			c.Response().Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", config.Max))
-			c.Response().Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", config.Max-count-1))
+			remaining := config.Max - count
+			c.Response().Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
 
 			return next(c)
 		}

@@ -23,17 +23,17 @@ func NewAutoReconcileTask() (*asynq.Task, error) {
 }
 
 func (j *JobService) handleAutoReconcileTask(ctx context.Context, t *asynq.Task) error {
-	j.logger.Info().Msg("Running auto-reconciliation for due transactions")
+	j.Logger.Info().Msg("Running auto-reconciliation for due transactions")
 
-	if j.transactionService == nil {
+	if j.TransactionService == nil {
 		return fmt.Errorf("transaction service not initialized")
 	}
 
-	if err := j.transactionService.AutoReconcile(ctx); err != nil {
-		j.logger.Error().Err(err).Msg("Failed to auto-reconcile transactions")
+	if err := j.TransactionService.AutoReconcile(ctx); err != nil {
+		j.Logger.Error().Err(err).Msg("Failed to auto-reconcile transactions")
 		return err
 	}
 
-	j.logger.Info().Msg("Auto-reconciliation completed")
+	j.Logger.Info().Msg("Auto-reconciliation completed")
 	return nil
 }

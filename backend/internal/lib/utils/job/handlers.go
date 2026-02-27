@@ -23,7 +23,7 @@ func (j *JobService) handleWelcomeEmailTask(ctx context.Context, t *asynq.Task) 
 		return fmt.Errorf("failed to unmarshal welcome email payload: %w", err)
 	}
 
-	j.logger.Info().
+	j.Logger.Info().
 		Str("type", "welcome").
 		Str("to", p.To).
 		Msg("Processing welcome email task")
@@ -33,7 +33,7 @@ func (j *JobService) handleWelcomeEmailTask(ctx context.Context, t *asynq.Task) 
 		p.FirstName,
 	)
 	if err != nil {
-		j.logger.Error().
+		j.Logger.Error().
 			Str("type", "welcome").
 			Str("to", p.To).
 			Err(err).
@@ -41,7 +41,7 @@ func (j *JobService) handleWelcomeEmailTask(ctx context.Context, t *asynq.Task) 
 		return err
 	}
 
-	j.logger.Info().
+	j.Logger.Info().
 		Str("type", "welcome").
 		Str("to", p.To).
 		Msg("Successfully sent welcome email")

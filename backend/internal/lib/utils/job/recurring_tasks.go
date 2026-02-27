@@ -23,18 +23,18 @@ func NewProcessRecurringsTask() (*asynq.Task, error) {
 }
 
 func (j *JobService) handleProcessRecurringsTask(ctx context.Context, t *asynq.Task) error {
-	j.logger.Info().Msg("Processing due recurring transactions")
+	j.Logger.Info().Msg("Processing due recurring transactions")
 
-	if j.recurringService == nil {
+	if j.RecurringService == nil {
 		return fmt.Errorf("recurring service not initialized")
 	}
 
-	err := j.recurringService.ProcessDueRecurrings(ctx)
+	err := j.RecurringService.ProcessDueRecurrings(ctx)
 	if err != nil {
-		j.logger.Error().Err(err).Msg("Failed to process recurring transactions")
+		j.Logger.Error().Err(err).Msg("Failed to process recurring transactions")
 		return err
 	}
 
-	j.logger.Info().Msg("Successfully processed recurring transactions")
+	j.Logger.Info().Msg("Successfully processed recurring transactions")
 	return nil
 }

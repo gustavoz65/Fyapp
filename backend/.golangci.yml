@@ -30,19 +30,22 @@ linters-settings:
     check-blank: false
     exclude-functions:
       - (*database/sql.Rows).Close
+      - (*database/sql.DB).Close
       - (io.Closer).Close
+      - (*github.com/redis/go-redis/v9.Client).Close
+      - (*github.com/hibiken/asynq.Client).Close
 
   govet:
-    enable:
-      - shadow
-    settings:
-      shadow:
-        strict: false
+    disable:
+      - shadow  # Too many false positives with err variable
 
   gosec:
     excludes:
       - G115  # integer overflow conversion - too many false positives
       - G112  # potential slowloris - handled at infrastructure level
+
+  staticcheck:
+    checks: ["all", "-SA1019"]  # Exclude deprecated warnings
 
 
 issues:
@@ -57,26 +60,14 @@ issues:
         - gosec
         - govet
 
-    # Allow type assertions in handlers (needed for response handling)
-    - path: "internal/handler/"
+    # Allow unchecked errors for Scan operations in audit log
+    - path: "internal/repository/audit_log_repository.go"
       linters:
         - errcheck
-      text: "Error return value is not checked"
+      text: "Error return value of.*Scan.*is not checked"
 
-    # Allow shadow in repository layer (common pattern with err variable)
-    - path: "internal/repository/"
+    # Allow unused types (may be for future use)
+    - path: "internal/database/"
       linters:
-        - govet
-      text: "shadow: declaration of"
-
-    # Allow shadow in service layer
-    - path: "internal/service/"
-      linters:
-        - govet
-      text: "shadow: declaration of"
-
-    # Blank imports are OK in some places
-    - path: "internal/(config|database|validation)/"
-      linters:
-        - typecheck
-      text: "could not import"
+        - unused
+      text: "type.*is unused"

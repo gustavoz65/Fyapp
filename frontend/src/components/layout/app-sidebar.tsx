@@ -24,7 +24,6 @@ import {
 import { useAuth } from "@/providers/auth-provider";
 import {
   ArrowLeftRight,
-  Bell,
   ChevronUp,
   Landmark,
   LayoutDashboard,
@@ -33,7 +32,7 @@ import {
   Repeat,
   Settings,
   Tags,
-  Target,
+  Target
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -46,7 +45,6 @@ const navItems = [
   { title: "Orçamentos", href: "/budgets", icon: PiggyBank },
   { title: "Metas", href: "/goals", icon: Target },
   { title: "Categorias", href: "/categories", icon: Tags },
-  { title: "Notificações", href: "/notifications", icon: Bell },
 ];
 
 export function AppSidebar() {

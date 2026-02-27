@@ -7,11 +7,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/database"
-	"github.com/gustavoz65/Cashing-go/internal/logger"
-	"github.com/gustavoz65/Cashing-go/internal/router"
-	"github.com/gustavoz65/Cashing-go/internal/server"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/database"
+	"github.com/gustavoz65/finext/internal/logger"
+	"github.com/gustavoz65/finext/internal/router"
+	"github.com/gustavoz65/finext/internal/server"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
+	"github.com/gustavoz65/finext/internal/config"
 	"github.com/pkg/errors"
 	"github.com/resend/resend-go/v2"
 	zerolog "github.com/rs/zerolog"

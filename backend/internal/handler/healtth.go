@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/internal/middleware"
-	"github.com/gustavoz65/Cashing-go/internal/server"
+	"github.com/gustavoz65/finext/internal/middleware"
+	"github.com/gustavoz65/finext/internal/server"
 	"github.com/labstack/echo/v4"
 )
 

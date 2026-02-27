@@ -3,11 +3,11 @@ package handler
 import (
 	"net/http"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/middleware"
-	"github.com/gustavoz65/Cashing-go/internal/model"
-	"github.com/gustavoz65/Cashing-go/internal/service"
-	"github.com/gustavoz65/Cashing-go/internal/validation"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/middleware"
+	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/finext/internal/service"
+	"github.com/gustavoz65/finext/internal/validation"
 	"github.com/labstack/echo/v4"
 )
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/finext/internal/repository"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 )

@@ -3,8 +3,8 @@ package job
 import (
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/service"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/service"
 	"github.com/hibiken/asynq"
 	zerolog "github.com/rs/zerolog"
 )

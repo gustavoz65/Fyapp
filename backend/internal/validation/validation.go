@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gustavoz65/Cashing-go/internal/errs"
+	"github.com/gustavoz65/finext/internal/errs"
 	"github.com/labstack/echo/v4"
 	"github.com/shopspring/decimal"
 )

@@ -6,19 +6,19 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/model"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/finext/internal/repository"
 	"github.com/rs/zerolog"
 	"github.com/shopspring/decimal"
 )
 
 type TransactionService struct {
-	txRepo              *repository.TransactionRepository
-	accountRepo         *repository.BankAccountRepository
-	budgetRepo          *repository.BudgetRepository
-	userRepo            *repository.UserRepository
-	categorizationSvc   *CategorizationService
-	logger              *zerolog.Logger
+	txRepo            *repository.TransactionRepository
+	accountRepo       *repository.BankAccountRepository
+	budgetRepo        *repository.BudgetRepository
+	userRepo          *repository.UserRepository
+	categorizationSvc *CategorizationService
+	logger            *zerolog.Logger
 }
 
 func NewTransactionService(
@@ -30,12 +30,12 @@ func NewTransactionService(
 	logger *zerolog.Logger,
 ) *TransactionService {
 	return &TransactionService{
-		txRepo:              txRepo,
-		accountRepo:         accountRepo,
-		budgetRepo:          budgetRepo,
-		userRepo:            userRepo,
-		categorizationSvc:   categorizationSvc,
-		logger:              logger,
+		txRepo:            txRepo,
+		accountRepo:       accountRepo,
+		budgetRepo:        budgetRepo,
+		userRepo:          userRepo,
+		categorizationSvc: categorizationSvc,
+		logger:            logger,
 	}
 }
 

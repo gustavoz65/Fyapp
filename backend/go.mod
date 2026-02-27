@@ -1,4 +1,4 @@
-module github.com/gustavoz65/Cashing-go
+module github.com/gustavoz65/finext
 
 go 1.25.1
 

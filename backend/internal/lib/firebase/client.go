@@ -7,7 +7,7 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
-	"github.com/gustavoz65/Cashing-go/internal/config"
+	"github.com/gustavoz65/finext/internal/config"
 	"google.golang.org/api/option"
 )
 

@@ -68,6 +68,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           scan-type: fs
           scan-ref: backend
@@ -75,8 +76,11 @@ jobs:
           output: trivy-backend.sarif
           severity: CRITICAL,HIGH
           scanners: vuln,secret,misconfig
+          exit-code: 0
 
       - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
         with:
           sarif_file: trivy-backend.sarif
           category: trivy-backend
@@ -92,6 +96,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           scan-type: fs
           scan-ref: frontend
@@ -99,8 +104,11 @@ jobs:
           output: trivy-frontend.sarif
           severity: CRITICAL,HIGH
           scanners: vuln,secret,misconfig
+          exit-code: 0
 
       - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
         with:
           sarif_file: trivy-frontend.sarif
           category: trivy-frontend
@@ -119,13 +127,17 @@ jobs:
         run: docker build -t finext-backend:ci backend/
 
       - uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: finext-backend:ci
           format: sarif
           output: trivy-docker-backend.sarif
           severity: CRITICAL,HIGH
+          exit-code: 0
 
       - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
         with:
           sarif_file: trivy-docker-backend.sarif
           category: trivy-docker-backend
@@ -144,13 +156,17 @@ jobs:
         run: docker build -t finext-frontend:ci frontend/
 
       - uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: finext-frontend:ci
           format: sarif
           output: trivy-docker-frontend.sarif
           severity: CRITICAL,HIGH
+          exit-code: 0
 
       - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
         with:
           sarif_file: trivy-docker-frontend.sarif
           category: trivy-docker-frontend

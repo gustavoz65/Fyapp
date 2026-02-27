@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gustavoz65/finext/internal/model"
 	"github.com/gustavoz65/finext/internal/repository"
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 )
 
@@ -15,15 +16,18 @@ type NotificationService struct {
 	notificationRepo *repository.NotificationRepository
 	userRepo         *repository.UserRepository
 	logger           *zerolog.Logger
+	jobClient        *asynq.Client
 }
 
 func NewNotificationService(
 	notificationRepo *repository.NotificationRepository,
 	userRepo *repository.UserRepository,
 	logger *zerolog.Logger,
+	jobClient *asynq.Client,
 ) *NotificationService {
 	return &NotificationService{
 		notificationRepo: notificationRepo,
+		jobClient:        jobClient,
 		userRepo:         userRepo,
 		logger:           logger,
 	}

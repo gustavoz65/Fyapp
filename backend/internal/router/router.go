@@ -50,7 +50,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
 	accountService := service.NewBankAccountService(accountRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)
-	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger)
+	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger, srv.Job.Client)
 	budgetService := service.NewBudgetService(budgetRepo, notificationService, logger)
 	goalService := service.NewGoalService(goalRepo, notificationService, logger)
 	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)

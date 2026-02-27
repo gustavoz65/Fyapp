@@ -510,6 +510,7 @@ export interface UpdateUserSettingsRequest {
   monthly_report?: boolean;
   low_balance_alert?: boolean;
   low_balance_threshold?: number;
+  allow_manual_transactions?: boolean;
   theme?: "light" | "dark" | "system";
 }
 

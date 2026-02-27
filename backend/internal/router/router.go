@@ -45,6 +45,8 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	// Services
 	authService := service.NewAuthService(userRepo, providerRepo, srv.FirebaseClient, cfg, logger)
+	// handler dependencies
+	authHandler := handler.NewAuthHandler(authService, cfg, srv.Job.Client, logger)
 	userService := service.NewUserService(userRepo, logger)
 	categorizationService := service.NewCategorizationService(categoryPatternRepo, logger)
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
@@ -57,7 +59,6 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(authService, cfg)
 	userHandler := handler.NewUserHandler(userService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	accountHandler := handler.NewBankAccountHandler(accountService)

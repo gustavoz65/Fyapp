@@ -60,6 +60,13 @@ func New(cfg *config.Config, log *zerolog.Logger, loggerService *logger.LoggerSe
 		}
 	}
 
+	// Validate email service configuration
+	if cfg.Integration.ResendAPIKey == "" {
+		log.Warn().Msg("Resend API Key is not configured - email notifications will not be sent")
+	} else {
+		log.Info().Msg("Email service (Resend) initialized successfully")
+	}
+
 	// job service
 	jobService := job.NewJobService(log, cfg)
 	jobService.InitHandlers(cfg, log)

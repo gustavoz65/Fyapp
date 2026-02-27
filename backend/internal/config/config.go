@@ -61,7 +61,10 @@ func (a *AuthConfig) GetSecretKey() string {
 }
 
 type IntegrationConfig struct {
-	ResendAPIKey string `koanf:"resend_api_key"`
+	ResendAPIKey   string `koanf:"resend_api_key"`
+	SenderName     string `koanf:"sender_name"`
+	SenderEmail    string `koanf:"sender_email"`
+	TemplatesPath  string `koanf:"templates_path"`
 }
 
 type RedisConfig struct {
@@ -113,6 +116,9 @@ func transformEnvKey(s string) string {
 		"firebase_service_account_path":                       "firebase.service_account_path",
 		"firebase_service_account_json":                       "firebase.service_account_json",
 		"integration_resend_api_key":                          "integration.resend_api_key",
+		"integration_sender_name":                             "integration.sender_name",
+		"integration_sender_email":                            "integration.sender_email",
+		"integration_templates_path":                          "integration.templates_path",
 		"observability_service_name":                          "observability.service_name",
 		"observability_environment":                           "observability.environment",
 		"observability_logging_level":                         "observability.logging.level",
@@ -209,6 +215,16 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.Auth.Issuer == "" {
 		cfg.Auth.Issuer = "cashing-api"
+	}
+
+	if cfg.Integration.SenderName == "" {
+		cfg.Integration.SenderName = "Finext"
+	}
+	if cfg.Integration.SenderEmail == "" {
+		cfg.Integration.SenderEmail = "noreply@resend.dev"
+	}
+	if cfg.Integration.TemplatesPath == "" {
+		cfg.Integration.TemplatesPath = "templates/emails"
 	}
 }
 

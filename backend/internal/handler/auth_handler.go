@@ -8,16 +8,20 @@ import (
 	"github.com/gustavoz65/finext/internal/model"
 	"github.com/gustavoz65/finext/internal/service"
 	"github.com/gustavoz65/finext/internal/validation"
+	"github.com/gustavoz65/finext/internal/lib/utils/job"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
 	config      *config.Config
+	enqueuer    job.Enqueuer
+	logger      *zerolog.Logger
 }
 
-func NewAuthHandler(authService *service.AuthService, cfg *config.Config) *AuthHandler {
-	return &AuthHandler{authService: authService, config: cfg}
+func NewAuthHandler(authService *service.AuthService, cfg *config.Config, enqueuer job.Enqueuer, logger *zerolog.Logger) *AuthHandler {
+	return &AuthHandler{authService: authService, config: cfg, enqueuer: enqueuer, logger: logger}
 }
 
 func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken string) {
@@ -74,6 +78,15 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 
 	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
+
+	// Enqueue welcome email (non-blocking)
+	if h.enqueuer != nil {
+		if task, err := job.NewWelcomeEmailTask(response.User.Email, response.User.FirstName); err == nil {
+			if _, err := h.enqueuer.Enqueue(task); err != nil {
+				h.logger.Error().Err(err).Str("email", response.User.Email).Msg("failed to enqueue welcome email task from handler")
+			}
+		}
+	}
 
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"user":       response.User,

@@ -126,6 +126,7 @@ func (s *AuthService) Register(ctx context.Context, req *model.RegisterRequest) 
 		Str("email", user.Email).
 		Msg("new user registered")
 
+
 	return &model.LoginResponse{
 		User:         user,
 		AccessToken:  accessToken,

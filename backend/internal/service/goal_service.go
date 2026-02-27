@@ -6,27 +6,27 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/model"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/finext/internal/repository"
 	"github.com/rs/zerolog"
 	"github.com/shopspring/decimal"
 )
 
 type GoalService struct {
-	goalRepo         *repository.GoalRepository
-	notificationRepo *repository.NotificationRepository
-	logger           *zerolog.Logger
+	goalRepo        *repository.GoalRepository
+	notificationSvc *NotificationService
+	logger          *zerolog.Logger
 }
 
 func NewGoalService(
 	goalRepo *repository.GoalRepository,
-	notificationRepo *repository.NotificationRepository,
+	notificationSvc *NotificationService,
 	logger *zerolog.Logger,
 ) *GoalService {
 	return &GoalService{
-		goalRepo:         goalRepo,
-		notificationRepo: notificationRepo,
-		logger:           logger,
+		goalRepo:        goalRepo,
+		notificationSvc: notificationSvc,
+		logger:          logger,
 	}
 }
 
@@ -212,15 +212,7 @@ func (s *GoalService) AddContribution(ctx context.Context, userID, goalID uuid.U
 			s.logger.Warn().Err(err).Msg("failed to mark goal as completed")
 		}
 
-		// Create notification
-		notification := &model.Notification{
-			UserID:  userID,
-			Type:    model.NotificationTypeGoalAchieved,
-			Title:   "Meta Alcancada!",
-			Message: fmt.Sprintf("Parabens! Voce alcancou sua meta '%s' de %s.", goal.Name, goal.TargetAmount.StringFixed(2)),
-		}
-
-		if err := s.notificationRepo.Create(ctx, notification); err != nil {
+		if err := s.notificationSvc.SendGoalAchievedNotification(ctx, userID, goal.Name, goal.TargetAmount.InexactFloat64()); err != nil {
 			s.logger.Warn().Err(err).Msg("failed to create goal achieved notification")
 		}
 

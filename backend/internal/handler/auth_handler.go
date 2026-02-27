@@ -3,11 +3,11 @@ package handler
 import (
 	"net/http"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/middleware"
-	"github.com/gustavoz65/Cashing-go/internal/model"
-	"github.com/gustavoz65/Cashing-go/internal/service"
-	"github.com/gustavoz65/Cashing-go/internal/validation"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/middleware"
+	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/finext/internal/service"
+	"github.com/gustavoz65/finext/internal/validation"
 	"github.com/labstack/echo/v4"
 )
 
@@ -167,6 +167,20 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 
 	userID := middleware.GetUserID(c)
 	if err := h.authService.ChangePassword(c.Request().Context(), userID, &req); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *AuthHandler) SetPassword(c echo.Context) error {
+	var req model.SetPasswordRequest
+	if err := validation.BindAndValidate(c, &req); err != nil {
+		return err
+	}
+
+	userID := middleware.GetUserID(c)
+	if err := h.authService.SetPassword(c.Request().Context(), userID, &req); err != nil {
 		return err
 	}
 

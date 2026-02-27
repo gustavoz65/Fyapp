@@ -13,10 +13,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/lib/firebase"
-	"github.com/gustavoz65/Cashing-go/internal/model"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/lib/firebase"
+	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/finext/internal/repository"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -28,6 +28,7 @@ var (
 	ErrTokenExpired       = errors.New("token expired")
 	ErrPasswordMismatch   = errors.New("current password is incorrect")
 	ErrWeakPassword       = errors.New("password does not meet requirements")
+	ErrPasswordAlreadySet = errors.New("user already has a password set")
 )
 
 type JWTClaims struct {
@@ -266,6 +267,33 @@ func (s *AuthService) LogoutAll(ctx context.Context, userID uuid.UUID) error {
 	return s.userRepo.RevokeAllUserSessions(ctx, userID)
 }
 
+// SetPassword defines a password for users who logged in via social provider and have no password yet
+func (s *AuthService) SetPassword(ctx context.Context, userID uuid.UUID, req *model.SetPasswordRequest) error {
+	hasPassword, err := s.providerRepo.CheckUserHasPassword(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to check user password: %w", err)
+	}
+
+	if hasPassword {
+		return ErrPasswordAlreadySet
+	}
+
+	newPasswordHash, err := s.hashPassword(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, userID, newPasswordHash); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Msg("user set password for the first time")
+
+	return nil
+}
+
 // ChangePassword changes the user's password
 func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, req *model.ChangePasswordRequest) error {
 	user, err := s.userRepo.GetByID(ctx, userID)
@@ -423,6 +451,13 @@ func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginReq
 			return nil, ErrUserNotActive
 		}
 
+		// Atualizar avatar se o usuário ainda não tiver um
+		if user.AvatarURL == nil && picture != "" {
+			if err := s.userRepo.UpdateAvatarURL(ctx, user.ID, picture); err == nil {
+				user.AvatarURL = &picture
+			}
+		}
+
 		// Atualizar last login do provider
 		_ = s.providerRepo.UpdateLastLogin(ctx, provider.ID)
 	} else {
@@ -451,6 +486,12 @@ func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginReq
 		if err == nil {
 			// Usuário já existe, vincular provider
 			user = existingUser
+			// Atualizar avatar se ainda não tiver
+			if user.AvatarURL == nil && picture != "" {
+				if err := s.userRepo.UpdateAvatarURL(ctx, user.ID, picture); err == nil {
+					user.AvatarURL = &picture
+				}
+			}
 		} else if !errors.Is(err, repository.ErrUserNotFound) {
 			return nil, fmt.Errorf("failed to check existing user: %w", err)
 		} else {

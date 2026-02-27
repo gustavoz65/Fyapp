@@ -80,7 +80,7 @@ type FirebaseConfig struct {
 // transformEnvKey converte nomes de variáveis de ambiente para chaves koanf
 // Mapeamentos explícitos preservam underscores nos nomes dos campos
 func transformEnvKey(s string) string {
-	s = strings.TrimPrefix(s, "BOILERPLATE_")
+	s = strings.TrimPrefix(s, "FINEXT_")
 	s = strings.ToLower(s)
 
 	// Mapeamentos explícitos para campos com underscores
@@ -142,7 +142,7 @@ func LoadConfig() (*Config, error) {
 	k := koanf.New(".")
 
 	// Transforma variáveis de ambiente com mapeamentos explícitos para preservar underscores nos nomes dos campos
-	err := k.Load(env.Provider("BOILERPLATE_", ".", transformEnvKey), nil)
+	err := k.Load(env.Provider("FINEXT_", ".", transformEnvKey), nil)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("could not load initial env variables")
 	}

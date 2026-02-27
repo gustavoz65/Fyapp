@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/database"
-	"github.com/gustavoz65/Cashing-go/internal/lib/firebase"
-	"github.com/gustavoz65/Cashing-go/internal/lib/utils/job"
-	"github.com/gustavoz65/Cashing-go/internal/logger"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/database"
+	"github.com/gustavoz65/finext/internal/lib/firebase"
+	"github.com/gustavoz65/finext/internal/lib/utils/job"
+	"github.com/gustavoz65/finext/internal/logger"
 	"github.com/redis/go-redis/v9"
 	zerolog "github.com/rs/zerolog"
 )

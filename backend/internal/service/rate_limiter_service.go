@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/finext/internal/repository"
 	"github.com/labstack/echo/v4"
 )
 

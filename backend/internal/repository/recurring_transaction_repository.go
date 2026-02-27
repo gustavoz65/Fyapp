@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/database"
-	"github.com/gustavoz65/Cashing-go/internal/model"
+	"github.com/gustavoz65/finext/internal/database"
+	"github.com/gustavoz65/finext/internal/model"
 	"github.com/rs/zerolog"
 )
 
@@ -147,8 +147,8 @@ func (r *RecurringTransactionRepository) GetByID(ctx context.Context, id, userID
 
 	if bankAccountName.Valid {
 		rt.BankAccount = &model.BankAccount{
-			ID:   rt.BankAccountID,
-			Name: bankAccountName.String,
+			ID:          rt.BankAccountID,
+			Name:        bankAccountName.String,
 			AccountType: model.AccountType(bankAccountType.String),
 		}
 	}
@@ -232,8 +232,8 @@ func (r *RecurringTransactionRepository) GetAll(ctx context.Context, userID uuid
 
 		if bankAccountName.Valid {
 			rt.BankAccount = &model.BankAccount{
-				ID:   rt.BankAccountID,
-				Name: bankAccountName.String,
+				ID:          rt.BankAccountID,
+				Name:        bankAccountName.String,
 				AccountType: model.AccountType(bankAccountType.String),
 			}
 		}

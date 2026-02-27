@@ -6,8 +6,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/model"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
+	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/finext/internal/repository"
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 )
 
@@ -15,21 +16,24 @@ type NotificationService struct {
 	notificationRepo *repository.NotificationRepository
 	userRepo         *repository.UserRepository
 	logger           *zerolog.Logger
+	jobClient        *asynq.Client
 }
 
 func NewNotificationService(
 	notificationRepo *repository.NotificationRepository,
 	userRepo *repository.UserRepository,
 	logger *zerolog.Logger,
+	jobClient *asynq.Client,
 ) *NotificationService {
 	return &NotificationService{
 		notificationRepo: notificationRepo,
+		jobClient:        jobClient,
 		userRepo:         userRepo,
 		logger:           logger,
 	}
 }
 
-// Create creates a new notification
+// cria uma nova notificação para um usuário
 func (s *NotificationService) Create(ctx context.Context, notification *model.Notification) error {
 	if err := s.notificationRepo.Create(ctx, notification); err != nil {
 		return fmt.Errorf("failed to create notification: %w", err)
@@ -44,7 +48,7 @@ func (s *NotificationService) Create(ctx context.Context, notification *model.No
 	return nil
 }
 
-// CreateBulk creates notifications for multiple users
+// cria notificações em massa para uma lista de usuários
 func (s *NotificationService) CreateBulk(ctx context.Context, userIDs []uuid.UUID, notificationType model.NotificationType, title, message string, data interface{}) error {
 	var dataJSON *string
 	if data != nil {
@@ -166,7 +170,7 @@ func (s *NotificationService) Delete(ctx context.Context, userID, notificationID
 	return nil
 }
 
-// SendBudgetAlert sends a budget alert notification
+// SendBudgetAlert é uma função de conveniência para criar uma notificação de alerta de orçamento
 func (s *NotificationService) SendBudgetAlert(ctx context.Context, userID uuid.UUID, budgetName string, percentage, remaining float64) error {
 	notification := &model.Notification{
 		UserID:  userID,

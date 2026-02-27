@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gustavoz65/Cashing-go/internal/errs"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
-	"github.com/gustavoz65/Cashing-go/internal/service"
+	"github.com/gustavoz65/finext/internal/errs"
+	"github.com/gustavoz65/finext/internal/repository"
+	"github.com/gustavoz65/finext/internal/service"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 )

@@ -3,8 +3,8 @@ package job
 import (
 	"time"
 
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/service"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/service"
 	"github.com/hibiken/asynq"
 	zerolog "github.com/rs/zerolog"
 )
@@ -13,9 +13,9 @@ type JobService struct {
 	Client             *asynq.Client
 	Server             *asynq.Server
 	Scheduler          *asynq.Scheduler
-	logger             *zerolog.Logger
-	recurringService   *service.RecurringTransactionService
-	transactionService *service.TransactionService
+	Logger             *zerolog.Logger
+	RecurringService   *service.RecurringTransactionService
+	TransactionService *service.TransactionService
 }
 
 func NewJobService(logger *zerolog.Logger, cfg *config.Config) *JobService {
@@ -47,16 +47,16 @@ func NewJobService(logger *zerolog.Logger, cfg *config.Config) *JobService {
 		Client:    client,
 		Server:    server,
 		Scheduler: scheduler,
-		logger:    logger,
+		Logger:    logger,
 	}
 }
 
 func (j *JobService) SetRecurringService(svc *service.RecurringTransactionService) {
-	j.recurringService = svc
+	j.RecurringService = svc
 }
 
 func (j *JobService) SetTransactionService(svc *service.TransactionService) {
-	j.transactionService = svc
+	j.TransactionService = svc
 }
 
 func (j *JobService) Start() error {
@@ -67,21 +67,21 @@ func (j *JobService) Start() error {
 
 	task, _ := NewProcessRecurringsTask()
 	if _, err := j.Scheduler.Register("0 0 * * *", task); err != nil {
-		j.logger.Error().Err(err).Msg("Failed to schedule recurring task")
+		j.Logger.Error().Err(err).Msg("Failed to schedule recurring task")
 	}
 
 	reconcileTask, _ := NewAutoReconcileTask()
 	if _, err := j.Scheduler.Register("5 0 * * *", reconcileTask); err != nil {
-		j.logger.Error().Err(err).Msg("Failed to schedule auto reconcile task")
+		j.Logger.Error().Err(err).Msg("Failed to schedule auto reconcile task")
 	}
 
 	go func() {
 		if err := j.Scheduler.Run(); err != nil {
-			j.logger.Error().Err(err).Msg("Scheduler stopped")
+			j.Logger.Error().Err(err).Msg("Scheduler stopped")
 		}
 	}()
 
-	j.logger.Info().Msg("Starting background job server")
+	j.Logger.Info().Msg("Starting background job server")
 	if err := j.Server.Start(mux); err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (j *JobService) Start() error {
 }
 
 func (j *JobService) Stop() {
-	j.logger.Info().Msg("Stopping background job server")
+	j.Logger.Info().Msg("Stopping background job server")
 	j.Scheduler.Shutdown()
 	j.Server.Shutdown()
 	j.Client.Close()

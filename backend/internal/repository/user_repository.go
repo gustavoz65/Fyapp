@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Cashing-go/internal/database"
-	"github.com/gustavoz65/Cashing-go/internal/model"
+	"github.com/gustavoz65/finext/internal/database"
+	"github.com/gustavoz65/finext/internal/model"
 	"github.com/rs/zerolog"
 )
 
@@ -242,6 +242,18 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, p
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
 		return ErrUserNotFound
+	}
+
+	return nil
+}
+
+// puxar a URL do avatar do usuário para atualizar o perfil
+func (r *UserRepository) UpdateAvatarURL(ctx context.Context, userID uuid.UUID, avatarURL string) error {
+	query := `UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?`
+
+	_, err := r.ExecContext(ctx, query, avatarURL, time.Now(), userID.String())
+	if err != nil {
+		return fmt.Errorf("failed to update avatar URL: %w", err)
 	}
 
 	return nil

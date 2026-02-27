@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	models "github.com/gustavoz65/Cashing-go/internal/model"
+	models "github.com/gustavoz65/finext/internal/model"
 )
 
 type Filter struct {

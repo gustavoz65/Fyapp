@@ -1,14 +1,14 @@
 package router
 
 import (
-	"github.com/gustavoz65/Cashing-go/internal/config"
-	"github.com/gustavoz65/Cashing-go/internal/database"
-	"github.com/gustavoz65/Cashing-go/internal/handler"
-	"github.com/gustavoz65/Cashing-go/internal/lib/utils/validator"
-	"github.com/gustavoz65/Cashing-go/internal/middleware"
-	"github.com/gustavoz65/Cashing-go/internal/repository"
-	"github.com/gustavoz65/Cashing-go/internal/server"
-	"github.com/gustavoz65/Cashing-go/internal/service"
+	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/finext/internal/database"
+	"github.com/gustavoz65/finext/internal/handler"
+	"github.com/gustavoz65/finext/internal/lib/utils/validator"
+	"github.com/gustavoz65/finext/internal/middleware"
+	"github.com/gustavoz65/finext/internal/repository"
+	"github.com/gustavoz65/finext/internal/server"
+	"github.com/gustavoz65/finext/internal/service"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -50,10 +50,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
 	accountService := service.NewBankAccountService(accountRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)
-	budgetService := service.NewBudgetService(budgetRepo, notificationRepo, logger)
-	goalService := service.NewGoalService(goalRepo, notificationRepo, logger)
+	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger, srv.Job.Client)
+	budgetService := service.NewBudgetService(budgetRepo, notificationService, logger)
+	goalService := service.NewGoalService(goalRepo, notificationService, logger)
 	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
-	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger)
 	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
 
 	// Handlers
@@ -93,6 +93,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
 	authProtected.POST("/change-password", authHandler.ChangePassword, mutationRL)
+	authProtected.POST("/set-password", authHandler.SetPassword, mutationRL)
 	authProtected.POST("/social/link", authHandler.LinkProvider, mutationRL)
 	authProtected.DELETE("/social/:provider", authHandler.UnlinkProvider, mutationRL)
 	authProtected.GET("/social/providers", authHandler.GetLinkedProviders, readRL)

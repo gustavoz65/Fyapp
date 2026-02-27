@@ -4,6 +4,8 @@ import type {
   LoginResponse,
   RegisterRequest,
   SocialLoginRequest,
+  ListProvidersResponse,
+  SetPasswordRequest,
   User,
   UserSettings,
   UpdateUserRequest,
@@ -53,4 +55,20 @@ export async function deactivateAccount(): Promise<void> {
 export async function socialLogin(data: SocialLoginRequest): Promise<LoginResponse> {
   // Cookies são setados automaticamente pelo backend (httpOnly)
   return api.post<LoginResponse>("/auth/social/login", data);
+}
+
+export async function setPassword(data: SetPasswordRequest): Promise<void> {
+  return api.post("/auth/set-password", data);
+}
+
+export async function getLinkedProviders(): Promise<ListProvidersResponse> {
+  return api.get<ListProvidersResponse>("/auth/social/providers");
+}
+
+export async function linkProvider(data: SocialLoginRequest): Promise<void> {
+  return api.post("/auth/social/link", data);
+}
+
+export async function unlinkProvider(provider: string): Promise<void> {
+  return api.delete(`/auth/social/${provider}`);
 }

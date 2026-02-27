@@ -3,11 +3,11 @@ version: "3"
 dotenv: [".env"]
 
 vars:
-  DB_USER: '{{.BOILERPLATE_DATABASE_USER | default "root"}}'
-  DB_PASS: '{{.BOILERPLATE_DATABASE_PASSWORD | default "senha123"}}'
-  DB_HOST: '{{.BOILERPLATE_DATABASE_HOST | default "localhost"}}'
-  DB_PORT: '{{.BOILERPLATE_DATABASE_PORT | default "3306"}}'
-  DB_NAME: '{{.BOILERPLATE_DATABASE_DB_NAME | default "credit_management"}}'
+  DB_USER: '{{.FINEXT_DATABASE_USER | default "root"}}'
+  DB_PASS: '{{.FINEXT_DATABASE_PASSWORD | default "senha123"}}'
+  DB_HOST: '{{.FINEXT_DATABASE_HOST | default "localhost"}}'
+  DB_PORT: '{{.FINEXT_DATABASE_PORT | default "3306"}}'
+  DB_NAME: '{{.FINEXT_DATABASE_DB_NAME | default "credit_management"}}'
   DB_DSN: "mysql://{{.DB_USER}}:{{.DB_PASS}}@{{.DB_HOST}}:{{.DB_PORT}}/{{.DB_NAME}}?parseTime=true"
 
 tasks:

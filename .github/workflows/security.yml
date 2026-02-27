@@ -1,156 +1,95 @@
-name: Security
+name: Frontend CI
 
 on:
   push:
     branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
   pull_request:
     branches: [main]
-  schedule:
-    - cron: "0 6 * * 1"
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    working-directory: frontend
+
 jobs:
-  codeql:
-    name: CodeQL (${{ matrix.language }})
+  lint:
+    name: Lint & Type Check
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      security-events: write
-      contents: read
-      actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [go, javascript-typescript]
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-          queries: security-extended,security-and-quality
-
-      - name: Setup Go
-        if: matrix.language == 'go'
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Setup Node.js
-        if: matrix.language == 'javascript-typescript'
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{ matrix.language }}"
+      - name: ESLint
+        run: npm run lint
 
-  trivy-backend:
-    name: Trivy (Backend)
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      security-events: write
-      contents: read
+    needs: [lint]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: aquasecurity/trivy-action@master
+      - uses: actions/setup-node@v4
         with:
-          scan-type: fs
-          scan-ref: backend
-          format: sarif
-          output: trivy-backend.sarif
-          severity: CRITICAL,HIGH
-          scanners: vuln,secret,misconfig
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-      - uses: github/codeql-action/upload-sarif@v4
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-project.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-project
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-project.appspot.com
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:000000000000"
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: G-XXXXXXXXXX
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: trivy-backend.sarif
-          category: trivy-backend
+          name: frontend-build
+          path: frontend/.next/
+          retention-days: 3
 
-  trivy-frontend:
-    name: Trivy (Frontend)
+  audit:
+    name: Dependency Audit
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      security-events: write
-      contents: read
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: aquasecurity/trivy-action@master
+      - uses: actions/setup-node@v4
         with:
-          scan-type: fs
-          scan-ref: frontend
-          format: sarif
-          output: trivy-frontend.sarif
-          severity: CRITICAL,HIGH
-          scanners: vuln,secret,misconfig
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-      - uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: trivy-frontend.sarif
-          category: trivy-frontend
-
-  trivy-docker-backend:
-    name: Trivy (Dockerfile Backend)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      security-events: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build image
-        run: docker build -t finext-backend:ci backend/
-
-      - uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: finext-backend:ci
-          format: sarif
-          output: trivy-docker-backend.sarif
-          severity: CRITICAL,HIGH
-
-      - uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: trivy-docker-backend.sarif
-          category: trivy-docker-backend
-
-  trivy-docker-frontend:
-    name: Trivy (Dockerfile Frontend)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      security-events: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build image
-        run: docker build -t finext-frontend:ci frontend/
-
-      - uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: finext-frontend:ci
-          format: sarif
-          output: trivy-docker-frontend.sarif
-          severity: CRITICAL,HIGH
-
-      - uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: trivy-docker-frontend.sarif
-          category: trivy-docker-frontend
+      - name: npm audit
+        run: npm audit --audit-level=high

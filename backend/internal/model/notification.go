@@ -27,18 +27,18 @@ const (
 )
 
 type Notification struct {
-	ID           uuid.UUID          `json:"id" db:"id"`
-	UserID       uuid.UUID          `json:"user_id" db:"user_id"`
-	Type         NotificationType   `json:"type" db:"type"`
-	Title        string             `json:"title" db:"title"`
-	Message      string             `json:"message" db:"message"`
-	Data         *string            `json:"data,omitempty" db:"data"`
-	IsRead       bool               `json:"is_read" db:"is_read"`
-	ReadAt       *time.Time         `json:"read_at,omitempty" db:"read_at"`
-	SentVia      []string           `json:"sent_via" db:"sent_via"`
-	ScheduledFor *time.Time         `json:"scheduled_for,omitempty" db:"scheduled_for"`
-	SentAt       *time.Time         `json:"sent_at,omitempty" db:"sent_at"`
-	CreatedAt    time.Time          `json:"created_at" db:"created_at"`
+	ID           uuid.UUID        `json:"id" db:"id"`
+	UserID       uuid.UUID        `json:"user_id" db:"user_id"`
+	Type         NotificationType `json:"type" db:"type"`
+	Title        string           `json:"title" db:"title"`
+	Message      string           `json:"message" db:"message"`
+	Data         *string          `json:"data,omitempty" db:"data"`
+	IsRead       bool             `json:"is_read" db:"is_read"`
+	ReadAt       *time.Time       `json:"read_at,omitempty" db:"read_at"`
+	SentVia      []string         `json:"sent_via" db:"sent_via"`
+	ScheduledFor *time.Time       `json:"scheduled_for,omitempty" db:"scheduled_for"`
+	SentAt       *time.Time       `json:"sent_at,omitempty" db:"sent_at"`
+	CreatedAt    time.Time        `json:"created_at" db:"created_at"`
 }
 
 func (n *Notification) MarkAsRead() {
@@ -66,11 +66,11 @@ func (n *Notification) ShouldSendNow() bool {
 }
 
 type NotificationPreferences struct {
-	UserID           uuid.UUID             `json:"user_id"`
-	EnabledChannels  []NotificationChannel `json:"enabled_channels"`
-	EnabledTypes     []NotificationType    `json:"enabled_types"`
-	QuietHoursStart  *string               `json:"quiet_hours_start,omitempty"`
-	QuietHoursEnd    *string               `json:"quiet_hours_end,omitempty"`
+	UserID          uuid.UUID             `json:"user_id"`
+	EnabledChannels []NotificationChannel `json:"enabled_channels"`
+	EnabledTypes    []NotificationType    `json:"enabled_types"`
+	QuietHoursStart *string               `json:"quiet_hours_start,omitempty"`
+	QuietHoursEnd   *string               `json:"quiet_hours_end,omitempty"`
 }
 
 type NotificationTemplate struct {

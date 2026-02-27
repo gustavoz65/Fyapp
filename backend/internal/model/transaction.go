@@ -162,19 +162,19 @@ type Transfer struct {
 }
 
 type Installment struct {
-	ID                 uuid.UUID       `json:"id" db:"id"`
-	UserID             uuid.UUID       `json:"user_id" db:"user_id"`
-	BankAccountID      uuid.UUID       `json:"bank_account_id" db:"bank_account_id"`
-	CategoryID         *uuid.UUID      `json:"category_id,omitempty" db:"category_id"`
-	Description        string          `json:"description" db:"description"`
-	TotalAmount        decimal.Decimal `json:"total_amount" db:"total_amount"`
-	InstallmentAmount  decimal.Decimal `json:"installment_amount" db:"installment_amount"`
-	TotalInstallments  int             `json:"total_installments" db:"total_installments"`
-	PaidInstallments   int             `json:"paid_installments" db:"paid_installments"`
-	FirstDueDate       time.Time       `json:"first_due_date" db:"first_due_date"`
-	IsActive           bool            `json:"is_active" db:"is_active"`
-	CreatedAt          time.Time       `json:"created_at" db:"created_at"`
-	UpdatedAt          time.Time       `json:"updated_at" db:"updated_at"`
+	ID                uuid.UUID       `json:"id" db:"id"`
+	UserID            uuid.UUID       `json:"user_id" db:"user_id"`
+	BankAccountID     uuid.UUID       `json:"bank_account_id" db:"bank_account_id"`
+	CategoryID        *uuid.UUID      `json:"category_id,omitempty" db:"category_id"`
+	Description       string          `json:"description" db:"description"`
+	TotalAmount       decimal.Decimal `json:"total_amount" db:"total_amount"`
+	InstallmentAmount decimal.Decimal `json:"installment_amount" db:"installment_amount"`
+	TotalInstallments int             `json:"total_installments" db:"total_installments"`
+	PaidInstallments  int             `json:"paid_installments" db:"paid_installments"`
+	FirstDueDate      time.Time       `json:"first_due_date" db:"first_due_date"`
+	IsActive          bool            `json:"is_active" db:"is_active"`
+	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at" db:"updated_at"`
 
 	Category    *Category    `json:"category,omitempty" db:"-"`
 	BankAccount *BankAccount `json:"bank_account,omitempty" db:"-"`

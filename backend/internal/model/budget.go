@@ -80,10 +80,10 @@ func (b *Budget) IsCurrentPeriod() bool {
 }
 
 type BudgetSummary struct {
-	Budget          *Budget         `json:"budget"`
-	TotalBudgeted   decimal.Decimal `json:"total_budgeted"`
-	TotalSpent      decimal.Decimal `json:"total_spent"`
-	TotalRemaining  decimal.Decimal `json:"total_remaining"`
-	UsedPercentage  decimal.Decimal `json:"used_percentage"`
-	TransactionCount int            `json:"transaction_count"`
+	Budget           *Budget         `json:"budget"`
+	TotalBudgeted    decimal.Decimal `json:"total_budgeted"`
+	TotalSpent       decimal.Decimal `json:"total_spent"`
+	TotalRemaining   decimal.Decimal `json:"total_remaining"`
+	UsedPercentage   decimal.Decimal `json:"used_percentage"`
+	TransactionCount int             `json:"transaction_count"`
 }

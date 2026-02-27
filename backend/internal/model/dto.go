@@ -143,20 +143,20 @@ type UpdateCategoryRequest struct {
 // ========================================
 
 type CreateBankAccountRequest struct {
-	Name           string          `json:"name" validate:"required,min=2,max=100"`
-	BankName       string          `json:"bank_name,omitempty" validate:"omitempty,max=100"`
-	BankCode       string          `json:"bank_code,omitempty" validate:"omitempty,max=10"`
-	AccountType    AccountType     `json:"account_type" validate:"required,oneof=checking savings credit_card investment cash other"`
-	AccountNumber  string          `json:"account_number,omitempty" validate:"omitempty,max=50"`
-	Agency         string          `json:"agency,omitempty" validate:"omitempty,max=20"`
-	InitialBalance decimal.Decimal `json:"initial_balance" validate:"required"`
+	Name           string           `json:"name" validate:"required,min=2,max=100"`
+	BankName       string           `json:"bank_name,omitempty" validate:"omitempty,max=100"`
+	BankCode       string           `json:"bank_code,omitempty" validate:"omitempty,max=10"`
+	AccountType    AccountType      `json:"account_type" validate:"required,oneof=checking savings credit_card investment cash other"`
+	AccountNumber  string           `json:"account_number,omitempty" validate:"omitempty,max=50"`
+	Agency         string           `json:"agency,omitempty" validate:"omitempty,max=20"`
+	InitialBalance decimal.Decimal  `json:"initial_balance" validate:"required"`
 	CreditLimit    *decimal.Decimal `json:"credit_limit,omitempty"`
-	ClosingDay     *int            `json:"closing_day,omitempty" validate:"omitempty,min=1,max=31"`
-	DueDay         *int            `json:"due_day,omitempty" validate:"omitempty,min=1,max=31"`
-	Currency       string          `json:"currency,omitempty" validate:"omitempty,len=3"`
-	Color          string          `json:"color,omitempty" validate:"omitempty,hexcolor"`
-	Icon           string          `json:"icon,omitempty" validate:"omitempty,max=50"`
-	IncludeInTotal *bool           `json:"include_in_total,omitempty"`
+	ClosingDay     *int             `json:"closing_day,omitempty" validate:"omitempty,min=1,max=31"`
+	DueDay         *int             `json:"due_day,omitempty" validate:"omitempty,min=1,max=31"`
+	Currency       string           `json:"currency,omitempty" validate:"omitempty,len=3"`
+	Color          string           `json:"color,omitempty" validate:"omitempty,hexcolor"`
+	Icon           string           `json:"icon,omitempty" validate:"omitempty,max=50"`
+	IncludeInTotal *bool            `json:"include_in_total,omitempty"`
 }
 
 type UpdateBankAccountRequest struct {
@@ -205,23 +205,23 @@ type UpdateTransactionRequest struct {
 }
 
 type TransactionFilter struct {
-	UserID        uuid.UUID         `json:"-"`
-	AccountID     *uuid.UUID        `json:"account_id,omitempty"`
-	CategoryID    *uuid.UUID        `json:"category_id,omitempty"`
-	Type          *TransactionType  `json:"type,omitempty"`
+	UserID        uuid.UUID          `json:"-"`
+	AccountID     *uuid.UUID         `json:"account_id,omitempty"`
+	CategoryID    *uuid.UUID         `json:"category_id,omitempty"`
+	Type          *TransactionType   `json:"type,omitempty"`
 	Source        *TransactionSource `json:"source,omitempty"`
-	StartDate     *time.Time        `json:"start_date,omitempty"`
-	EndDate       *time.Time        `json:"end_date,omitempty"`
-	IsPaid        *bool             `json:"is_paid,omitempty"`
-	IsRecurring   *bool             `json:"is_recurring,omitempty"`
-	MinAmount     *decimal.Decimal  `json:"min_amount,omitempty"`
-	MaxAmount     *decimal.Decimal  `json:"max_amount,omitempty"`
-	SearchTerm    string            `json:"search_term,omitempty"`
-	Tags          []string          `json:"tags,omitempty"`
-	Page          int               `json:"page,omitempty"`
-	PageSize      int               `json:"page_size,omitempty"`
-	SortBy        string            `json:"sort_by,omitempty"`
-	SortDirection string            `json:"sort_direction,omitempty"`
+	StartDate     *time.Time         `json:"start_date,omitempty"`
+	EndDate       *time.Time         `json:"end_date,omitempty"`
+	IsPaid        *bool              `json:"is_paid,omitempty"`
+	IsRecurring   *bool              `json:"is_recurring,omitempty"`
+	MinAmount     *decimal.Decimal   `json:"min_amount,omitempty"`
+	MaxAmount     *decimal.Decimal   `json:"max_amount,omitempty"`
+	SearchTerm    string             `json:"search_term,omitempty"`
+	Tags          []string           `json:"tags,omitempty"`
+	Page          int                `json:"page,omitempty"`
+	PageSize      int                `json:"page_size,omitempty"`
+	SortBy        string             `json:"sort_by,omitempty"`
+	SortDirection string             `json:"sort_direction,omitempty"`
 }
 
 // ========================================

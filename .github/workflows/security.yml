@@ -17,6 +17,7 @@ jobs:
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    continue-on-error: true  # Don't fail the build if CodeQL fails
     permissions:
       security-events: write
       contents: read

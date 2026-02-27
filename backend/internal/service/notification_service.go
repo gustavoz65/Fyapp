@@ -170,7 +170,7 @@ func (s *NotificationService) Delete(ctx context.Context, userID, notificationID
 	return nil
 }
 
-// SendBudgetAlert sends a budget alert notification
+// SendBudgetAlert é uma função de conveniência para criar uma notificação de alerta de orçamento
 func (s *NotificationService) SendBudgetAlert(ctx context.Context, userID uuid.UUID, budgetName string, percentage, remaining float64) error {
 	notification := &model.Notification{
 		UserID:  userID,

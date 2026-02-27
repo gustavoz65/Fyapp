@@ -76,6 +76,7 @@ export default function TransactionsPage() {
     type: "expense" as string,
     amount: "",
     description: "",
+    notes: "",
     transaction_date: new Date().toISOString().split("T")[0],
     due_date: "",
     is_paid: false,
@@ -172,6 +173,7 @@ export default function TransactionsPage() {
         type: validated.type as CreateTransactionRequest["type"],
         amount: validated.amount,
         description: validated.description,
+        notes: validated.notes || undefined,
         transaction_date: new Date(validated.transaction_date).toISOString(),
         due_date: validated.due_date
           ? new Date(validated.due_date).toISOString()

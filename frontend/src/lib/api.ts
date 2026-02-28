@@ -1,7 +1,18 @@
 import type { APIError } from "@/types";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+const API_BASE_URL = (() => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (
+    globalThis.window !== undefined &&
+    globalThis.window.location.hostname !== "localhost" &&
+    globalThis.window.location.hostname !== "127.0.0.1"
+  ) {
+    return "https://satisfied-strength-production-fcdb.up.railway.app/api/v1";
+  }
+  return "http://localhost:3000/api/v1";
+})();
 
 let redirectToLogin: (() => void) | null = null;
 

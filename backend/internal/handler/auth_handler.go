@@ -23,13 +23,18 @@ func NewAuthHandler(authService *service.AuthService, cfg *config.Config) *AuthH
 func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	isProduction := h.config.Primary.Env == "production"
 
+	sameSite := http.SameSiteStrictMode
+	if isProduction {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	c.SetCookie(&http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		MaxAge:   h.config.Auth.AccessTokenDuration * 60,
 	})
 
@@ -39,7 +44,7 @@ func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken s
 		Path:     "/api/v1/auth",
 		HttpOnly: true,
 		Secure:   isProduction,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: sameSite,
 		MaxAge:   h.config.Auth.RefreshTokenDuration * 3600,
 	})
 }

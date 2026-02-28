@@ -295,6 +295,72 @@ func (r *UserRepository) Deactivate(ctx context.Context, userID uuid.UUID) error
 	return nil
 }
 
+// Reactivate reativates a soft-deleted user
+func (r *UserRepository) Reactivate(ctx context.Context, userID uuid.UUID) error {
+	query := `UPDATE users SET is_active = TRUE, updated_at = ? WHERE id = ?`
+
+	_, err := r.ExecContext(ctx, query, time.Now(), userID.String())
+	if err != nil {
+		return fmt.Errorf("failed to reactivate user: %w", err)
+	}
+
+	return nil
+}
+
+// GetByIDIncludingInactive retrieves a user by ID regardless of active status
+func (r *UserRepository) GetByIDIncludingInactive(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	query := `
+		SELECT id, email, password_hash, first_name, last_name, phone, avatar_url,
+			preferred_currency, preferred_language, timezone, role,
+			email_verified, email_verified_at, last_login_at, is_active,
+			created_at, updated_at
+		FROM users
+		WHERE id = ?
+	`
+
+	user := &model.User{}
+	var phone, avatarURL sql.NullString
+	var emailVerifiedAt, lastLoginAt sql.NullTime
+
+	err := r.QueryRowContext(ctx, query, id.String()).Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FirstName,
+		&user.LastName,
+		&phone,
+		&avatarURL,
+		&user.PreferredCurrency,
+		&user.PreferredLanguage,
+		&user.Timezone,
+		&user.Role,
+		&user.EmailVerified,
+		&emailVerifiedAt,
+		&lastLoginAt,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to get user by ID: %w", err)
+	}
+
+	user.Phone = StringPtr(phone)
+	user.AvatarURL = StringPtr(avatarURL)
+	if emailVerifiedAt.Valid {
+		user.EmailVerifiedAt = &emailVerifiedAt.Time
+	}
+	if lastLoginAt.Valid {
+		user.LastLoginAt = &lastLoginAt.Time
+	}
+
+	return user, nil
+}
+
 // ========================================
 // Session Methods
 // ========================================

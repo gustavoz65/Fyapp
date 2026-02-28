@@ -88,15 +88,33 @@ func (s *AuthService) Register(ctx context.Context, req *model.RegisterRequest) 
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		if errors.Is(err, repository.ErrUserAlreadyExists) {
-			return nil, err
+			// Verificar se o usuário existente está inativo (soft-deleted)
+			existingUser, getErr := s.userRepo.GetByEmail(ctx, req.Email)
+			if getErr == nil && !existingUser.IsActive {
+				// Reativar e atualizar credenciais
+				if err := s.userRepo.Reactivate(ctx, existingUser.ID); err != nil {
+					return nil, fmt.Errorf("failed to reactivate user: %w", err)
+				}
+				if err := s.userRepo.UpdatePassword(ctx, existingUser.ID, passwordHash); err != nil {
+					return nil, fmt.Errorf("failed to update password: %w", err)
+				}
+				existingUser.IsActive = true
+				existingUser.FirstName = req.FirstName
+				existingUser.LastName = req.LastName
+				user = existingUser
+				s.logger.Info().Str("user_id", user.ID.String()).Msg("user reactivated via re-registration")
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
-		return nil, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	// Create default settings
-	_, err = s.userRepo.CreateDefaultSettings(ctx, user.ID)
-	if err != nil {
-		s.logger.Warn().Err(err).Msg("failed to create default settings for user")
+	} else {
+		// Create default settings apenas para usuários novos
+		_, err = s.userRepo.CreateDefaultSettings(ctx, user.ID)
+		if err != nil {
+			s.logger.Warn().Err(err).Msg("failed to create default settings for user")
+		}
 	}
 
 	// Generate tokens for auto-login after registration
@@ -442,13 +460,18 @@ func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginReq
 
 	if provider != nil {
 		// Provider já existe, fazer login
-		user, err = s.userRepo.GetByID(ctx, provider.UserID)
+		user, err = s.userRepo.GetByIDIncludingInactive(ctx, provider.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
 		if !user.IsActive {
-			return nil, ErrUserNotActive
+			// Reativar conta: identidade verificada pelo Firebase
+			if err := s.userRepo.Reactivate(ctx, user.ID); err != nil {
+				return nil, fmt.Errorf("failed to reactivate user: %w", err)
+			}
+			user.IsActive = true
+			s.logger.Info().Str("user_id", user.ID.String()).Msg("user reactivated via social login")
 		}
 
 		// Atualizar avatar se o usuário ainda não tiver um
@@ -486,6 +509,14 @@ func (s *AuthService) SocialLogin(ctx context.Context, req *model.SocialLoginReq
 		if err == nil {
 			// Usuário já existe, vincular provider
 			user = existingUser
+			// Reativar se a conta estiver inativa
+			if !user.IsActive {
+				if err := s.userRepo.Reactivate(ctx, user.ID); err != nil {
+					return nil, fmt.Errorf("failed to reactivate user: %w", err)
+				}
+				user.IsActive = true
+				s.logger.Info().Str("user_id", user.ID.String()).Msg("user reactivated via social login (email match)")
+			}
 			// Atualizar avatar se ainda não tiver
 			if user.AvatarURL == nil && picture != "" {
 				if err := s.userRepo.UpdateAvatarURL(ctx, user.ID, picture); err == nil {

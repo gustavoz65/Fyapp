@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, setTokens, clearTokens, getRefreshToken } from "./api";
 import type {
   LoginRequest,
   LoginResponse,
@@ -14,18 +14,23 @@ import type {
 } from "@/types";
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  // Cookies são setados automaticamente pelo backend (httpOnly)
-  return api.post<LoginResponse>("/auth/login", data);
+  const response = await api.post<LoginResponse>("/auth/login", data);
+  setTokens(response.access_token, response.refresh_token);
+  return response;
 }
 
 export async function register(data: RegisterRequest): Promise<LoginResponse> {
-  // Cookies são setados automaticamente pelo backend (httpOnly)
-  return api.post<LoginResponse>("/auth/register", data);
+  const response = await api.post<LoginResponse>("/auth/register", data);
+  setTokens(response.access_token, response.refresh_token);
+  return response;
 }
 
 export async function logout(): Promise<void> {
-  // Backend limpa os cookies automaticamente
-  await api.post("/auth/logout");
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    await api.post("/auth/logout", { refresh_token: refreshToken });
+  }
+  clearTokens();
 }
 
 export async function getCurrentUser(): Promise<User> {
@@ -53,8 +58,9 @@ export async function deactivateAccount(): Promise<void> {
 }
 
 export async function socialLogin(data: SocialLoginRequest): Promise<LoginResponse> {
-  // Cookies são setados automaticamente pelo backend (httpOnly)
-  return api.post<LoginResponse>("/auth/social/login", data);
+  const response = await api.post<LoginResponse>("/auth/social/login", data);
+  setTokens(response.access_token, response.refresh_token);
+  return response;
 }
 
 export async function setPassword(data: SetPasswordRequest): Promise<void> {

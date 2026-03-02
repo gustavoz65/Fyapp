@@ -157,7 +157,7 @@ type UpdateBankAccountRequest struct {
 	BankCode       *string          `json:"bank_code,omitempty" validate:"omitempty,max=10"`
 	AccountNumber  *string          `json:"account_number,omitempty" validate:"omitempty,max=50"`
 	Agency         *string          `json:"agency,omitempty" validate:"omitempty,max=20"`
-	CreditLimit    *decimal.Decimal `json:"credit_limit,omitempty"`
+	CreditLimit    *decimal.Decimal `json:"credit_limit,omitempty" validate:"omitempty,maxcredit"`
 	ClosingDay     *int             `json:"closing_day,omitempty" validate:"omitempty,min=1,max=31"`
 	DueDay         *int             `json:"due_day,omitempty" validate:"omitempty,min=1,max=31"`
 	Color          *string          `json:"color,omitempty" validate:"omitempty,hexcolor"`

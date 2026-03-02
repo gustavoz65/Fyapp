@@ -1,6 +1,8 @@
 import type { APIError } from "@/types";
 
-const API_BASE_URL = "/api/v1";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://satisfied-strength-production-fcdb.up.railway.app/api/v1";
 
 let redirectToLogin: (() => void) | null = null;
 
@@ -8,35 +10,77 @@ export function setRedirectCallback(callback: () => void) {
   redirectToLogin = callback;
 }
 
+const TOKEN_KEYS = {
+  ACCESS: "access_token",
+  REFRESH: "refresh_token",
+} as const;
+
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEYS.ACCESS);
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEYS.REFRESH);
+}
+
+export function setTokens(accessToken: string, refreshToken: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEYS.ACCESS, accessToken);
+  localStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
+}
+
+export function clearTokens(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEYS.ACCESS);
+  localStorage.removeItem(TOKEN_KEYS.REFRESH);
+}
+
 class ApiClient {
   private refreshPromise: Promise<void> | null = null;
 
   private async refreshAccessToken(): Promise<void> {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      throw new Error("No refresh token");
+    }
+
     const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
-      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
     if (!res.ok) {
+      clearTokens();
       throw new Error("Token refresh failed");
     }
+
+    const data = await res.json();
+    setTokens(data.access_token, data.refresh_token);
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const accessToken = getAccessToken();
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
     };
 
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
-      credentials: "include",
     });
 
     if (res.status === 401) {
       try {
-        // Evitar múltiplos refreshes simultâneos
         if (!this.refreshPromise) {
           this.refreshPromise = this.refreshAccessToken().finally(() => {
             this.refreshPromise = null;
@@ -44,11 +88,14 @@ class ApiClient {
         }
         await this.refreshPromise;
 
-        // Retry request original
+        const newAccessToken = getAccessToken();
+        if (newAccessToken) {
+          headers.Authorization = `Bearer ${newAccessToken}`;
+        }
+
         const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
           headers,
-          credentials: "include",
         });
 
         if (!retryRes.ok) {
@@ -59,6 +106,7 @@ class ApiClient {
         if (retryRes.status === 204) return undefined as T;
         return retryRes.json();
       } catch {
+        clearTokens();
         if (redirectToLogin) {
           redirectToLogin();
         }

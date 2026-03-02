@@ -1,16 +1,15 @@
+version: "2"
 run:
   timeout: 5m
 
 linters:
-  disable-all: true
+  default: none
   enable:
     # Critical - bugs and correctness
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - unused
 
     # Important - best practices
@@ -21,54 +20,60 @@ linters:
     - sqlclosecheck
 
     # Nice to have - code quality
-    - goimports
     - unconvert
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+      exclude-functions:
+        - (*database/sql.Rows).Close
+        - (*database/sql.DB).Close
+        - (io.Closer).Close
+        - (*github.com/redis/go-redis/v9.Client).Close
+        - (*github.com/hibiken/asynq.Client).Close
 
-linters-settings:
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-    exclude-functions:
-      - (*database/sql.Rows).Close
-      - (*database/sql.DB).Close
-      - (io.Closer).Close
-      - (*github.com/redis/go-redis/v9.Client).Close
-      - (*github.com/hibiken/asynq.Client).Close
+    govet:
+      disable:
+        - shadow  # Too many false positives with err variable
 
-  govet:
-    disable:
-      - shadow  # Too many false positives with err variable
+    gosec:
+      excludes:
+        - G101  # Potential hardcoded credentials - false positive for config key mappings
+        - G104  # errors unhandled - redundant with errcheck
+        - G112  # potential slowloris - handled at infrastructure level
+        - G115  # integer overflow conversion - too many false positives
+        - G117  # Exported struct field matches secret pattern - false positive for DTOs/config
 
-  gosec:
-    excludes:
-      - G104  # errors unhandled - redundant with errcheck
-      - G115  # integer overflow conversion - too many false positives
-      - G112  # potential slowloris - handled at infrastructure level
+    staticcheck:
+      checks: ["all", "-SA1019"]  # Exclude deprecated warnings
 
-  staticcheck:
-    checks: ["all", "-SA1019"]  # Exclude deprecated warnings
+  exclusions:
+    presets:
+      - comments  # Excludes ST1000, ST1020, ST1021, ST1022 (package/export comment checks)
+    rules:
+      # Exclude some linters from running on test files
+      - path: "_test\\.go"
+        linters:
+          - bodyclose
+          - errcheck
+          - gosec
+          - govet
 
+      # Allow unchecked errors for Scan operations in audit log
+      - path: "internal/repository/audit_log_repository\\.go"
+        linters:
+          - errcheck
+        text: "Error return value of.*Scan.*is not checked"
+
+      # Allow unused types (may be for future use)
+      - path: "internal/database/"
+        linters:
+          - unused
+        text: "type.*is unused"
+
+formatters:
+  enable:
+    - goimports
 
 issues:
   max-same-issues: 50
-  exclude-use-default: false
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: "_test\\.go"
-      linters:
-        - bodyclose
-        - errcheck
-        - gosec
-        - govet
-
-    # Allow unchecked errors for Scan operations in audit log
-    - path: "internal/repository/audit_log_repository.go"
-      linters:
-        - errcheck
-      text: "Error return value of.*Scan.*is not checked"
-
-    # Allow unused types (may be for future use)
-    - path: "internal/database/"
-      linters:
-        - unused
-      text: "type.*is unused"

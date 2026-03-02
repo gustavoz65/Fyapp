@@ -51,7 +51,16 @@ func (s *RecurringTransactionService) Create(ctx context.Context, rt *model.Recu
 		return errors.New("description is required")
 	}
 
-	_, err := s.accountRepo.GetByIDAndUser(ctx, rt.BankAccountID, rt.UserID)
+	// Verificar limite de transações recorrentes ativas
+	count, err := s.repo.CountActiveByUser(ctx, rt.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to count recurring transactions: %w", err)
+	}
+	if count >= 50 { // MaxRecurringTransactions
+		return fmt.Errorf("você atingiu o limite de 50 transações recorrentes ativas")
+	}
+
+	_, err = s.accountRepo.GetByIDAndUser(ctx, rt.BankAccountID, rt.UserID)
 	if err != nil {
 		return fmt.Errorf("bank account not found")
 	}

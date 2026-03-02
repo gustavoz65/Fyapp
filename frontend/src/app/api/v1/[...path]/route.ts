@@ -66,6 +66,8 @@ async function proxyRequest(
     : undefined;
 
   try {
+    console.log(`[Proxy] ${request.method} ${url.toString()}`);
+
     const response = await fetch(url.toString(), {
       method: request.method,
       headers,
@@ -73,10 +75,19 @@ async function proxyRequest(
       credentials: "include",
     });
 
-    const responseHeaders = new Headers();
-    response.headers.forEach((value, key) => {
-      responseHeaders.set(key, value);
-    });
+    console.log(`[Proxy] Response: ${response.status} ${response.statusText}`);
+
+    const responseHeaders = new Headers(response.headers);
+
+    const cookies = response.headers.getSetCookie?.() || [];
+    console.log(`[Proxy] Set-Cookie headers: ${cookies.length}`);
+
+    if (cookies.length > 0) {
+      responseHeaders.delete("set-cookie");
+      cookies.forEach((cookie) => {
+        responseHeaders.append("set-cookie", cookie);
+      });
+    }
 
     const responseBody = await response.arrayBuffer();
 
@@ -86,7 +97,7 @@ async function proxyRequest(
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error("Proxy error:", error);
+    console.error("[Proxy] Error:", error);
     return NextResponse.json(
       { code: "PROXY_ERROR", message: "Failed to connect to backend" },
       { status: 502 }

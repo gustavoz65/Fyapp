@@ -387,3 +387,20 @@ func (r *BudgetRepository) scanBudgets(rows *sql.Rows) ([]*model.Budget, error) 
 
 	return budgets, nil
 }
+
+// CountActiveByUser conta o número de orçamentos ativos de um usuário
+func (r *BudgetRepository) CountActiveByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM budgets
+		WHERE user_id = ? AND is_active = TRUE
+	`
+
+	var count int64
+	err := r.QueryRowContext(ctx, query, userID.String()).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count active budgets: %w", err)
+	}
+
+	return count, nil
+}

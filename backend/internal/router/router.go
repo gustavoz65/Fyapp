@@ -57,7 +57,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(authService, cfg)
+	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	accountHandler := handler.NewBankAccountHandler(accountService)

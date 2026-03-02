@@ -32,6 +32,15 @@ func NewBudgetService(
 
 // Create creates a new budget
 func (s *BudgetService) Create(ctx context.Context, userID uuid.UUID, req *model.CreateBudgetRequest) (*model.Budget, error) {
+	// Verificar limite de orçamentos ativos
+	count, err := s.budgetRepo.CountActiveByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count budgets: %w", err)
+	}
+	if count >= 20 { // MaxActiveBudgets
+		return nil, fmt.Errorf("você atingiu o limite de 20 orçamentos ativos")
+	}
+
 	budget := &model.Budget{
 		UserID:     userID,
 		CategoryID: req.CategoryID,

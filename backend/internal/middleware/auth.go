@@ -20,28 +20,17 @@ const (
 func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			var tokenString string
-
-			// Tentar ler de cookie primeiro (método preferido com httpOnly)
-			cookie, err := c.Cookie("access_token")
-			if err == nil && cookie.Value != "" {
-				tokenString = cookie.Value
-			} else {
-				// Fallback para Authorization header (backward compatibility)
-				authHeader := c.Request().Header.Get("Authorization")
-				if authHeader == "" {
-					return errs.NewUnauthorizedError("Token de autenticacao nao fornecido", false)
-				}
-
-				parts := strings.SplitN(authHeader, " ", 2)
-				if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-					return errs.NewUnauthorizedError("Formato de token invalido", false)
-				}
-				tokenString = parts[1]
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader == "" {
+				return errs.NewUnauthorizedError("Token de autenticacao nao fornecido", false)
 			}
 
-			// Validar token
-			claims, err := authService.ValidateAccessToken(tokenString)
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+				return errs.NewUnauthorizedError("Formato de token invalido", false)
+			}
+
+			claims, err := authService.ValidateAccessToken(parts[1])
 			if err != nil {
 				if err == service.ErrTokenExpired {
 					return errs.NewUnauthorizedError("Token expirado", false)
@@ -49,7 +38,6 @@ func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 				return errs.NewUnauthorizedError("Token invalido", false)
 			}
 
-			// Injeta dados do usuario no contexto
 			c.Set(userIDKey, claims.UserID)
 			c.Set(emailKey, claims.Email)
 			c.Set(roleKey, claims.Role)

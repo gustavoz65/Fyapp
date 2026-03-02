@@ -50,6 +50,15 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 		return nil, fmt.Errorf("manual transactions are disabled in your settings")
 	}
 
+	// Verificar limite de transações por dia
+	count, err := s.txRepo.CountTransactionsByUserToday(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count transactions: %w", err)
+	}
+	if count >= 100 { // MaxTransactionsPerDay
+		return nil, fmt.Errorf("você atingiu o limite de 100 transações por dia")
+	}
+
 	// Validate account belongs to user
 	account, err := s.accountRepo.GetByIDAndUser(ctx, req.BankAccountID, userID)
 	if err != nil {

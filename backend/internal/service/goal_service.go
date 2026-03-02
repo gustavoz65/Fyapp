@@ -32,6 +32,15 @@ func NewGoalService(
 
 // Create creates a new goal
 func (s *GoalService) Create(ctx context.Context, userID uuid.UUID, req *model.CreateGoalRequest) (*model.Goal, error) {
+	// Verificar limite de metas ativas
+	count, err := s.goalRepo.CountActiveByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count goals: %w", err)
+	}
+	if count >= 15 { // MaxActiveGoals
+		return nil, fmt.Errorf("você atingiu o limite de 15 metas ativas")
+	}
+
 	goal := &model.Goal{
 		UserID:       userID,
 		Name:         req.Name,

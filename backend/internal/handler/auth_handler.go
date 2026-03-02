@@ -25,7 +25,7 @@ func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken s
 
 	sameSite := http.SameSiteStrictMode
 	if isProduction {
-		sameSite = http.SameSiteNoneMode
+		sameSite = http.SameSiteLaxMode
 	}
 
 	c.SetCookie(&http.Cookie{

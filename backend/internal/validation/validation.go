@@ -90,6 +90,16 @@ func formatValidationError(fe validator.FieldError) string {
 		return fmt.Sprintf("O campo '%s' deve ser maior que '%s'", field, toSnakeCase(fe.Param()))
 	case "nefield":
 		return fmt.Sprintf("O campo '%s' deve ser diferente de '%s'", field, toSnakeCase(fe.Param()))
+	case "maxmoney":
+		return ErrMaxMoneyValueExceeded
+	case "maxcredit":
+		return ErrMaxCreditLimitExceeded
+	case "maxbudget":
+		return ErrMaxBudgetAmountExceeded
+	case "maxgoal":
+		return ErrMaxGoalAmountExceeded
+	case "minpositive":
+		return ErrMinPositiveValueRequired
 	default:
 		return fmt.Sprintf("O campo '%s' e invalido", field)
 	}

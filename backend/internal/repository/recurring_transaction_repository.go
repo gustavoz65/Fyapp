@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -449,4 +450,21 @@ func (r *RecurringTransactionRepository) GetStats(ctx context.Context, userID uu
 		"total_income":  totalIncome,
 		"total_expense": totalExpense,
 	}, nil
+}
+
+// CountActiveByUser conta o número de transações recorrentes ativas de um usuário
+func (r *RecurringTransactionRepository) CountActiveByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM recurring_transactions
+		WHERE user_id = ? AND is_active = TRUE
+	`
+
+	var count int64
+	err := r.QueryRowContext(ctx, query, userID.String()).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count active recurring transactions: %w", err)
+	}
+
+	return count, nil
 }

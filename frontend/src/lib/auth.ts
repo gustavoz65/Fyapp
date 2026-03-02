@@ -14,17 +14,14 @@ import type {
 } from "@/types";
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  // Cookies são setados automaticamente pelo backend (httpOnly)
   return api.post<LoginResponse>("/auth/login", data);
 }
 
 export async function register(data: RegisterRequest): Promise<LoginResponse> {
-  // Cookies são setados automaticamente pelo backend (httpOnly)
   return api.post<LoginResponse>("/auth/register", data);
 }
 
 export async function logout(): Promise<void> {
-  // Backend limpa os cookies automaticamente
   await api.post("/auth/logout");
 }
 
@@ -53,7 +50,6 @@ export async function deactivateAccount(): Promise<void> {
 }
 
 export async function socialLogin(data: SocialLoginRequest): Promise<LoginResponse> {
-  // Cookies são setados automaticamente pelo backend (httpOnly)
   return api.post<LoginResponse>("/auth/social/login", data);
 }
 

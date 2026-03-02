@@ -23,8 +23,6 @@ func NewAuthHandler(authService *service.AuthService, cfg *config.Config) *AuthH
 func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	isProduction := h.config.Primary.Env == "production"
 
-	// Usar Lax em vez de None para melhor compatibilidade com Safari iOS
-	// Lax permite cookies em cross-origin mas com menos restrições que None
 	sameSite := http.SameSiteStrictMode
 	if isProduction {
 		sameSite = http.SameSiteLaxMode
@@ -102,10 +100,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	// Setar cookies httpOnly
 	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
 
-	// Retornar response SEM tokens (por segurança)
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"user":       response.User,
 		"expires_at": response.ExpiresAt,
@@ -113,13 +109,11 @@ func (h *AuthHandler) Login(c echo.Context) error {
 }
 
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
-	// Tentar ler refresh_token do cookie primeiro
 	var refreshToken string
 	cookie, err := c.Cookie("refresh_token")
 	if err == nil && cookie.Value != "" {
 		refreshToken = cookie.Value
 	} else {
-		// Fallback para body (backward compatibility)
 		var req model.RefreshTokenRequest
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return err
@@ -132,23 +126,19 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 		return err
 	}
 
-	// Setar novos cookies httpOnly
 	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
 
-	// Retornar response SEM tokens (por segurança)
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"expires_at": response.ExpiresAt,
 	})
 }
 
 func (h *AuthHandler) Logout(c echo.Context) error {
-	// Tentar ler refresh_token do cookie primeiro
 	var refreshToken string
 	cookie, err := c.Cookie("refresh_token")
 	if err == nil && cookie.Value != "" {
 		refreshToken = cookie.Value
 	} else {
-		// Fallback para body (backward compatibility)
 		var req model.RefreshTokenRequest
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return err
@@ -160,7 +150,6 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 		return err
 	}
 
-	// Limpar cookies
 	h.clearAuthCookies(c)
 
 	return c.NoContent(http.StatusNoContent)
@@ -212,10 +201,8 @@ func (h *AuthHandler) SocialLogin(c echo.Context) error {
 		return err
 	}
 
-	// Setar cookies httpOnly
 	h.setAuthCookies(c, response.AccessToken, response.RefreshToken)
 
-	// Retornar response SEM tokens (por segurança)
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"user":       response.User,
 		"expires_at": response.ExpiresAt,

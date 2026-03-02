@@ -16,18 +16,15 @@ const (
 	roleKey   = "role"
 )
 
-// AuthMiddleware valida o token JWT e injeta dados do usuario no contexto
 func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			var tokenString string
 
-			// Tentar ler de cookie primeiro (método preferido com httpOnly)
 			cookie, err := c.Cookie("access_token")
 			if err == nil && cookie.Value != "" {
 				tokenString = cookie.Value
 			} else {
-				// Fallback para Authorization header (backward compatibility)
 				authHeader := c.Request().Header.Get("Authorization")
 				if authHeader == "" {
 					return errs.NewUnauthorizedError("Token de autenticacao nao fornecido", false)
@@ -40,7 +37,6 @@ func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 				tokenString = parts[1]
 			}
 
-			// Validar token
 			claims, err := authService.ValidateAccessToken(tokenString)
 			if err != nil {
 				if err == service.ErrTokenExpired {
@@ -49,7 +45,6 @@ func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 				return errs.NewUnauthorizedError("Token invalido", false)
 			}
 
-			// Injeta dados do usuario no contexto
 			c.Set(userIDKey, claims.UserID)
 			c.Set(emailKey, claims.Email)
 			c.Set(roleKey, claims.Role)
@@ -59,7 +54,6 @@ func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 	}
 }
 
-// RequireRole verifica se o usuario tem uma das roles permitidas
 func RequireRole(roles ...model.UserRole) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -79,7 +73,6 @@ func RequireRole(roles ...model.UserRole) echo.MiddlewareFunc {
 	}
 }
 
-// GetUserID retorna o ID do usuario autenticado
 func GetUserID(c echo.Context) uuid.UUID {
 	if id, ok := c.Get(userIDKey).(uuid.UUID); ok {
 		return id
@@ -87,7 +80,6 @@ func GetUserID(c echo.Context) uuid.UUID {
 	return uuid.Nil
 }
 
-// GetUserEmail retorna o email do usuario autenticado
 func GetUserEmail(c echo.Context) string {
 	if email, ok := c.Get(emailKey).(string); ok {
 		return email
@@ -95,7 +87,6 @@ func GetUserEmail(c echo.Context) string {
 	return ""
 }
 
-// GetUserRole retorna a role do usuario autenticado
 func GetUserRole(c echo.Context) model.UserRole {
 	if role, ok := c.Get(roleKey).(model.UserRole); ok {
 		return role

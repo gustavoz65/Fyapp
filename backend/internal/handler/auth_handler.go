@@ -23,11 +23,9 @@ func NewAuthHandler(authService *service.AuthService, cfg *config.Config) *AuthH
 func (h *AuthHandler) setAuthCookies(c echo.Context, accessToken, refreshToken string) {
 	isProduction := h.config.Primary.Env == "production"
 
-	// Usar Lax em vez de None para melhor compatibilidade com Safari iOS
-	// Lax permite cookies em cross-origin mas com menos restrições que None
 	sameSite := http.SameSiteStrictMode
 	if isProduction {
-		sameSite = http.SameSiteLaxMode
+		sameSite = http.SameSiteNoneMode
 	}
 
 	c.SetCookie(&http.Cookie{

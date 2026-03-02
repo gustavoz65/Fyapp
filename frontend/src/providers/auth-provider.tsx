@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setRedirectCallback(() => {
+      // Rotas públicas que não devem redirecionar
       const publicRoutes = ["/", "/login", "/register"];
       const isPublicRoute = publicRoutes.some(route => pathname === route || pathname?.startsWith(route));
 
@@ -48,12 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Tentar buscar usuário - cookie será enviado automaticamente
     const loadUser = async () => {
       try {
         if (mounted) {
           await refreshUser();
         }
       } catch {
+        // Se falhar, usuário não está autenticado
       } finally {
         if (mounted) {
           setIsLoading(false);

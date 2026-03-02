@@ -1,6 +1,18 @@
 import type { APIError } from "@/types";
 
-const API_BASE_URL = "/api/v1";
+const API_BASE_URL = (() => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (
+    globalThis.window !== undefined &&
+    globalThis.window.location.hostname !== "localhost" &&
+    globalThis.window.location.hostname !== "127.0.0.1"
+  ) {
+    return "https://satisfied-strength-production-fcdb.up.railway.app/api/v1";
+  }
+  return "http://localhost:3000/api/v1";
+})();
 
 let redirectToLogin: (() => void) | null = null;
 
@@ -36,6 +48,7 @@ class ApiClient {
 
     if (res.status === 401) {
       try {
+        // Evitar múltiplos refreshes simultâneos
         if (!this.refreshPromise) {
           this.refreshPromise = this.refreshAccessToken().finally(() => {
             this.refreshPromise = null;
@@ -43,6 +56,7 @@ class ApiClient {
         }
         await this.refreshPromise;
 
+        // Retry request original
         const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
           headers,

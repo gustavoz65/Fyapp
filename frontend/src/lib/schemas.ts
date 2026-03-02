@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-// ============================================================================
+ ====================================
 // AUTH SCHEMAS
-// ============================================================================
+ ====================================
 
 export const loginSchema = z.object({
   email: z
@@ -43,9 +43,9 @@ export const registerSchema = z.object({
   phone: z.string().max(20, "Telefone muito longo").optional(),
 });
 
-// ============================================================================
+ ====================================
 // TRANSACTION SCHEMAS
-// ============================================================================
+ ====================================
 
 export const createTransactionSchema = z.object({
   bank_account_id: z.string().uuid("ID de conta inválido"),
@@ -89,9 +89,9 @@ export const createTransactionSchema = z.object({
     .optional(),
 });
 
-// ============================================================================
+ ====================================
 // ACCOUNT SCHEMAS
-// ============================================================================
+ ====================================
 
 export const createAccountSchema = z.object({
   name: z
@@ -135,9 +135,9 @@ export const createAccountSchema = z.object({
   include_in_total: z.boolean().optional(),
 });
 
-// ============================================================================
+ ====================================
 // BUDGET SCHEMAS
-// ============================================================================
+ ====================================
 
 export const createBudgetSchema = z.object({
   category_id: z.string().uuid("ID de categoria inválido").optional().or(z.literal("")),
@@ -167,9 +167,9 @@ export const createBudgetSchema = z.object({
     .or(z.literal("")),
 });
 
-// ============================================================================
+ ====================================
 // GOAL SCHEMAS
-// ============================================================================
+ ====================================
 
 export const createGoalSchema = z.object({
   name: z
@@ -203,9 +203,9 @@ export const createGoalSchema = z.object({
     .optional(),
 });
 
-// ============================================================================
+ ====================================
 // TYPE EXPORTS
-// ============================================================================
+ ====================================
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

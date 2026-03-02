@@ -231,9 +231,7 @@ func (r *GoalRepository) Delete(ctx context.Context, id, userID uuid.UUID) error
 	return nil
 }
 
-// ========================================
 // Goal Contribution Methods
-// ========================================
 
 // AddContribution adds a contribution to a goal
 func (r *GoalRepository) AddContribution(ctx context.Context, contribution *model.GoalContribution) error {

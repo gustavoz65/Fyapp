@@ -361,9 +361,7 @@ func (r *UserRepository) GetByIDIncludingInactive(ctx context.Context, id uuid.U
 	return user, nil
 }
 
-// ========================================
 // Session Methods
-// ========================================
 
 // CreateSession creates a new user session
 func (r *UserRepository) CreateSession(ctx context.Context, session *model.UserSession) error {
@@ -481,9 +479,7 @@ func (r *UserRepository) CleanupExpiredSessions(ctx context.Context) (int64, err
 	return result.RowsAffected()
 }
 
-// ========================================
 // User Settings Methods
-// ========================================
 
 // GetSettings retrieves user settings
 func (r *UserRepository) GetSettings(ctx context.Context, userID uuid.UUID) (*model.UserSettings, error) {

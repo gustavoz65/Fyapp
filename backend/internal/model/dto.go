@@ -7,9 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// ========================================
 // Auth DTOs
-// ========================================
 
 type RegisterRequest struct {
 	Email     string `json:"email" validate:"required,email,max=255"`
@@ -90,9 +88,7 @@ type ListProvidersResponse struct {
 	HasPassword bool                     `json:"has_password"`
 }
 
-// ========================================
 // User DTOs
-// ========================================
 
 type UpdateUserRequest struct {
 	FirstName         *string `json:"first_name,omitempty" validate:"omitempty,min=2,max=100"`
@@ -118,9 +114,7 @@ type UpdateUserSettingsRequest struct {
 	Theme                   *string  `json:"theme,omitempty" validate:"omitempty,oneof=light dark system"`
 }
 
-// ========================================
 // Category DTOs
-// ========================================
 
 type CreateCategoryRequest struct {
 	Name        string       `json:"name" validate:"required,min=2,max=100"`
@@ -138,9 +132,7 @@ type UpdateCategoryRequest struct {
 	IsActive    *bool   `json:"is_active,omitempty"`
 }
 
-// ========================================
 // Bank Account DTOs
-// ========================================
 
 type CreateBankAccountRequest struct {
 	Name           string           `json:"name" validate:"required,min=2,max=100"`
@@ -149,8 +141,8 @@ type CreateBankAccountRequest struct {
 	AccountType    AccountType      `json:"account_type" validate:"required,oneof=checking savings credit_card investment cash other"`
 	AccountNumber  string           `json:"account_number,omitempty" validate:"omitempty,max=50"`
 	Agency         string           `json:"agency,omitempty" validate:"omitempty,max=20"`
-	InitialBalance decimal.Decimal  `json:"initial_balance" validate:"required"`
-	CreditLimit    *decimal.Decimal `json:"credit_limit,omitempty"`
+	InitialBalance decimal.Decimal  `json:"initial_balance" validate:"required,maxmoney"`
+	CreditLimit    *decimal.Decimal `json:"credit_limit,omitempty" validate:"omitempty,maxcredit"`
 	ClosingDay     *int             `json:"closing_day,omitempty" validate:"omitempty,min=1,max=31"`
 	DueDay         *int             `json:"due_day,omitempty" validate:"omitempty,min=1,max=31"`
 	Currency       string           `json:"currency,omitempty" validate:"omitempty,len=3"`
@@ -174,34 +166,32 @@ type UpdateBankAccountRequest struct {
 	IncludeInTotal *bool            `json:"include_in_total,omitempty"`
 }
 
-// ========================================
 // Transaction DTOs
-// ========================================
 
 type CreateTransactionRequest struct {
 	BankAccountID     uuid.UUID       `json:"bank_account_id" validate:"required"`
 	CategoryID        *uuid.UUID      `json:"category_id,omitempty"`
 	Type              TransactionType `json:"type" validate:"required,oneof=income expense"`
-	Amount            decimal.Decimal `json:"amount" validate:"required,gt=0"`
+	Amount            decimal.Decimal `json:"amount" validate:"required,gt=0,maxmoney"`
 	Description       string          `json:"description" validate:"required,min=2,max=255"`
 	Notes             string          `json:"notes,omitempty" validate:"omitempty,max=1000"`
 	TransactionDate   time.Time       `json:"transaction_date" validate:"required"`
 	DueDate           *time.Time      `json:"due_date,omitempty"`
 	IsPaid            bool            `json:"is_paid"`
 	AutoPay           bool            `json:"auto_pay"`
-	Tags              []string        `json:"tags,omitempty" validate:"omitempty,dive,max=50"`
+	Tags              []string        `json:"tags,omitempty" validate:"omitempty,max=10,dive,max=50"`
 	TotalInstallments *int            `json:"total_installments,omitempty" validate:"omitempty,min=2,max=120"`
 }
 
 type UpdateTransactionRequest struct {
 	CategoryID      *uuid.UUID       `json:"category_id,omitempty"`
-	Amount          *decimal.Decimal `json:"amount,omitempty" validate:"omitempty,gt=0"`
+	Amount          *decimal.Decimal `json:"amount,omitempty" validate:"omitempty,gt=0,maxmoney"`
 	Description     *string          `json:"description,omitempty" validate:"omitempty,min=2,max=255"`
 	Notes           *string          `json:"notes,omitempty" validate:"omitempty,max=1000"`
 	TransactionDate *time.Time       `json:"transaction_date,omitempty"`
 	DueDate         *time.Time       `json:"due_date,omitempty"`
 	IsPaid          *bool            `json:"is_paid,omitempty"`
-	Tags            []string         `json:"tags,omitempty" validate:"omitempty,dive,max=50"`
+	Tags            []string         `json:"tags,omitempty" validate:"omitempty,max=10,dive,max=50"`
 }
 
 type TransactionFilter struct {
@@ -224,27 +214,23 @@ type TransactionFilter struct {
 	SortDirection string             `json:"sort_direction,omitempty"`
 }
 
-// ========================================
 // Transfer DTOs
-// ========================================
 
 type CreateTransferRequest struct {
 	FromAccountID uuid.UUID       `json:"from_account_id" validate:"required"`
 	ToAccountID   uuid.UUID       `json:"to_account_id" validate:"required,nefield=FromAccountID"`
-	Amount        decimal.Decimal `json:"amount" validate:"required,gt=0"`
+	Amount        decimal.Decimal `json:"amount" validate:"required,gt=0,maxmoney"`
 	Description   string          `json:"description,omitempty" validate:"omitempty,max=255"`
 	TransferDate  time.Time       `json:"transfer_date" validate:"required"`
 }
 
-// ========================================
 // Recurring Transaction DTOs
-// ========================================
 
 type CreateRecurringTransactionRequest struct {
 	BankAccountID uuid.UUID          `json:"bank_account_id" validate:"required"`
 	CategoryID    *uuid.UUID         `json:"category_id,omitempty"`
 	Type          TransactionType    `json:"type" validate:"required,oneof=income expense"`
-	Amount        decimal.Decimal    `json:"amount" validate:"required,gt=0"`
+	Amount        decimal.Decimal    `json:"amount" validate:"required,gt=0,maxmoney"`
 	Description   string             `json:"description" validate:"required,min=2,max=255"`
 	Frequency     RecurringFrequency `json:"frequency" validate:"required,oneof=daily weekly biweekly monthly quarterly yearly"`
 	DayOfMonth    *int               `json:"day_of_month,omitempty" validate:"omitempty,min=1,max=31"`
@@ -256,7 +242,7 @@ type CreateRecurringTransactionRequest struct {
 
 type UpdateRecurringTransactionRequest struct {
 	CategoryID  *uuid.UUID          `json:"category_id,omitempty"`
-	Amount      *decimal.Decimal    `json:"amount,omitempty" validate:"omitempty,gt=0"`
+	Amount      *decimal.Decimal    `json:"amount,omitempty" validate:"omitempty,gt=0,maxmoney"`
 	Description *string             `json:"description,omitempty" validate:"omitempty,min=2,max=255"`
 	Frequency   *RecurringFrequency `json:"frequency,omitempty" validate:"omitempty,oneof=daily weekly biweekly monthly quarterly yearly"`
 	DayOfMonth  *int                `json:"day_of_month,omitempty" validate:"omitempty,min=1,max=31"`
@@ -266,14 +252,12 @@ type UpdateRecurringTransactionRequest struct {
 	AutoConfirm *bool               `json:"auto_confirm,omitempty"`
 }
 
-// ========================================
 // Budget DTOs
-// ========================================
 
 type CreateBudgetRequest struct {
 	CategoryID     *uuid.UUID       `json:"category_id,omitempty"`
 	Name           string           `json:"name" validate:"required,min=2,max=100"`
-	Amount         decimal.Decimal  `json:"amount" validate:"required,gt=0"`
+	Amount         decimal.Decimal  `json:"amount" validate:"required,gt=0,maxbudget"`
 	PeriodType     BudgetPeriodType `json:"period_type" validate:"required,oneof=monthly quarterly yearly custom"`
 	StartDate      time.Time        `json:"start_date" validate:"required"`
 	EndDate        time.Time        `json:"end_date" validate:"required,gtfield=StartDate"`
@@ -282,19 +266,17 @@ type CreateBudgetRequest struct {
 
 type UpdateBudgetRequest struct {
 	Name           *string          `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
-	Amount         *decimal.Decimal `json:"amount,omitempty" validate:"omitempty,gt=0"`
+	Amount         *decimal.Decimal `json:"amount,omitempty" validate:"omitempty,gt=0,maxbudget"`
 	AlertThreshold *decimal.Decimal `json:"alert_threshold,omitempty" validate:"omitempty,gt=0,lte=100"`
 	IsActive       *bool            `json:"is_active,omitempty"`
 }
 
-// ========================================
 // Goal DTOs
-// ========================================
 
 type CreateGoalRequest struct {
 	Name         string          `json:"name" validate:"required,min=2,max=100"`
 	Description  string          `json:"description,omitempty" validate:"omitempty,max=500"`
-	TargetAmount decimal.Decimal `json:"target_amount" validate:"required,gt=0"`
+	TargetAmount decimal.Decimal `json:"target_amount" validate:"required,gt=0,maxgoal"`
 	TargetDate   *time.Time      `json:"target_date,omitempty"`
 	Icon         string          `json:"icon,omitempty" validate:"omitempty,max=50"`
 	Color        string          `json:"color,omitempty" validate:"omitempty,hexcolor"`
@@ -304,7 +286,7 @@ type CreateGoalRequest struct {
 type UpdateGoalRequest struct {
 	Name         *string          `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
 	Description  *string          `json:"description,omitempty" validate:"omitempty,max=500"`
-	TargetAmount *decimal.Decimal `json:"target_amount,omitempty" validate:"omitempty,gt=0"`
+	TargetAmount *decimal.Decimal `json:"target_amount,omitempty" validate:"omitempty,gt=0,maxgoal"`
 	TargetDate   *time.Time       `json:"target_date,omitempty"`
 	Icon         *string          `json:"icon,omitempty" validate:"omitempty,max=50"`
 	Color        *string          `json:"color,omitempty" validate:"omitempty,hexcolor"`
@@ -313,14 +295,12 @@ type UpdateGoalRequest struct {
 }
 
 type CreateGoalContributionRequest struct {
-	Amount           decimal.Decimal `json:"amount" validate:"required,gt=0"`
+	Amount           decimal.Decimal `json:"amount" validate:"required,gt=0,maxmoney"`
 	Note             string          `json:"note,omitempty" validate:"omitempty,max=255"`
 	ContributionDate *time.Time      `json:"contribution_date,omitempty"`
 }
 
-// ========================================
 // Report DTOs
-// ========================================
 
 type GenerateReportRequest struct {
 	Type          ReportType  `json:"type" validate:"required,oneof=cash_flow expense_by_category income_vs_expense budget_analysis custom"`
@@ -339,9 +319,7 @@ type CreateScheduledReportRequest struct {
 	Parameters string         `json:"parameters" validate:"required"`
 }
 
-// ========================================
 // Category Suggestion DTOs
-// ========================================
 
 type SuggestCategoryRequest struct {
 	Description string `json:"description" validate:"required,min=1,max=255"`
@@ -351,9 +329,7 @@ type SuggestCategoryResponse struct {
 	Suggestions []CategorySuggestion `json:"suggestions"`
 }
 
-// ========================================
 // Pagination & Response DTOs
-// ========================================
 
 type PaginationParams struct {
 	Page     int    `json:"page" validate:"min=1"`

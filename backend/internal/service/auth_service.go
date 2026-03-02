@@ -422,9 +422,7 @@ func (s *AuthService) hashRefreshToken(token string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// ========================================
 // Social Login Methods
-// ========================================
 
 var (
 	ErrFirebaseNotConfigured    = errors.New("firebase is not configured")

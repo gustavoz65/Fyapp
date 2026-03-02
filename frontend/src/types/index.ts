@@ -1,6 +1,6 @@
-// ========================================
+
 // Enums / Union Types
-// ========================================
+
 
 export type UserRole = "user" | "admin" | "premium";
 export type TransactionType = "income" | "expense" | "transfer";
@@ -12,9 +12,9 @@ export type GoalStatus = "in_progress" | "completed" | "cancelled";
 export type NotificationType = "budget_alert" | "bill_reminder" | "goal_achieved" | "low_balance" | "transaction_alert" | "system";
 export type RecurringFrequency = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 
-// ========================================
+
 // User
-// ========================================
+
 
 export interface User {
   id: string;
@@ -55,9 +55,9 @@ export interface UserSettings {
   updated_at: string;
 }
 
-// ========================================
+
 // Bank Account
-// ========================================
+
 
 export interface BankAccount {
   id: string;
@@ -83,9 +83,9 @@ export interface BankAccount {
   updated_at: string;
 }
 
-// ========================================
+
 // Category
-// ========================================
+
 
 export interface Category {
   id: string;
@@ -101,9 +101,9 @@ export interface Category {
   updated_at: string;
 }
 
-// ========================================
+
 // Transaction
-// ========================================
+
 
 export interface Transaction {
   id: string;
@@ -155,9 +155,9 @@ export interface RecurringTransaction {
   bank_account?: BankAccount;
 }
 
-// ========================================
+
 // Budget
-// ========================================
+
 
 export interface Budget {
   id: string;
@@ -186,9 +186,9 @@ export interface BudgetSummary {
   transaction_count: number;
 }
 
-// ========================================
+
 // Goal
-// ========================================
+
 
 export interface Goal {
   id: string;
@@ -226,9 +226,9 @@ export interface GoalSummary {
   overall_progress: string;
 }
 
-// ========================================
+
 // Notification
-// ========================================
+
 
 export interface Notification {
   id: string;
@@ -245,9 +245,9 @@ export interface Notification {
   created_at: string;
 }
 
-// ========================================
+
 // Dashboard
-// ========================================
+
 
 export interface DashboardSummary {
   total_balance: string;
@@ -319,9 +319,9 @@ export interface IncomeVsExpenseReport {
   expense_growth: string;
 }
 
-// ========================================
+
 // Auth
-// ========================================
+
 
 export interface LoginRequest {
   email: string;
@@ -369,9 +369,9 @@ export interface ListProvidersResponse {
   has_password: boolean;
 }
 
-// ========================================
+
 // Request DTOs
-// ========================================
+
 
 export interface CreateBankAccountRequest {
   name: string;
@@ -523,9 +523,9 @@ export interface SetPasswordRequest {
   confirm_password: string;
 }
 
-// ========================================
+
 // Pagination
-// ========================================
+
 
 export interface PaginatedResponse<T> {
   data: T[];

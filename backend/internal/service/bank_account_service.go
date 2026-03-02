@@ -25,6 +25,15 @@ func NewBankAccountService(accountRepo *repository.BankAccountRepository, logger
 
 // Create creates a new bank account
 func (s *BankAccountService) Create(ctx context.Context, userID uuid.UUID, req *model.CreateBankAccountRequest) (*model.BankAccount, error) {
+	// Verificar limite de contas bancárias
+	count, err := s.accountRepo.CountAccounts(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count bank accounts: %w", err)
+	}
+	if count >= 20 { // MaxBankAccountsPerUser
+		return nil, fmt.Errorf("você atingiu o limite máximo de 20 contas bancárias")
+	}
+
 	account := &model.BankAccount{
 		UserID:         userID,
 		Name:           req.Name,

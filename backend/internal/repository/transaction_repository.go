@@ -667,3 +667,23 @@ func (r *TransactionRepository) GetDueForAutoReconcile(ctx context.Context, toda
 
 	return r.scanTransactions(rows)
 }
+
+// CountTransactionsByUserToday conta o número de transações criadas pelo usuário hoje
+func (r *TransactionRepository) CountTransactionsByUserToday(ctx context.Context, userID uuid.UUID) (int64, error) {
+	today := time.Now().Truncate(24 * time.Hour)
+	tomorrow := today.Add(24 * time.Hour)
+
+	query := `
+		SELECT COUNT(*)
+		FROM transactions
+		WHERE user_id = ? AND created_at >= ? AND created_at < ?
+	`
+
+	var count int64
+	err := r.QueryRowContext(ctx, query, userID.String(), today, tomorrow).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count transactions: %w", err)
+	}
+
+	return count, nil
+}

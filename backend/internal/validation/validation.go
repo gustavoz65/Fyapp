@@ -16,6 +16,7 @@ var validate *validator.Validate
 func init() {
 	validate = validator.New()
 	registerDecimalValidations(validate)
+	registerCustomValidations(validate)
 }
 
 // registerDecimalValidations registra validações customizadas para o tipo decimal.Decimal
@@ -107,4 +108,92 @@ func toSnakeCase(s string) string {
 		}
 	}
 	return result.String()
+}
+
+// registerCustomValidations registra validações customizadas para limites do sistema
+func registerCustomValidations(v *validator.Validate) {
+	// Validação para valores monetários máximos
+	v.RegisterValidation("maxmoney", validateMaxMoney)
+	v.RegisterValidation("maxcredit", validateMaxCredit)
+	v.RegisterValidation("maxbudget", validateMaxBudget)
+	v.RegisterValidation("maxgoal", validateMaxGoal)
+	v.RegisterValidation("minpositive", validateMinPositive)
+}
+
+func validateMaxMoney(fl validator.FieldLevel) bool {
+	value, ok := fl.Field().Interface().(decimal.Decimal)
+	if !ok {
+		return false
+	}
+	return value.LessThanOrEqual(MaxMoneyValue)
+}
+
+func validateMaxCredit(fl validator.FieldLevel) bool {
+	if fl.Field().IsNil() {
+		return true
+	}
+	value, ok := fl.Field().Interface().(*decimal.Decimal)
+	if !ok {
+		return false
+	}
+	return value.LessThanOrEqual(MaxCreditLimit)
+}
+
+func validateMaxBudget(fl validator.FieldLevel) bool {
+	value, ok := fl.Field().Interface().(decimal.Decimal)
+	if !ok {
+		return false
+	}
+	return value.LessThanOrEqual(MaxBudgetAmount)
+}
+
+func validateMaxGoal(fl validator.FieldLevel) bool {
+	value, ok := fl.Field().Interface().(decimal.Decimal)
+	if !ok {
+		return false
+	}
+	return value.LessThanOrEqual(MaxGoalAmount)
+}
+
+func validateMinPositive(fl validator.FieldLevel) bool {
+	value, ok := fl.Field().Interface().(decimal.Decimal)
+	if !ok {
+		return false
+	}
+	return value.GreaterThanOrEqual(MinPositiveValue)
+}
+
+// ValidateMoneyValue valida se um valor decimal está dentro dos limites permitidos
+func ValidateMoneyValue(value decimal.Decimal) error {
+	if value.GreaterThan(MaxMoneyValue) {
+		return errs.NewBadRequestError(ErrMaxMoneyValueExceeded, false, nil, nil, nil)
+	}
+	if value.IsPositive() && value.LessThan(MinPositiveValue) {
+		return errs.NewBadRequestError(ErrMinPositiveValueRequired, false, nil, nil, nil)
+	}
+	return nil
+}
+
+// ValidateCreditLimit valida se um limite de crédito está dentro dos limites permitidos
+func ValidateCreditLimit(value *decimal.Decimal) error {
+	if value != nil && value.GreaterThan(MaxCreditLimit) {
+		return errs.NewBadRequestError(ErrMaxCreditLimitExceeded, false, nil, nil, nil)
+	}
+	return nil
+}
+
+// ValidateBudgetAmount valida se um valor de orçamento está dentro dos limites permitidos
+func ValidateBudgetAmount(value decimal.Decimal) error {
+	if value.GreaterThan(MaxBudgetAmount) {
+		return errs.NewBadRequestError(ErrMaxBudgetAmountExceeded, false, nil, nil, nil)
+	}
+	return nil
+}
+
+// ValidateGoalAmount valida se um valor de meta está dentro dos limites permitidos
+func ValidateGoalAmount(value decimal.Decimal) error {
+	if value.GreaterThan(MaxGoalAmount) {
+		return errs.NewBadRequestError(ErrMaxGoalAmountExceeded, false, nil, nil, nil)
+	}
+	return nil
 }

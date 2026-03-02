@@ -49,7 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Tentar buscar usuário - cookie será enviado automaticamente
     const loadUser = async () => {
       try {
         if (mounted) {

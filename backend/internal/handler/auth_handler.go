@@ -18,7 +18,6 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-
 func (h *AuthHandler) Register(c echo.Context) error {
 	var req model.RegisterRequest
 	if err := validation.BindAndValidate(c, &req); err != nil {
@@ -105,9 +104,7 @@ func (h *AuthHandler) SetPassword(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-// ========================================
 // Social Login Handlers
-// ========================================
 
 func (h *AuthHandler) SocialLogin(c echo.Context) error {
 	var req model.SocialLoginRequest

@@ -453,3 +453,20 @@ func (r *GoalRepository) scanGoals(rows *sql.Rows) ([]*model.Goal, error) {
 
 	return goals, nil
 }
+
+// CountActiveByUser conta o número de metas ativas de um usuário
+func (r *GoalRepository) CountActiveByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM goals
+		WHERE user_id = ? AND status = 'in_progress'
+	`
+
+	var count int64
+	err := r.QueryRowContext(ctx, query, userID.String()).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count active goals: %w", err)
+	}
+
+	return count, nil
+}

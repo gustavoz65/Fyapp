@@ -653,6 +653,7 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 	bankAccountID uuid.UUID,
 	reader io.Reader,
 	bankType string,
+	forceReimport bool,
 	progressCallback func(current, total int),
 ) (*ImportResult, error) {
 	// Validate account belongs to user
@@ -680,16 +681,20 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 	total := len(importedTxs)
 	progressCallback(0, total)
 
-	// Get existing external IDs for deduplication
-	externalIDs := make([]string, len(importedTxs))
-	for i, tx := range importedTxs {
-		externalIDs[i] = tx.ExternalID
-	}
+	// Get existing external IDs for deduplication (pula se forceReimport)
+	existingIDs := make(map[string]bool)
+	if !forceReimport {
+		externalIDs := make([]string, len(importedTxs))
+		for i, tx := range importedTxs {
+			externalIDs[i] = tx.ExternalID
+		}
 
-	existingIDs, err := s.txRepo.GetExistingExternalIDs(ctx, userID, externalIDs)
-	if err != nil {
-		s.logger.Warn().Err(err).Msg("failed to check for duplicates, proceeding without deduplication")
-		existingIDs = make(map[string]bool)
+		foundIDs, err := s.txRepo.GetExistingExternalIDs(ctx, userID, externalIDs)
+		if err != nil {
+			s.logger.Warn().Err(err).Msg("failed to check for duplicates, proceeding without deduplication")
+		} else {
+			existingIDs = foundIDs
+		}
 	}
 
 	// Process transactions
@@ -702,8 +707,8 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 		// Update progress
 		progressCallback(idx+1, total)
 
-		// Check for duplicates
-		if existingIDs[importedTx.ExternalID] {
+		// Check for duplicates (sempre false se forceReimport=true)
+		if !forceReimport && existingIDs[importedTx.ExternalID] {
 			result.Duplicates++
 			s.logger.Debug().
 				Str("external_id", importedTx.ExternalID).
@@ -784,4 +789,54 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 		Msg("completed transaction import with progress")
 
 	return result, nil
+}
+
+// DeleteAllByAccount deleta todas as transações de uma conta bancária
+func (s *TransactionService) DeleteAllByAccount(ctx context.Context, userID, accountID uuid.UUID) error {
+	// Validar que a conta pertence ao usuário
+	account, err := s.accountRepo.GetByIDAndUser(ctx, accountID, userID)
+	if err != nil {
+		return fmt.Errorf("conta bancária inválida: %w", err)
+	}
+
+	// Buscar todas as transações da conta
+	filter := &model.TransactionFilter{
+		UserID:    userID,
+		AccountID: &accountID,
+		Page:      1,
+		PageSize:  10000, // Limite alto para pegar todas
+	}
+
+	transactions, _, err := s.txRepo.GetByFilter(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("falha ao buscar transações: %w", err)
+	}
+
+	// Deletar cada transação e ajustar saldo
+	for _, tx := range transactions {
+		// Reverter impacto no saldo se estava paga
+		if tx.IsPaid {
+			delta := tx.Amount
+			if tx.Type == model.TransactionTypeIncome {
+				delta = delta.Neg()
+			}
+			if err := s.accountRepo.AdjustBalance(ctx, account.ID, delta); err != nil {
+				s.logger.Error().Err(err).Msg("falha ao ajustar saldo ao deletar transação")
+			}
+		}
+
+		// Deletar transação
+		if err := s.txRepo.Delete(ctx, tx.ID, userID); err != nil {
+			s.logger.Error().Err(err).Str("tx_id", tx.ID.String()).Msg("falha ao deletar transação")
+			continue
+		}
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("account_id", accountID.String()).
+		Int("deleted", len(transactions)).
+		Msg("deletadas todas as transações da conta")
+
+	return nil
 }

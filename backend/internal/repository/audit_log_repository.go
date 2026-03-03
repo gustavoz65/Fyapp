@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/finext/internal/database"
-	"github.com/gustavoz65/finext/internal/model"
+	"github.com/gustavoz65/Fyapp/internal/database"
+	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/rs/zerolog"
 )
 

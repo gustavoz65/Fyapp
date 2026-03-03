@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/shopspring/decimal"
 
-	"github.com/gustavoz65/finext/internal/errs"
+	"github.com/gustavoz65/Fyapp/internal/errs"
 )
 
 var validate *validator.Validate

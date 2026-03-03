@@ -1,14 +1,14 @@
 package router
 
 import (
-	"github.com/gustavoz65/finext/internal/config"
-	"github.com/gustavoz65/finext/internal/database"
-	"github.com/gustavoz65/finext/internal/handler"
-	"github.com/gustavoz65/finext/internal/lib/utils/validator"
-	"github.com/gustavoz65/finext/internal/middleware"
-	"github.com/gustavoz65/finext/internal/repository"
-	"github.com/gustavoz65/finext/internal/server"
-	"github.com/gustavoz65/finext/internal/service"
+	"github.com/gustavoz65/Fyapp/internal/config"
+	"github.com/gustavoz65/Fyapp/internal/database"
+	"github.com/gustavoz65/Fyapp/internal/handler"
+	"github.com/gustavoz65/Fyapp/internal/lib/utils/validator"
+	"github.com/gustavoz65/Fyapp/internal/middleware"
+	"github.com/gustavoz65/Fyapp/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/server"
+	"github.com/gustavoz65/Fyapp/internal/service"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"

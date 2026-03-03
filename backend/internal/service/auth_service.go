@@ -13,10 +13,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/gustavoz65/finext/internal/config"
-	"github.com/gustavoz65/finext/internal/lib/firebase"
-	"github.com/gustavoz65/finext/internal/model"
-	"github.com/gustavoz65/finext/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/config"
+	"github.com/gustavoz65/Fyapp/internal/lib/firebase"
+	"github.com/gustavoz65/Fyapp/internal/model"
+	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )

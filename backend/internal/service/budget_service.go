@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/finext/internal/model"
-	"github.com/gustavoz65/finext/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/model"
+	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/rs/zerolog"
 	"github.com/shopspring/decimal"
 )

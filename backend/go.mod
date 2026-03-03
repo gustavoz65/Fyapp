@@ -1,4 +1,4 @@
-module github.com/gustavoz65/finext
+module github.com/gustavoz65/Fyapp
 
 go 1.25.7
 

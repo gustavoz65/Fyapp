@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/finext/internal/errs"
-	"github.com/gustavoz65/finext/internal/middleware"
-	"github.com/gustavoz65/finext/internal/model"
-	"github.com/gustavoz65/finext/internal/service"
+	"github.com/gustavoz65/Fyapp/internal/errs"
+	"github.com/gustavoz65/Fyapp/internal/middleware"
+	"github.com/gustavoz65/Fyapp/internal/model"
+	"github.com/gustavoz65/Fyapp/internal/service"
 	"github.com/labstack/echo/v4"
 	"github.com/shopspring/decimal"
 )

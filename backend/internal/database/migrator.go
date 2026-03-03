@@ -8,7 +8,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/gustavoz65/finext/internal/config"
+	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/rs/zerolog"
 
 	_ "github.com/go-sql-driver/mysql"

@@ -7,11 +7,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gustavoz65/finext/internal/config"
-	"github.com/gustavoz65/finext/internal/database"
-	"github.com/gustavoz65/finext/internal/logger"
-	"github.com/gustavoz65/finext/internal/router"
-	"github.com/gustavoz65/finext/internal/server"
+	"github.com/gustavoz65/Fyapp/internal/config"
+	"github.com/gustavoz65/Fyapp/internal/database"
+	"github.com/gustavoz65/Fyapp/internal/logger"
+	"github.com/gustavoz65/Fyapp/internal/router"
+	"github.com/gustavoz65/Fyapp/internal/server"
 )
 
 func main() {

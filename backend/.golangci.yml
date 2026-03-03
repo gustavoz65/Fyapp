@@ -1,8 +1,10 @@
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
-  disable-all: true
+  default: none
   enable:
     # Critical - bugs and correctness
     - errcheck
@@ -23,31 +25,30 @@ linters:
     - goimports
     - unconvert
 
-linters-settings:
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-    exclude-functions:
-      - (*database/sql.Rows).Close
-      - (*database/sql.DB).Close
-      - (io.Closer).Close
-      - (*github.com/redis/go-redis/v9.Client).Close
-      - (*github.com/hibiken/asynq.Client).Close
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+      exclude-functions:
+        - (*database/sql.Rows).Close
+        - (*database/sql.DB).Close
+        - (io.Closer).Close
+        - (*github.com/redis/go-redis/v9.Client).Close
+        - (*github.com/hibiken/asynq.Client).Close
 
-  govet:
-    disable:
-      - shadow  # Too many false positives with err variable
+    govet:
+      disable:
+        - shadow  # Too many false positives with err variable
 
-  gosec:
-    excludes:
-      - G101  # hardcoded credentials - false positives on error message constants
-      - G104  # errors unhandled - redundant with errcheck
-      - G115  # integer overflow conversion - too many false positives
-      - G112  # potential slowloris - handled at infrastructure level
+    gosec:
+      excludes:
+        - G101  # hardcoded credentials - false positives on error message constants
+        - G104  # errors unhandled - redundant with errcheck
+        - G115  # integer overflow conversion - too many false positives
+        - G112  # potential slowloris - handled at infrastructure level
 
-  staticcheck:
-    checks: ["all", "-SA1019"]  # Exclude deprecated warnings
-
+    staticcheck:
+      checks: ["all", "-SA1019"]  # Exclude deprecated warnings
 
 issues:
   max-same-issues: 50

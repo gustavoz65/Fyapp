@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gustavoz65/finext/internal/config"
-	"github.com/gustavoz65/finext/internal/lib/email"
+	"github.com/gustavoz65/Fyapp/internal/config"
+	"github.com/gustavoz65/Fyapp/internal/lib/email"
 	"github.com/hibiken/asynq"
 	zerolog "github.com/rs/zerolog"
 )

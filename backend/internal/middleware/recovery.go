@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/gustavoz65/finext/internal/errs"
+	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 )

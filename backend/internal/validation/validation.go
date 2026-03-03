@@ -6,9 +6,10 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gustavoz65/finext/internal/errs"
 	"github.com/labstack/echo/v4"
 	"github.com/shopspring/decimal"
+
+	"github.com/gustavoz65/finext/internal/errs"
 )
 
 var validate *validator.Validate
@@ -123,11 +124,11 @@ func toSnakeCase(s string) string {
 // registerCustomValidations registra validações customizadas para limites do sistema
 func registerCustomValidations(v *validator.Validate) {
 	// Validação para valores monetários máximos
-	v.RegisterValidation("maxmoney", validateMaxMoney)
-	v.RegisterValidation("maxcredit", validateMaxCredit)
-	v.RegisterValidation("maxbudget", validateMaxBudget)
-	v.RegisterValidation("maxgoal", validateMaxGoal)
-	v.RegisterValidation("minpositive", validateMinPositive)
+	_ = v.RegisterValidation("maxmoney", validateMaxMoney)
+	_ = v.RegisterValidation("maxcredit", validateMaxCredit)
+	_ = v.RegisterValidation("maxbudget", validateMaxBudget)
+	_ = v.RegisterValidation("maxgoal", validateMaxGoal)
+	_ = v.RegisterValidation("minpositive", validateMinPositive)
 }
 
 func validateMaxMoney(fl validator.FieldLevel) bool {

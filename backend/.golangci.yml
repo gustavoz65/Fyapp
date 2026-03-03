@@ -40,6 +40,7 @@ linters-settings:
 
   gosec:
     excludes:
+      - G101  # hardcoded credentials - false positives on error message constants
       - G104  # errors unhandled - redundant with errcheck
       - G115  # integer overflow conversion - too many false positives
       - G112  # potential slowloris - handled at infrastructure level

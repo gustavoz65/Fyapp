@@ -166,8 +166,14 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 		return TransactionImport{}, fmt.Errorf("invalid amount '%s': %w", amountStr, err)
 	}
 
-	// Override type if TypeColumn is specified (e.g., Banco do Brasil)
-	if mapping.TypeColumn != nil && len(record) > *mapping.TypeColumn {
+	// Pagamento com cartão BB é sempre despesa mesmo quando marcado como "Entrada"
+	lancamento := ""
+	if len(record) > 1 {
+		lancamento = strings.ToLower(strings.TrimSpace(record[1]))
+	}
+	if strings.Contains(lancamento, "pagamento pix cart") || strings.Contains(lancamento, "pagamento pix cartão") {
+		transactionType = "expense"
+	} else if mapping.TypeColumn != nil && len(record) > *mapping.TypeColumn {
 		typeStr := strings.TrimSpace(strings.ToLower(record[*mapping.TypeColumn]))
 		switch typeStr {
 		case "entrada", "receita", "credit":

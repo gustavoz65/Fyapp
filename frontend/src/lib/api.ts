@@ -28,6 +28,14 @@ const TOKEN_KEYS = {
   REFRESH: "refresh_token",
 } as const;
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEYS.ACCESS);
@@ -35,13 +43,17 @@ export function getAccessToken(): string | null {
 
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
+  const cookieToken = getCookie("refresh_token");
+  if (cookieToken) return cookieToken;
   return localStorage.getItem(TOKEN_KEYS.REFRESH);
 }
 
-export function setTokens(accessToken: string, refreshToken: string): void {
+export function setTokens(accessToken: string, refreshToken?: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_KEYS.ACCESS, accessToken);
-  localStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
+  if (refreshToken) {
+    localStorage.setItem(TOKEN_KEYS.REFRESH, refreshToken);
+  }
 }
 
 export function clearTokens(): void {
@@ -55,8 +67,11 @@ class ApiClient {
 
   private async refreshAccessToken(): Promise<void> {
     const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-      throw new Error("No refresh token");
+    const cookieRefreshToken = getCookie("refresh_token");
+
+    const body: Record<string, string> = {};
+    if (!cookieRefreshToken && refreshToken) {
+      body.refresh_token = refreshToken;
     }
 
     const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
@@ -64,7 +79,8 @@ class ApiClient {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      credentials: "include",
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
     });
 
     if (!res.ok) {
@@ -78,6 +94,7 @@ class ApiClient {
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const accessToken = getAccessToken();
+    const csrfToken = getCookie("csrf_token");
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
@@ -87,9 +104,14 @@ class ApiClient {
       headers.Authorization = `Bearer ${accessToken}`;
     }
 
+    if (csrfToken && options.method && options.method !== "GET") {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
+
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials: "include",
     });
 
     if (res.status === 401) {
@@ -109,6 +131,7 @@ class ApiClient {
         const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
           headers,
+          credentials: "include",
         });
 
         if (!retryRes.ok) {

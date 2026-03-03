@@ -1,4 +1,4 @@
-import { api, setTokens, clearTokens, getRefreshToken } from "./api";
+import { api, setTokens, clearTokens } from "./api";
 import type {
   LoginRequest,
   LoginResponse,
@@ -15,20 +15,21 @@ import type {
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const response = await api.post<LoginResponse>("/auth/login", data);
-  setTokens(response.access_token, response.refresh_token);
+  setTokens(response.access_token, response.refresh_token || undefined);
   return response;
 }
 
 export async function register(data: RegisterRequest): Promise<LoginResponse> {
   const response = await api.post<LoginResponse>("/auth/register", data);
-  setTokens(response.access_token, response.refresh_token);
+  setTokens(response.access_token, response.refresh_token || undefined);
   return response;
 }
 
 export async function logout(): Promise<void> {
-  const refreshToken = getRefreshToken();
-  if (refreshToken) {
-    await api.post("/auth/logout", { refresh_token: refreshToken });
+  try {
+    await api.post("/auth/logout", {});
+  } catch (error) {
+    console.error("Logout error:", error);
   }
   clearTokens();
 }
@@ -59,7 +60,7 @@ export async function deactivateAccount(): Promise<void> {
 
 export async function socialLogin(data: SocialLoginRequest): Promise<LoginResponse> {
   const response = await api.post<LoginResponse>("/auth/social/login", data);
-  setTokens(response.access_token, response.refresh_token);
+  setTokens(response.access_token, response.refresh_token || undefined);
   return response;
 }
 

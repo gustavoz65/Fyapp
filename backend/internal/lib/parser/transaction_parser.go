@@ -51,6 +51,13 @@ var BankMappings = map[string]CSVMapping{
 		AmountColumn:      3,
 		DateFormat:        "02/01/2006",
 	},
+	"bb": {
+		DateColumn:        0,
+		DescriptionColumn: 2, // Detalhes column
+		AmountColumn:      4, // Valor column
+		TypeColumn:        &[]int{5}[0], // Tipo Lançamento (Entrada/Saída)
+		DateFormat:        "02/01/2006",
+	},
 	"generic": {
 		DateColumn:        0,
 		DescriptionColumn: 1,
@@ -137,6 +144,10 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 
 	// Parse date
 	dateStr := strings.TrimSpace(record[mapping.DateColumn])
+	// Skip invalid dates like "00/00/0000" from Banco do Brasil
+	if dateStr == "00/00/0000" || dateStr == "" {
+		return TransactionImport{}, fmt.Errorf("invalid or empty date")
+	}
 	date, err := p.parseDate(dateStr, mapping.DateFormat)
 	if err != nil {
 		return TransactionImport{}, fmt.Errorf("invalid date '%s': %w", dateStr, err)
@@ -155,8 +166,18 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 		return TransactionImport{}, fmt.Errorf("invalid amount '%s': %w", amountStr, err)
 	}
 
+	// Override type if TypeColumn is specified (e.g., Banco do Brasil)
+	if mapping.TypeColumn != nil && len(record) > *mapping.TypeColumn {
+		typeStr := strings.TrimSpace(strings.ToLower(record[*mapping.TypeColumn]))
+		if typeStr == "entrada" || typeStr == "receita" || typeStr == "credit" {
+			transactionType = "income"
+		} else if typeStr == "saída" || typeStr == "saida" || typeStr == "despesa" || typeStr == "debit" {
+			transactionType = "expense"
+		}
+	}
+
 	// Generate external ID for deduplication
-	externalID := p.generateExternalID(date, description, amount)
+	externalID := p.generateExternalID(date, description, amount.Abs())
 
 	// Store raw data
 	rawData := make(map[string]string)

@@ -518,6 +518,7 @@ export default function TransactionsPage() {
                     <SelectContent>
                       <SelectItem value="generic">Genérico (CSV padrão)</SelectItem>
                       <SelectItem value="nubank">Nubank</SelectItem>
+                      <SelectItem value="bb">Banco do Brasil</SelectItem>
                       <SelectItem value="inter">Inter</SelectItem>
                       <SelectItem value="itau">Itaú</SelectItem>
                     </SelectContent>
@@ -866,7 +867,9 @@ export default function TransactionsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={tx.is_paid ? "default" : "destructive"}>
-                          {tx.is_paid ? "Pago" : "Pendente"}
+                          {tx.is_paid
+                            ? (tx.type === "income" ? "Recebido" : "Pago")
+                            : "Pendente"}
                         </Badge>
                       </TableCell>
                       <TableCell

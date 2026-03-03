@@ -121,6 +121,31 @@ export default function DashboardPage() {
   const totalBalance = parseFloat(data.total_balance || "0");
   const isNegativeBalance = totalBalance < 0;
 
+  type HealthStatus = "good" | "warning" | "critical";
+
+  // Saldo Total
+  // critical → saldo negativo | warning → positivo mas caindo | good → positivo e crescendo
+  const balanceStatus: HealthStatus =
+    isNegativeBalance ? "critical" : balanceChangePercent < 0 ? "warning" : "good";
+
+  // Receitas do Mês
+  // good → crescendo | warning → caindo até -30% | critical → caindo mais de -30%
+  const incomeChange = parseFloat(data.income_change || "0");
+  const incomeStatus: HealthStatus =
+    incomeChange > 0 ? "good" : incomeChange > -30 ? "warning" : "critical";
+
+  // Despesas do Mês (lógica invertida: gastar menos é bom)
+  // good → caindo | warning → subindo até +30% | critical → subindo mais de +30%
+  const expenseChange = parseFloat(data.expense_change || "0");
+  const expenseStatus: HealthStatus =
+    expenseChange < 0 ? "good" : expenseChange < 30 ? "warning" : "critical";
+
+  // Metas Ativas
+  // good → >50% concluído | warning → 20-50% | critical → <20%
+  const goalsProgress = parseFloat(data.goals_progress || "0");
+  const goalsStatus: HealthStatus =
+    goalsProgress > 50 ? "good" : goalsProgress > 20 ? "warning" : "critical";
+
   const metrics = [
     {
       title: "Saldo Total",
@@ -129,40 +154,35 @@ export default function DashboardPage() {
       trend: balanceChangePercent >= 0 ? ("up" as const) : ("down" as const),
       icon: Wallet,
       isNegative: isNegativeBalance,
+      status: balanceStatus,
     },
     {
       title: "Receitas do Mês",
       value: formatCurrency(data.month_income),
       change: data.income_change
-        ? `${parseFloat(data.income_change) > 0 ? "+" : ""}${parseFloat(data.income_change).toFixed(1)}%`
+        ? `${incomeChange > 0 ? "+" : ""}${incomeChange.toFixed(1)}%`
         : "+0%",
-      trend:
-        parseFloat(data.income_change || "0") > 0
-          ? ("up" as const)
-          : ("down" as const),
+      trend: incomeChange >= 0 ? ("up" as const) : ("down" as const),
       icon: TrendingUpIcon,
+      status: incomeStatus,
     },
     {
       title: "Despesas do Mês",
       value: formatCurrency(data.month_expense),
       change: data.expense_change
-        ? `${parseFloat(data.expense_change) > 0 ? "+" : ""}${parseFloat(data.expense_change).toFixed(1)}%`
+        ? `${expenseChange > 0 ? "+" : ""}${expenseChange.toFixed(1)}%`
         : "+0%",
-      trend:
-        parseFloat(data.expense_change || "0") > 0
-          ? ("down" as const)
-          : ("up" as const),
+      trend: expenseChange > 0 ? ("up" as const) : ("down" as const),
       icon: CreditCard,
+      status: expenseStatus,
     },
     {
       title: "Metas Ativas",
       value: data.active_goals.toString(),
-      change: `${data.goals_progress}% concluido`,
-      trend:
-        parseFloat(data.goals_progress || "0") > 50
-          ? ("up" as const)
-          : ("down" as const),
+      change: `${data.goals_progress}% concluído`,
+      trend: goalsProgress > 50 ? ("up" as const) : ("down" as const),
       icon: DollarSign,
+      status: goalsStatus,
     },
   ];
 
@@ -206,15 +226,25 @@ export default function DashboardPage() {
                   {metric.value}
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  {metric.trend === "up" ? (
-                    <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
-                  )}
+                  {(() => {
+                    const colorMap = {
+                      good: "text-green-500",
+                      warning: "text-yellow-500",
+                      critical: "text-red-500",
+                    };
+                    const color = colorMap[metric.status];
+                    return metric.trend === "up" ? (
+                      <TrendingUp className={`h-3 w-3 mr-1 ${color}`} />
+                    ) : (
+                      <TrendingDown className={`h-3 w-3 mr-1 ${color}`} />
+                    );
+                  })()}
                   <span
-                    className={
-                      metric.trend === "up" ? "text-green-500" : "text-red-500"
-                    }
+                    className={{
+                      good: "text-green-500",
+                      warning: "text-yellow-500",
+                      critical: "text-red-500",
+                    }[metric.status]}
                   >
                     {metric.change}
                   </span>

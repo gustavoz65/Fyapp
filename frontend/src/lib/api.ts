@@ -1,7 +1,7 @@
 import type { APIError } from "@/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
 let redirectToLogin: (() => void) | null = null;
 

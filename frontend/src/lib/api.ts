@@ -2,7 +2,7 @@ import type { APIError } from "@/types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://satisfied-strength-production-fcdb.up.railway.app/api/v1";
+  "https://fyapp-production.up.railway.app/api/v1";
 
 let redirectToLogin: (() => void) | null = null;
 

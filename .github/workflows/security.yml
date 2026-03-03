@@ -65,7 +65,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      security-events: write
       contents: read
     steps:
       - uses: actions/checkout@v6
@@ -75,25 +74,16 @@ jobs:
         with:
           scan-type: fs
           scan-ref: backend
-          format: sarif
-          output: trivy-backend.sarif
+          format: table
           severity: CRITICAL,HIGH
           scanners: vuln,secret,misconfig
           exit-code: 0
-
-      - uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: trivy-backend.sarif
-          category: trivy-backend
 
   trivy-frontend:
     name: Trivy (Frontend)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      security-events: write
       contents: read
     steps:
       - uses: actions/checkout@v6
@@ -103,25 +93,16 @@ jobs:
         with:
           scan-type: fs
           scan-ref: frontend
-          format: sarif
-          output: trivy-frontend.sarif
+          format: table
           severity: CRITICAL,HIGH
           scanners: vuln,secret,misconfig
           exit-code: 0
-
-      - uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: trivy-frontend.sarif
-          category: trivy-frontend
 
   trivy-docker-backend:
     name: Trivy (Dockerfile Backend)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      security-events: write
       contents: read
     steps:
       - uses: actions/checkout@v6
@@ -133,24 +114,15 @@ jobs:
         continue-on-error: true
         with:
           image-ref: finext-backend:ci
-          format: sarif
-          output: trivy-docker-backend.sarif
+          format: table
           severity: CRITICAL,HIGH
           exit-code: 0
-
-      - uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: trivy-docker-backend.sarif
-          category: trivy-docker-backend
 
   trivy-docker-frontend:
     name: Trivy (Dockerfile Frontend)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      security-events: write
       contents: read
     steps:
       - uses: actions/checkout@v6
@@ -162,14 +134,6 @@ jobs:
         continue-on-error: true
         with:
           image-ref: finext-frontend:ci
-          format: sarif
-          output: trivy-docker-frontend.sarif
+          format: table
           severity: CRITICAL,HIGH
           exit-code: 0
-
-      - uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        continue-on-error: true
-        with:
-          sarif_file: trivy-docker-frontend.sarif
-          category: trivy-docker-frontend

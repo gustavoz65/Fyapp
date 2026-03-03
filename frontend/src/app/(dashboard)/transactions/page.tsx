@@ -739,6 +739,7 @@ export default function TransactionsPage() {
           </DialogContent>
         </Dialog>
       </div>
+      </div>
 
       <Card>
         <CardHeader>

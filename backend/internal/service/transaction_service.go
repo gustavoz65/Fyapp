@@ -508,10 +508,10 @@ func (s *TransactionService) AutoReconcile(ctx context.Context) error {
 
 // ImportResult contains the result of a transaction import
 type ImportResult struct {
-	TotalImported int                     `json:"total_imported"`
-	Duplicates    int                     `json:"duplicates"`
-	Errors        []string                `json:"errors"`
-	Transactions  []*model.Transaction    `json:"transactions"`
+	TotalImported int                  `json:"total_imported"`
+	Duplicates    int                  `json:"duplicates"`
+	Errors        []string             `json:"errors"`
+	Transactions  []*model.Transaction `json:"transactions"`
 }
 
 // ImportTransactions imports transactions from CSV file

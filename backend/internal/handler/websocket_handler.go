@@ -58,9 +58,9 @@ func (h *WebSocketHandler) ImportProgress(c echo.Context) error {
 				if err != nil {
 					// Job not found or expired
 					errMsg := map[string]interface{}{
-						"error":   "Job não encontrado ou expirado",
-						"job_id":  jobID,
-						"status":  "error",
+						"error":  "Job não encontrado ou expirado",
+						"job_id": jobID,
+						"status": "error",
 					}
 					data, _ := json.Marshal(errMsg)
 					if err := websocket.Message.Send(ws, string(data)); err != nil {

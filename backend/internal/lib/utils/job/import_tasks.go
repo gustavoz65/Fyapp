@@ -23,14 +23,14 @@ type ImportTransactionsPayload struct {
 }
 
 type ImportStatus struct {
-	JobID         string   `json:"job_id"`
-	Status        string   `json:"status"` // "processing", "completed", "failed"
-	Progress      int      `json:"progress"`
-	Total         int      `json:"total"`
-	Imported      int      `json:"imported"`
-	Duplicates    int      `json:"duplicates"`
-	Errors        []string `json:"errors"`
-	Message       string   `json:"message"`
+	JobID      string   `json:"job_id"`
+	Status     string   `json:"status"` // "processing", "completed", "failed"
+	Progress   int      `json:"progress"`
+	Total      int      `json:"total"`
+	Imported   int      `json:"imported"`
+	Duplicates int      `json:"duplicates"`
+	Errors     []string `json:"errors"`
+	Message    string   `json:"message"`
 }
 
 // NewImportTransactionsTask creates a new import task

@@ -63,7 +63,7 @@ import type {
   UserSettings,
 } from "@/types";
 import { signInWithPopup } from "firebase/auth";
-import { KeyRound, Link2, Link2Off, ShieldCheck } from "lucide-react";
+import { KeyRound, Link2, Link2Off, Loader2, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -85,7 +85,6 @@ const BR_TIMEZONES = [
   { value: "America/Noronha", label: "Fernando de Noronha (UTC-2)" },
 ];
 
-// Ícone SVG do Google
 function GoogleIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -97,12 +96,24 @@ function GoogleIcon() {
   );
 }
 
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "message" in error) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
+
 export default function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [providers, setProviders] = useState<ListProvidersResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [linkingProvider, setLinkingProvider] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [definePasswordOpen, setDefinePasswordOpen] = useState(false);
 
   const [profileForm, setProfileForm] = useState({
     first_name: "",
@@ -121,7 +132,6 @@ export default function SettingsPage() {
     new_password: "",
     confirm_password: "",
   });
-  const [definePasswordOpen, setDefinePasswordOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -129,6 +139,7 @@ export default function SettingsPage() {
       setSettings(s);
       setProviders(p);
     } catch {
+      // empty
     } finally {
       setIsLoading(false);
     }
@@ -148,8 +159,9 @@ export default function SettingsPage() {
     fetchData();
   }, [user, fetchData]);
 
-  async function handleProfileSave(e: React.FormEvent) {
+  async function handleProfileSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setIsSavingProfile(true);
     try {
       const body: UpdateUserRequest = {
         first_name: profileForm.first_name,
@@ -161,9 +173,11 @@ export default function SettingsPage() {
       };
       await updateUser(body);
       await refreshUser();
-      toast.success("Perfil atualizado");
-    } catch {
-      toast.error("Erro ao atualizar perfil");
+      toast.success("Perfil atualizado com sucesso");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao atualizar perfil. Tente novamente."));
+    } finally {
+      setIsSavingProfile(false);
     }
   }
 
@@ -171,17 +185,22 @@ export default function SettingsPage() {
     try {
       const updated = await updateUserSettings({ [key]: value });
       setSettings(updated);
-    } catch {
-      toast.error("Erro ao atualizar configuração");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao atualizar configuração."));
     }
   }
 
-  async function handlePasswordChange(e: React.FormEvent) {
+  async function handlePasswordChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (passwordForm.new_password !== passwordForm.confirm_password) {
-      toast.error("Senhas não coincidem");
+      toast.error("As senhas não coincidem. Verifique e tente novamente.");
       return;
     }
+    if (passwordForm.new_password.length < 8) {
+      toast.error("A nova senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+    setIsChangingPassword(true);
     try {
       const body: ChangePasswordRequest = {
         current_password: passwordForm.current_password,
@@ -190,26 +209,36 @@ export default function SettingsPage() {
       await changePassword(body);
       toast.success("Senha alterada com sucesso");
       setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
-    } catch {
-      toast.error("Erro ao alterar senha");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao alterar senha. Verifique a senha atual."));
+    } finally {
+      setIsChangingPassword(false);
     }
   }
 
   async function handleDeactivate() {
+    setIsDeactivating(true);
     try {
       await deactivateAccount();
+      toast.success("Conta desativada");
       logout();
-    } catch {
-      toast.error("Erro ao desativar conta");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao desativar conta. Tente novamente."));
+      setIsDeactivating(false);
     }
   }
 
   async function handleSetPassword(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (firstPasswordForm.new_password !== firstPasswordForm.confirm_password) {
-      toast.error("As senhas não coincidem");
+      toast.error("As senhas não coincidem. Verifique e tente novamente.");
       return;
     }
+    if (firstPasswordForm.new_password.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+    setIsSettingPassword(true);
     try {
       await setPassword({
         new_password: firstPasswordForm.new_password,
@@ -219,8 +248,10 @@ export default function SettingsPage() {
       setFirstPasswordForm({ new_password: "", confirm_password: "" });
       setDefinePasswordOpen(false);
       await fetchData();
-    } catch {
-      toast.error("Erro ao definir senha");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao definir senha. Tente novamente."));
+    } finally {
+      setIsSettingPassword(false);
     }
   }
 
@@ -233,8 +264,7 @@ export default function SettingsPage() {
       toast.success("Conta Google vinculada com sucesso");
       await fetchData();
     } catch (error) {
-      console.error(error);
-      toast.error("Erro ao vincular conta Google");
+      toast.error(getApiErrorMessage(error, "Erro ao vincular conta Google. Tente novamente."));
     } finally {
       setLinkingProvider(false);
     }
@@ -244,24 +274,33 @@ export default function SettingsPage() {
     setLinkingProvider(true);
     try {
       await unlinkProvider("google");
-      toast.success("Conta Google desvinculada");
+      toast.success("Conta Google desvinculada com sucesso");
       await fetchData();
-    } catch {
-      toast.error("Erro ao desvincular conta Google");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao desvincular conta Google."));
     } finally {
       setLinkingProvider(false);
     }
   }
 
-  const googleProvider_linked = providers?.providers.find(
+  const googleProviderLinked = providers?.providers.find(
     (p: LinkedProvider) => p.provider === "google"
   );
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <Skeleton className="h-100" />
+      <div className="space-y-6 pb-8">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-20" />
+          <Skeleton className="h-9 w-28" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <Skeleton className="h-64" />
+        <Skeleton className="h-48" />
       </div>
     );
   }
@@ -271,7 +310,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-4xl font-bold tracking-tight">Configurações</h1>
         <p className="text-muted-foreground mt-2">
-          Gerencie suas preferências e configurações
+          Gerencie suas preferências e configurações de conta
         </p>
       </div>
 
@@ -287,7 +326,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Informações Pessoais</CardTitle>
-              <CardDescription>Atualize seus dados</CardDescription>
+              <CardDescription>Atualize seu nome, telefone e preferências regionais</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleProfileSave} className="space-y-4">
@@ -297,6 +336,7 @@ export default function SettingsPage() {
                     <Input
                       value={profileForm.first_name}
                       onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+                      placeholder="Seu nome"
                     />
                   </div>
                   <div className="space-y-2">
@@ -304,6 +344,7 @@ export default function SettingsPage() {
                     <Input
                       value={profileForm.last_name}
                       onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+                      placeholder="Seu sobrenome"
                     />
                   </div>
                 </div>
@@ -312,16 +353,25 @@ export default function SettingsPage() {
                   <Input
                     value={profileForm.phone}
                     onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    placeholder="(11) 99999-9999"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Moeda</Label>
-                    <Input value="BRL — Real Brasileiro" disabled className="bg-muted text-muted-foreground cursor-not-allowed" />
+                    <Input
+                      value="BRL — Real Brasileiro"
+                      disabled
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Idioma</Label>
-                    <Input value="Português (Brasil)" disabled className="bg-muted text-muted-foreground cursor-not-allowed" />
+                    <Input
+                      value="Português (Brasil)"
+                      disabled
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Fuso Horário</Label>
@@ -342,7 +392,10 @@ export default function SettingsPage() {
                     </Select>
                   </div>
                 </div>
-                <Button type="submit">Salvar Perfil</Button>
+                <Button type="submit" disabled={isSavingProfile}>
+                  {isSavingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {isSavingProfile ? "Salvando..." : "Salvar perfil"}
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -351,14 +404,14 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Transações</CardTitle>
-                <CardDescription>Configure o comportamento das Transações</CardDescription>
+                <CardDescription>Configure o comportamento das transações</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Permitir Transações manuais</p>
+                    <p className="text-sm font-medium">Permitir transações manuais</p>
                     <p className="text-xs text-muted-foreground">
-                      Quando desativado, você só poderá ter Transações automáticas do banco
+                      Quando desativado, só serão aceitas transações automáticas via banco
                     </p>
                   </div>
                   <Switch
@@ -375,24 +428,24 @@ export default function SettingsPage() {
 
         {/* ── NOTIFICAÇÕES ── */}
         <TabsContent value="notifications" className="mt-4">
-          {settings && (
+          {settings ? (
             <Card>
               <CardHeader>
                 <CardTitle>Preferências de Notificação</CardTitle>
-                <CardDescription>Configure como deseja receber notificações</CardDescription>
+                <CardDescription>Configure como deseja receber alertas e relatórios</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
                   { key: "notification_email" as const, label: "Email", desc: "Receber notificações por email" },
-                  { key: "notification_push" as const, label: "Push", desc: "Receber notificações push" },
+                  { key: "notification_push" as const, label: "Push", desc: "Receber notificações push no navegador" },
                   { key: "notification_sms" as const, label: "SMS", desc: "Receber notificações por SMS" },
-                  { key: "budget_alerts" as const, label: "Alertas de Orçamento", desc: "Quando atingir o limite do orçamento" },
-                  { key: "bill_reminders" as const, label: "Lembretes de Contas", desc: "Quando uma conta estiver próxima do vencimento" },
-                  { key: "weekly_summary" as const, label: "Resumo Semanal", desc: "Receber resumo semanal por email" },
-                  { key: "monthly_report" as const, label: "Relatório Mensal", desc: "Receber relatório mensal por email" },
-                  { key: "low_balance_alert" as const, label: "Alerta de Saldo Baixo", desc: "Quando o saldo estiver abaixo do limite" },
+                  { key: "budget_alerts" as const, label: "Alertas de Orçamento", desc: "Avisar quando atingir o limite configurado" },
+                  { key: "bill_reminders" as const, label: "Lembretes de Contas", desc: "Avisar quando uma conta estiver próxima do vencimento" },
+                  { key: "weekly_summary" as const, label: "Resumo Semanal", desc: "Receber resumo semanal das finanças por email" },
+                  { key: "monthly_report" as const, label: "Relatório Mensal", desc: "Receber relatório mensal detalhado por email" },
+                  { key: "low_balance_alert" as const, label: "Alerta de Saldo Baixo", desc: "Avisar quando o saldo estiver abaixo do limite definido" },
                 ].map((item) => (
-                  <div key={item.key} className="flex items-center justify-between">
+                  <div key={item.key} className="flex items-center justify-between py-1">
                     <div>
                       <p className="text-sm font-medium">{item.label}</p>
                       <p className="text-xs text-muted-foreground">{item.desc}</p>
@@ -403,6 +456,12 @@ export default function SettingsPage() {
                     />
                   </div>
                 ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground text-sm">
+                Não foi possível carregar as configurações. Recarregue a página.
               </CardContent>
             </Card>
           )}
@@ -477,10 +536,18 @@ export default function SettingsPage() {
                           />
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
-                          <Button type="button" variant="ghost" onClick={() => setDefinePasswordOpen(false)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setDefinePasswordOpen(false)}
+                            disabled={isSettingPassword}
+                          >
                             Cancelar
                           </Button>
-                          <Button type="submit">Definir Senha</Button>
+                          <Button type="submit" disabled={isSettingPassword}>
+                            {isSettingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Definir Senha
+                          </Button>
                         </div>
                       </form>
                     </DialogContent>
@@ -498,22 +565,26 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Google</p>
-                    {googleProvider_linked ? (
-                      <p className="text-xs text-muted-foreground">{googleProvider_linked.email}</p>
+                    {googleProviderLinked ? (
+                      <p className="text-xs text-muted-foreground">{googleProviderLinked.email}</p>
                     ) : (
                       <p className="text-xs text-muted-foreground">Não vinculado</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {googleProvider_linked ? (
+                  {googleProviderLinked ? (
                     <>
                       <Badge variant="default">Vinculado</Badge>
                       {providers?.has_password && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" disabled={linkingProvider}>
-                              <Link2Off className="h-4 w-4 mr-1" />
+                              {linkingProvider ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Link2Off className="h-4 w-4 mr-1" />
+                              )}
                               Desvincular
                             </Button>
                           </AlertDialogTrigger>
@@ -521,7 +592,7 @@ export default function SettingsPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Desvincular Google?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Você não poderá mais fazer login com sua conta Google. Certifique-se de ter uma senha cadastrada.
+                                Você não poderá mais fazer login com sua conta Google. Certifique-se de ter uma senha cadastrada para não perder o acesso.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -536,7 +607,11 @@ export default function SettingsPage() {
                     </>
                   ) : (
                     <Button variant="outline" size="sm" onClick={handleLinkGoogle} disabled={linkingProvider}>
-                      <Link2 className="h-4 w-4 mr-1" />
+                      {linkingProvider ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Link2 className="h-4 w-4 mr-1" />
+                      )}
                       Vincular Google
                     </Button>
                   )}
@@ -550,6 +625,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Alterar Senha</CardTitle>
+                <CardDescription>Escolha uma senha forte com pelo menos 8 caracteres</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handlePasswordChange} className="space-y-4">
@@ -559,6 +635,7 @@ export default function SettingsPage() {
                       type="password"
                       value={passwordForm.current_password}
                       onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                      placeholder="Digite sua senha atual"
                       required
                     />
                   </div>
@@ -568,6 +645,7 @@ export default function SettingsPage() {
                       type="password"
                       value={passwordForm.new_password}
                       onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                      placeholder="Mínimo 8 caracteres"
                       required
                     />
                   </div>
@@ -577,10 +655,14 @@ export default function SettingsPage() {
                       type="password"
                       value={passwordForm.confirm_password}
                       onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                      placeholder="Repita a nova senha"
                       required
                     />
                   </div>
-                  <Button type="submit">Alterar Senha</Button>
+                  <Button type="submit" disabled={isChangingPassword}>
+                    {isChangingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -588,30 +670,36 @@ export default function SettingsPage() {
 
           <Separator />
 
+          {/* Zona de Perigo */}
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
-              <CardDescription>Ações irreversíveis</CardDescription>
+              <CardDescription>Ações irreversíveis — prossiga com cautela</CardDescription>
             </CardHeader>
             <CardContent>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">Desativar Conta</Button>
+                  <Button variant="destructive" disabled={isDeactivating}>
+                    {isDeactivating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Desativar Conta
+                  </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Desativar sua conta?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Sua conta será desativada e você perderá acesso. Essa ação pode ser irreversível.
+                      Sua conta será desativada e você perderá acesso imediatamente. Essa ação pode ser irreversível. Tem certeza?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogCancel disabled={isDeactivating}>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDeactivate}
-                      className="bg-destructive text-destructive-foreground"
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      disabled={isDeactivating}
                     >
-                      Sim, desativar
+                      {isDeactivating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Sim, desativar conta
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

@@ -247,7 +247,7 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, p
 	return nil
 }
 
-// puxar a URL do avatar do usuário para atualizar o perfil
+// UpdateAvatarURL updates the avatar URL for a user.
 func (r *UserRepository) UpdateAvatarURL(ctx context.Context, userID uuid.UUID, avatarURL string) error {
 	query := `UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?`
 

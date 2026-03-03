@@ -58,7 +58,7 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required,min=8,max=72"`
 }
 
-// Social Login/Register DTOs
+// SocialLoginRequest represents a social authentication request.
 type SocialLoginRequest struct {
 	Provider   string `json:"provider" validate:"required,oneof=google facebook github"`
 	IDToken    string `json:"id_token" validate:"required"`

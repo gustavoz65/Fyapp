@@ -688,3 +688,49 @@ func (r *TransactionRepository) CountTransactionsByUserToday(ctx context.Context
 
 	return count, nil
 }
+
+// GetExistingExternalIDs returns a map of existing external IDs for the user
+func (r *TransactionRepository) GetExistingExternalIDs(ctx context.Context, userID uuid.UUID, externalIDs []string) (map[string]bool, error) {
+	if len(externalIDs) == 0 {
+		return make(map[string]bool), nil
+	}
+
+	// Create placeholders for IN clause
+	placeholders := make([]string, len(externalIDs))
+	args := make([]interface{}, 0, len(externalIDs)+1)
+	args = append(args, userID.String())
+
+	for i, id := range externalIDs {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT external_id
+		FROM transactions
+		WHERE user_id = ? AND external_id IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	rows, err := r.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing external IDs: %w", err)
+	}
+	defer rows.Close()
+
+	existingIDs := make(map[string]bool)
+	for rows.Next() {
+		var externalID sql.NullString
+		if err := rows.Scan(&externalID); err != nil {
+			return nil, fmt.Errorf("failed to scan external ID: %w", err)
+		}
+		if externalID.Valid {
+			existingIDs[externalID.String] = true
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating external IDs: %w", err)
+	}
+
+	return existingIDs, nil
+}

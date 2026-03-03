@@ -12,6 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -30,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api } from "@/lib/api";
+import { api, getApiBaseUrl, getWebSocketUrl } from "@/lib/api";
 import {
   formatCurrency,
   formatDate,
@@ -50,9 +57,12 @@ import {
   ArrowUpRight,
   Check,
   Loader2,
+  MoreVertical,
+  Pencil,
   Plus,
   ReceiptText,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -77,8 +87,15 @@ export default function TransactionsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<number>(0);
+  const [importMessage, setImportMessage] = useState<string>("");
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
+  const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<string>("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterType, setFilterType] = useState<string>("all");
@@ -101,6 +118,11 @@ export default function TransactionsPage() {
   };
 
   const [form, setForm] = useState(initialFormState);
+  const [importForm, setImportForm] = useState({
+    bank_account_id: "",
+    bank_type: "generic",
+    file: null as File | null,
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -228,6 +250,170 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleUpdateCategory(txId: string, categoryId: string) {
+    try {
+      await api.put(`/transactions/${txId}`, {
+        category_id: categoryId || undefined,
+      });
+      toast.success("Categoria atualizada com sucesso");
+      setEditCategoryDialogOpen(false);
+      setEditingCategoryId(null);
+      setSelectedCategoryForEdit("");
+      fetchData();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao atualizar categoria"));
+    }
+  }
+
+  function openEditCategoryDialog(tx: Transaction) {
+    setEditingCategoryId(tx.id);
+    setSelectedCategoryForEdit(tx.category?.id || "");
+    setEditCategoryDialogOpen(true);
+  }
+
+  async function handleImport(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!importForm.file || !importForm.bank_account_id) {
+      toast.error("Selecione a conta e o arquivo CSV");
+      return;
+    }
+
+    setIsImporting(true);
+    setImportProgress(0);
+    setImportMessage("Enviando arquivo...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", importForm.file);
+      formData.append("bank_account_id", importForm.bank_account_id);
+      formData.append("bank_type", importForm.bank_type);
+
+      const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao importar");
+      }
+
+      const result = await response.json();
+      const jobId = result.job_id;
+
+      setImportMessage("Processando transações...");
+
+      // Connect to WebSocket for real-time progress
+      const wsUrl = `${getWebSocketUrl()}/ws/import-progress?job_id=${jobId}`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+      };
+
+      ws.onmessage = (event) => {
+        const status = JSON.parse(event.data);
+
+        if (status.error) {
+          toast.error(status.error);
+          ws.close();
+          setIsImporting(false);
+          return;
+        }
+
+        setImportProgress(status.progress || 0);
+        setImportMessage(status.message || "Processando...");
+
+        if (status.status === "completed") {
+          toast.success(
+            `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
+          );
+          ws.close();
+          setImportDialogOpen(false);
+          setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+          fetchData();
+        } else if (status.status === "failed") {
+          toast.error(status.message || "Erro ao importar transações");
+          ws.close();
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        toast.error("Erro na conexão WebSocket. Usando polling...");
+        ws.close();
+        // Fallback to polling
+        pollImportStatus(jobId);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected");
+      };
+
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao importar transações"));
+      setIsImporting(false);
+      setImportProgress(0);
+      setImportMessage("");
+    }
+  }
+
+  // Fallback polling function if WebSocket fails
+  async function pollImportStatus(jobId: string) {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import/${jobId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        });
+
+        if (!response.ok) {
+          clearInterval(interval);
+          setIsImporting(false);
+          toast.error("Job não encontrado");
+          return;
+        }
+
+        const status = await response.json();
+        setImportProgress(status.progress || 0);
+        setImportMessage(status.message || "Processando...");
+
+        if (status.status === "completed") {
+          clearInterval(interval);
+          toast.success(
+            `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
+          );
+          setImportDialogOpen(false);
+          setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+          fetchData();
+        } else if (status.status === "failed") {
+          clearInterval(interval);
+          toast.error(status.message || "Erro ao importar transações");
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+        }
+      } catch (error) {
+        clearInterval(interval);
+        toast.error("Erro ao consultar status da importação");
+        setIsImporting(false);
+      }
+    }, 1000); // Poll every second
+  }
+
   function isSuggested(categoryId: string): boolean {
     return categorySuggestions.some((s) => s.category_id === categoryId);
   }
@@ -271,19 +457,121 @@ export default function TransactionsPage() {
             Gerencie todas as suas transações
           </p>
         </div>
-        <Dialog
-          open={dialogOpen}
-          onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) resetForm();
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="lg">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Transação
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Extrato
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Importar Extrato Bancário</DialogTitle>
+              </DialogHeader>
+              {isImporting && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{importMessage}</span>
+                    <span className="font-medium">{importProgress}%</span>
+                  </div>
+                  <Progress value={importProgress} className="h-2" />
+                </div>
+              )}
+              <form onSubmit={handleImport} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Conta *</Label>
+                  <Select
+                    value={importForm.bank_account_id}
+                    onValueChange={(v) =>
+                      setImportForm({ ...importForm, bank_account_id: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de Banco</Label>
+                  <Select
+                    value={importForm.bank_type}
+                    onValueChange={(v) =>
+                      setImportForm({ ...importForm, bank_type: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="generic">Genérico (CSV padrão)</SelectItem>
+                      <SelectItem value="nubank">Nubank</SelectItem>
+                      <SelectItem value="inter">Inter</SelectItem>
+                      <SelectItem value="itau">Itaú</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Arquivo CSV *</Label>
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) =>
+                      setImportForm({
+                        ...importForm,
+                        file: e.target.files?.[0] || null,
+                      })
+                    }
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceitos: CSV (máx. 10MB)
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setImportDialogOpen(false);
+                      setImportForm({
+                        bank_account_id: "",
+                        bank_type: "generic",
+                        file: null,
+                      });
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={isImporting}>
+                    {isImporting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isImporting ? "Importando..." : "Importar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) resetForm();
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="lg">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Transação
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Nova Transação</DialogTitle>
@@ -451,6 +739,7 @@ export default function TransactionsPage() {
           </DialogContent>
         </Dialog>
       </div>
+      </div>
 
       <Card>
         <CardHeader>
@@ -582,21 +871,36 @@ export default function TransactionsPage() {
                         {formatCurrency(tx.amount)}
                       </TableCell>
                       <TableCell>
-                        {!tx.is_paid && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={markingPaidId === tx.id}
-                            onClick={() => markAsPaid(tx.id)}
-                            title="Marcar como pago"
-                          >
-                            {markingPaidId === tx.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {!tx.is_paid && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={markingPaidId === tx.id}
+                              onClick={() => markAsPaid(tx.id)}
+                              title="Marcar como pago"
+                            >
+                              {markingPaidId === tx.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditCategoryDialog(tx)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar Categoria
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -629,6 +933,61 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para editar categoria */}
+      <Dialog open={editCategoryDialogOpen} onOpenChange={setEditCategoryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select
+                value={selectedCategoryForEdit}
+                onValueChange={setSelectedCategoryForEdit}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sem categoria</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setEditCategoryDialogOpen(false);
+                  setEditingCategoryId(null);
+                  setSelectedCategoryForEdit("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => {
+                  if (editingCategoryId) {
+                    handleUpdateCategory(editingCategoryId, selectedCategoryForEdit);
+                  }
+                }}
+              >
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

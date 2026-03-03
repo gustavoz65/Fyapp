@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/gustavoz65/Fyapp/internal/errs"
+	"github.com/gustavoz65/Fyapp/internal/lib/utils/job"
 	"github.com/gustavoz65/Fyapp/internal/middleware"
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/service"
@@ -17,10 +19,14 @@ import (
 
 type TransactionHandler struct {
 	transactionService *service.TransactionService
+	jobService         *job.JobService
 }
 
-func NewTransactionHandler(transactionService *service.TransactionService) *TransactionHandler {
-	return &TransactionHandler{transactionService: transactionService}
+func NewTransactionHandler(transactionService *service.TransactionService, jobService *job.JobService) *TransactionHandler {
+	return &TransactionHandler{
+		transactionService: transactionService,
+		jobService:         jobService,
+	}
 }
 
 func (h *TransactionHandler) GetAll(c echo.Context) error {
@@ -52,6 +58,15 @@ func (h *TransactionHandler) GetAll(c echo.Context) error {
 	if typeVal != nil {
 		t := model.TransactionType(*typeVal)
 		filter.Type = &t
+	}
+
+	sourceVal, err := qv.GetEnum("source", false, []string{"manual", "bank_sync", "recurring"})
+	if err != nil {
+		return err
+	}
+	if sourceVal != nil {
+		s := model.TransactionSource(*sourceVal)
+		filter.Source = &s
 	}
 
 	// Validar date params
@@ -217,4 +232,100 @@ func (h *TransactionHandler) GetUpcoming(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, transactions)
+}
+
+func (h *TransactionHandler) Import(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	// Get bank account ID from form data
+	bankAccountIDStr := c.FormValue("bank_account_id")
+	if bankAccountIDStr == "" {
+		return errs.NewBadRequestError("bank_account_id is required", false, nil, nil, nil)
+	}
+
+	bankAccountID, err := uuid.Parse(bankAccountIDStr)
+	if err != nil {
+		return errs.NewBadRequestError("invalid bank_account_id format", false, nil, nil, nil)
+	}
+
+	// Get bank type (default to generic)
+	bankType := c.FormValue("bank_type")
+	if bankType == "" {
+		bankType = "generic"
+	}
+
+	// Get file from multipart form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return errs.NewBadRequestError("file is required", false, nil, nil, nil)
+	}
+
+	// Validate file type (CSV only for now)
+	if file.Header.Get("Content-Type") != "text/csv" &&
+		file.Header.Get("Content-Type") != "application/vnd.ms-excel" {
+		// Also check file extension
+		if len(file.Filename) < 4 || file.Filename[len(file.Filename)-4:] != ".csv" {
+			return errs.NewBadRequestError("only CSV files are supported", false, nil, nil, nil)
+		}
+	}
+
+	// Limit file size to 10MB
+	if file.Size > 10*1024*1024 {
+		return errs.NewBadRequestError("file size exceeds 10MB limit", false, nil, nil, nil)
+	}
+
+	// Open file and read CSV data
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	// Read CSV content into memory
+	csvData, err := io.ReadAll(src)
+	if err != nil {
+		return errs.NewBadRequestError("failed to read file", false, nil, nil, nil)
+	}
+
+	// Generate job ID
+	jobID := uuid.New().String()
+
+	// Create async task
+	task, err := job.NewImportTransactionsTask(job.ImportTransactionsPayload{
+		JobID:         jobID,
+		UserID:        userID.String(),
+		BankAccountID: bankAccountID.String(),
+		BankType:      bankType,
+		CSVData:       string(csvData),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Enqueue task
+	if _, err := h.jobService.Client.Enqueue(task); err != nil {
+		return err
+	}
+
+	// Return job ID immediately
+	return c.JSON(http.StatusAccepted, map[string]interface{}{
+		"job_id":  jobID,
+		"status":  "processing",
+		"message": "Import job criado. Use o job_id para consultar o progresso.",
+	})
+}
+
+// GetImportStatus returns the status of an import job
+func (h *TransactionHandler) GetImportStatus(c echo.Context) error {
+	jobID := c.Param("job_id")
+	if jobID == "" {
+		return errs.NewBadRequestError("job_id is required", false, nil, nil, nil)
+	}
+
+	status, err := h.jobService.GetImportStatus(c.Request().Context(), jobID)
+	if err != nil {
+		return errs.NewNotFoundError("Job não encontrado ou expirado", false, nil)
+	}
+
+	return c.JSON(http.StatusOK, status)
 }

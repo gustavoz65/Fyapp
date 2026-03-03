@@ -131,6 +131,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.GET("/upcoming", transactionHandler.GetUpcoming, readRL)
 	transactions.GET("/:id", transactionHandler.GetByID, readRL)
 	transactions.POST("", transactionHandler.Create, mutationRL)
+	transactions.POST("/import", transactionHandler.Import, mutationRL)
 	transactions.PUT("/:id", transactionHandler.Update, mutationRL)
 	transactions.DELETE("/:id", transactionHandler.Delete, mutationRL)
 	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid, mutationRL)

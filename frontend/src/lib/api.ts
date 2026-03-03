@@ -1,8 +1,7 @@
 import type { APIError } from "@/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://fy-backend-production.up.railway.app/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
 
 let redirectToLogin: (() => void) | null = null;
 

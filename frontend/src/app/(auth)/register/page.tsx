@@ -48,7 +48,7 @@ export default function RegisterPage() {
       });
 
       await register(validated);
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
@@ -73,7 +73,7 @@ export default function RegisterPage() {
         device_info: navigator.userAgent,
       });
 
-      router.push("/dashboard");
+      router.push("/onboarding");
     } catch (error) {
       console.error("Erro no cadastro com Google:", error);
       if (error instanceof Error) {

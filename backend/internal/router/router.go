@@ -25,10 +25,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// Error handler global
 	e.HTTPErrorHandler = middleware.ErrorHandler(logger)
 
-	// Middlewares globais
 	e.Use(echomiddleware.RequestID())
 	e.Use(middleware.RecoveryMiddleware(logger))
 	e.Use(middleware.LoggerMiddleware(logger))
+	e.Use(middleware.SecurityHeadersMiddleware())
 	e.Use(middleware.CORSMiddleware(cfg.Server.CORSAllowedOrigins))
 
 	// Repositories
@@ -78,9 +78,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	authRateLimiter := middleware.AuthRateLimit(srv.Redis)
 	refreshRateLimiter := middleware.RefreshRateLimit(srv.Redis)
+	csrfTokenGen := middleware.CSRFTokenGenerator()
 
-	authWithRL := api.Group("/auth", authRateLimiter)
-	authRefresh := api.Group("/auth", refreshRateLimiter)
+	authWithRL := api.Group("/auth", authRateLimiter, csrfTokenGen)
+	authRefresh := api.Group("/auth", refreshRateLimiter, csrfTokenGen)
 
 	authWithRL.POST("/register", authHandler.Register)
 	authWithRL.POST("/login", authHandler.Login)
@@ -90,31 +91,31 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 
 	authMiddleware := middleware.AuthMiddleware(authService)
 	auditMiddleware := middleware.NewAuditMiddleware(auditLogRepo, logger)
+	csrfMiddleware := middleware.CSRFMiddleware()
 	mutationRL := middleware.MutationRateLimit(srv.Redis)
 	readRL := middleware.ReadRateLimit(srv.Redis)
+	uploadRL := middleware.UploadRateLimit(srv.Redis)
 
 	// WebSocket routes (with auth via query parameter)
 	wsAuthMiddleware := middleware.WebSocketAuthMiddleware(authService)
 	ws := e.Group("/ws", wsAuthMiddleware)
 	ws.GET("/import-progress", wsHandler.ImportProgress)
 
-	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
+	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	authProtected.POST("/change-password", authHandler.ChangePassword, mutationRL)
 	authProtected.POST("/set-password", authHandler.SetPassword, mutationRL)
 	authProtected.POST("/social/link", authHandler.LinkProvider, mutationRL)
 	authProtected.DELETE("/social/:provider", authHandler.UnlinkProvider, mutationRL)
 	authProtected.GET("/social/providers", authHandler.GetLinkedProviders, readRL)
 
-	// Users
-	users := api.Group("/users", authMiddleware, auditMiddleware.Handler())
+	users := api.Group("/users", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	users.GET("/me", userHandler.GetMe, readRL)
 	users.PUT("/me", userHandler.UpdateMe, mutationRL)
 	users.DELETE("/me", userHandler.DeactivateMe, mutationRL)
 	users.GET("/settings", userHandler.GetSettings, readRL)
 	users.PUT("/settings", userHandler.UpdateSettings, mutationRL)
 
-	// Categories
-	categories := api.Group("/categories", authMiddleware, auditMiddleware.Handler())
+	categories := api.Group("/categories", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	categories.GET("", categoryHandler.GetAll, readRL)
 	categories.GET("/suggest", categoryHandler.SuggestCategory, readRL)
 	categories.GET("/:id", categoryHandler.GetByID, readRL)
@@ -122,8 +123,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	categories.PUT("/:id", categoryHandler.Update, mutationRL)
 	categories.DELETE("/:id", categoryHandler.Delete, mutationRL)
 
-	// Bank Accounts
-	accounts := api.Group("/accounts", authMiddleware, auditMiddleware.Handler())
+	accounts := api.Group("/accounts", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	accounts.GET("", accountHandler.GetAll, readRL)
 	accounts.GET("/balance", accountHandler.GetTotalBalance, readRL)
 	accounts.GET("/:id", accountHandler.GetByID, readRL)
@@ -131,21 +131,19 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	accounts.PUT("/:id", accountHandler.Update, mutationRL)
 	accounts.DELETE("/:id", accountHandler.Delete, mutationRL)
 
-	// Transactions
-	transactions := api.Group("/transactions", authMiddleware, auditMiddleware.Handler())
+	transactions := api.Group("/transactions", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	transactions.GET("", transactionHandler.GetAll, readRL)
 	transactions.GET("/upcoming", transactionHandler.GetUpcoming, readRL)
 	transactions.GET("/:id", transactionHandler.GetByID, readRL)
 	transactions.POST("", transactionHandler.Create, mutationRL)
-	transactions.POST("/import", transactionHandler.Import, mutationRL)
+	transactions.POST("/import", transactionHandler.Import, mutationRL, uploadRL)
 	transactions.GET("/import/:job_id", transactionHandler.GetImportStatus, readRL)
 	transactions.PUT("/:id", transactionHandler.Update, mutationRL)
 	transactions.DELETE("/:id", transactionHandler.Delete, mutationRL)
 	transactions.DELETE("/account/:account_id", transactionHandler.DeleteAllByAccount, mutationRL)
 	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid, mutationRL)
 
-	// Recurring Transactions
-	recurring := api.Group("/recurring-transactions", authMiddleware, auditMiddleware.Handler())
+	recurring := api.Group("/recurring-transactions", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	recurring.GET("", recurringHandler.GetAll, readRL)
 	recurring.GET("/stats", recurringHandler.GetStats, readRL)
 	recurring.GET("/upcoming", recurringHandler.GetUpcoming, readRL)
@@ -155,8 +153,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	recurring.DELETE("/:id", recurringHandler.Delete, mutationRL)
 	recurring.PATCH("/:id/toggle", recurringHandler.ToggleActive, mutationRL)
 
-	// Budgets
-	budgets := api.Group("/budgets", authMiddleware, auditMiddleware.Handler())
+	budgets := api.Group("/budgets", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	budgets.GET("", budgetHandler.GetAll, readRL)
 	budgets.GET("/summary", budgetHandler.GetSummary, readRL)
 	budgets.GET("/:id", budgetHandler.GetByID, readRL)
@@ -164,8 +161,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	budgets.PUT("/:id", budgetHandler.Update, mutationRL)
 	budgets.DELETE("/:id", budgetHandler.Delete, mutationRL)
 
-	// Goals
-	goals := api.Group("/goals", authMiddleware, auditMiddleware.Handler())
+	goals := api.Group("/goals", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	goals.GET("", goalHandler.GetAll, readRL)
 	goals.GET("/summary", goalHandler.GetSummary, readRL)
 	goals.GET("/:id", goalHandler.GetByID, readRL)
@@ -175,16 +171,14 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goals.POST("/:id/contributions", goalHandler.AddContribution, mutationRL)
 	goals.GET("/:id/contributions", goalHandler.GetContributions, readRL)
 
-	// Dashboard
-	dashboard := api.Group("/dashboard", authMiddleware, auditMiddleware.Handler())
+	dashboard := api.Group("/dashboard", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	dashboard.GET("", dashboardHandler.GetSummary, readRL)
 	dashboard.GET("/cash-flow", dashboardHandler.GetCashFlow, readRL)
 	dashboard.GET("/income-expense", dashboardHandler.GetIncomeVsExpense, readRL)
 	dashboard.GET("/monthly-comparison", dashboardHandler.GetMonthlyComparison, readRL)
 	dashboard.GET("/account-balances", dashboardHandler.GetAccountBalances, readRL)
 
-	// Notifications
-	notifications := api.Group("/notifications", authMiddleware, auditMiddleware.Handler())
+	notifications := api.Group("/notifications", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	notifications.GET("", notificationHandler.GetAll, readRL)
 	notifications.GET("/unread", notificationHandler.GetUnread, readRL)
 	notifications.GET("/unread/count", notificationHandler.GetUnreadCount, readRL)

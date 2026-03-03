@@ -53,6 +53,7 @@ import {
   Plus,
   ReceiptText,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -77,7 +78,9 @@ export default function TransactionsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -101,6 +104,11 @@ export default function TransactionsPage() {
   };
 
   const [form, setForm] = useState(initialFormState);
+  const [importForm, setImportForm] = useState({
+    bank_account_id: "",
+    bank_type: "generic",
+    file: null as File | null,
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -228,6 +236,47 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleImport(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!importForm.file || !importForm.bank_account_id) {
+      toast.error("Selecione a conta e o arquivo CSV");
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", importForm.file);
+      formData.append("bank_account_id", importForm.bank_account_id);
+      formData.append("bank_type", importForm.bank_type);
+
+      const response = await fetch("http://localhost:3000/api/v1/transactions/import", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao importar");
+      }
+
+      const result = await response.json();
+      toast.success(
+        `Importação concluída! ${result.total_imported} transações importadas, ${result.duplicates} duplicadas.`
+      );
+      setImportDialogOpen(false);
+      setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+      fetchData();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao importar transações"));
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   function isSuggested(categoryId: string): boolean {
     return categorySuggestions.some((s) => s.category_id === categoryId);
   }
@@ -271,19 +320,112 @@ export default function TransactionsPage() {
             Gerencie todas as suas transações
           </p>
         </div>
-        <Dialog
-          open={dialogOpen}
-          onOpenChange={(open) => {
-            setDialogOpen(open);
-            if (!open) resetForm();
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="lg">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Transação
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Extrato
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Importar Extrato Bancário</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleImport} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Conta *</Label>
+                  <Select
+                    value={importForm.bank_account_id}
+                    onValueChange={(v) =>
+                      setImportForm({ ...importForm, bank_account_id: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de Banco</Label>
+                  <Select
+                    value={importForm.bank_type}
+                    onValueChange={(v) =>
+                      setImportForm({ ...importForm, bank_type: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="generic">Genérico (CSV padrão)</SelectItem>
+                      <SelectItem value="nubank">Nubank</SelectItem>
+                      <SelectItem value="inter">Inter</SelectItem>
+                      <SelectItem value="itau">Itaú</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Arquivo CSV *</Label>
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) =>
+                      setImportForm({
+                        ...importForm,
+                        file: e.target.files?.[0] || null,
+                      })
+                    }
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceitos: CSV (máx. 10MB)
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setImportDialogOpen(false);
+                      setImportForm({
+                        bank_account_id: "",
+                        bank_type: "generic",
+                        file: null,
+                      });
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={isImporting}>
+                    {isImporting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isImporting ? "Importando..." : "Importar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) resetForm();
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="lg">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Transação
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Nova Transação</DialogTitle>

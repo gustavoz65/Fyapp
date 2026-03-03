@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/shopspring/decimal"
 
+	"github.com/gustavoz65/Fyapp/internal/lib/parser"
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
 )
@@ -502,4 +504,284 @@ func (s *TransactionService) AutoReconcile(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// ImportResult contains the result of a transaction import
+type ImportResult struct {
+	TotalImported int                     `json:"total_imported"`
+	Duplicates    int                     `json:"duplicates"`
+	Errors        []string                `json:"errors"`
+	Transactions  []*model.Transaction    `json:"transactions"`
+}
+
+// ImportTransactions imports transactions from CSV file
+func (s *TransactionService) ImportTransactions(
+	ctx context.Context,
+	userID uuid.UUID,
+	bankAccountID uuid.UUID,
+	reader io.Reader,
+	bankType string,
+) (*ImportResult, error) {
+	// Validate account belongs to user
+	account, err := s.accountRepo.GetByIDAndUser(ctx, bankAccountID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bank account: %w", err)
+	}
+
+	// Parse CSV file
+	txParser := parser.NewTransactionParser()
+	importedTxs, err := txParser.ParseCSV(reader, bankType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CSV: %w", err)
+	}
+
+	if len(importedTxs) == 0 {
+		return &ImportResult{
+			TotalImported: 0,
+			Duplicates:    0,
+			Errors:        []string{"No transactions found in file"},
+			Transactions:  []*model.Transaction{},
+		}, nil
+	}
+
+	// Get existing external IDs for deduplication
+	externalIDs := make([]string, len(importedTxs))
+	for i, tx := range importedTxs {
+		externalIDs[i] = tx.ExternalID
+	}
+
+	existingIDs, err := s.txRepo.GetExistingExternalIDs(ctx, userID, externalIDs)
+	if err != nil {
+		s.logger.Warn().Err(err).Msg("failed to check for duplicates, proceeding without deduplication")
+		existingIDs = make(map[string]bool)
+	}
+
+	// Process transactions
+	result := &ImportResult{
+		Transactions: make([]*model.Transaction, 0),
+		Errors:       make([]string, 0),
+	}
+
+	for _, importedTx := range importedTxs {
+		// Check for duplicates
+		if existingIDs[importedTx.ExternalID] {
+			result.Duplicates++
+			s.logger.Debug().
+				Str("external_id", importedTx.ExternalID).
+				Str("description", importedTx.Description).
+				Msg("skipping duplicate transaction")
+			continue
+		}
+
+		// Convert TransactionImport to Transaction
+		tx := &model.Transaction{
+			UserID:          userID,
+			BankAccountID:   bankAccountID,
+			Type:            model.TransactionType(importedTx.Type),
+			Amount:          importedTx.Amount,
+			Description:     importedTx.Description,
+			Source:          model.TransactionSourceBankSync,
+			TransactionDate: importedTx.Date,
+			IsPaid:          true, // Imported transactions are already executed
+			ExternalID:      &importedTx.ExternalID,
+		}
+
+		// Set payment date same as transaction date for imported
+		tx.PaymentDate = &importedTx.Date
+
+		// Auto-categorize if available
+		if s.categorizationSvc != nil {
+			suggestion, err := s.categorizationSvc.SuggestCategory(ctx, userID, tx.Description)
+			if err == nil && len(suggestion.Suggestions) > 0 {
+				bestSuggestion := suggestion.Suggestions[0]
+				if bestSuggestion.Confidence >= 1 { // Only use if confidence is at least 1
+					tx.CategoryID = &bestSuggestion.CategoryID
+					s.logger.Debug().
+						Str("description", tx.Description).
+						Str("category", bestSuggestion.CategoryName).
+						Int("confidence", bestSuggestion.Confidence).
+						Msg("auto-categorized imported transaction")
+				}
+			}
+		}
+
+		// Create transaction
+		if err := s.txRepo.Create(ctx, tx); err != nil {
+			errMsg := fmt.Sprintf("Failed to import transaction '%s': %v", tx.Description, err)
+			result.Errors = append(result.Errors, errMsg)
+			s.logger.Error().Err(err).
+				Str("description", tx.Description).
+				Msg("failed to create imported transaction")
+			continue
+		}
+
+		// Update account balance (since imported transactions are already paid)
+		delta := tx.Amount
+		if tx.Type == model.TransactionTypeExpense {
+			delta = delta.Neg()
+		}
+		if err := s.accountRepo.AdjustBalance(ctx, account.ID, delta); err != nil {
+			s.logger.Error().Err(err).
+				Str("transaction_id", tx.ID.String()).
+				Msg("failed to update account balance for imported transaction")
+		}
+
+		result.TotalImported++
+		result.Transactions = append(result.Transactions, tx)
+
+		// Learn categorization pattern if categorized
+		if tx.CategoryID != nil && s.categorizationSvc != nil {
+			s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, "bank_sync")
+		}
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("bank_account_id", bankAccountID.String()).
+		Int("total_imported", result.TotalImported).
+		Int("duplicates", result.Duplicates).
+		Int("errors", len(result.Errors)).
+		Msg("completed transaction import")
+
+	return result, nil
+}
+
+// ImportTransactionsWithProgress imports transactions with progress callback
+func (s *TransactionService) ImportTransactionsWithProgress(
+	ctx context.Context,
+	userID uuid.UUID,
+	bankAccountID uuid.UUID,
+	reader io.Reader,
+	bankType string,
+	progressCallback func(current, total int),
+) (*ImportResult, error) {
+	// Validate account belongs to user
+	account, err := s.accountRepo.GetByIDAndUser(ctx, bankAccountID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bank account: %w", err)
+	}
+
+	// Parse CSV file
+	txParser := parser.NewTransactionParser()
+	importedTxs, err := txParser.ParseCSV(reader, bankType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse CSV: %w", err)
+	}
+
+	if len(importedTxs) == 0 {
+		return &ImportResult{
+			TotalImported: 0,
+			Duplicates:    0,
+			Errors:        []string{"No transactions found in file"},
+			Transactions:  []*model.Transaction{},
+		}, nil
+	}
+
+	total := len(importedTxs)
+	progressCallback(0, total)
+
+	// Get existing external IDs for deduplication
+	externalIDs := make([]string, len(importedTxs))
+	for i, tx := range importedTxs {
+		externalIDs[i] = tx.ExternalID
+	}
+
+	existingIDs, err := s.txRepo.GetExistingExternalIDs(ctx, userID, externalIDs)
+	if err != nil {
+		s.logger.Warn().Err(err).Msg("failed to check for duplicates, proceeding without deduplication")
+		existingIDs = make(map[string]bool)
+	}
+
+	// Process transactions
+	result := &ImportResult{
+		Transactions: make([]*model.Transaction, 0),
+		Errors:       make([]string, 0),
+	}
+
+	for idx, importedTx := range importedTxs {
+		// Update progress
+		progressCallback(idx+1, total)
+
+		// Check for duplicates
+		if existingIDs[importedTx.ExternalID] {
+			result.Duplicates++
+			s.logger.Debug().
+				Str("external_id", importedTx.ExternalID).
+				Str("description", importedTx.Description).
+				Msg("skipping duplicate transaction")
+			continue
+		}
+
+		// Convert TransactionImport to Transaction
+		tx := &model.Transaction{
+			UserID:          userID,
+			BankAccountID:   bankAccountID,
+			Type:            model.TransactionType(importedTx.Type),
+			Amount:          importedTx.Amount,
+			Description:     importedTx.Description,
+			Source:          model.TransactionSourceBankSync,
+			TransactionDate: importedTx.Date,
+			IsPaid:          true,
+			ExternalID:      &importedTx.ExternalID,
+		}
+
+		tx.PaymentDate = &importedTx.Date
+
+		// Auto-categorize if available
+		if s.categorizationSvc != nil {
+			suggestion, err := s.categorizationSvc.SuggestCategory(ctx, userID, tx.Description)
+			if err == nil && len(suggestion.Suggestions) > 0 {
+				bestSuggestion := suggestion.Suggestions[0]
+				if bestSuggestion.Confidence >= 1 {
+					tx.CategoryID = &bestSuggestion.CategoryID
+					s.logger.Debug().
+						Str("description", tx.Description).
+						Str("category", bestSuggestion.CategoryName).
+						Int("confidence", bestSuggestion.Confidence).
+						Msg("auto-categorized imported transaction")
+				}
+			}
+		}
+
+		// Create transaction
+		if err := s.txRepo.Create(ctx, tx); err != nil {
+			errMsg := fmt.Sprintf("Failed to import transaction '%s': %v", tx.Description, err)
+			result.Errors = append(result.Errors, errMsg)
+			s.logger.Error().Err(err).
+				Str("description", tx.Description).
+				Msg("failed to create imported transaction")
+			continue
+		}
+
+		// Update account balance
+		delta := tx.Amount
+		if tx.Type == model.TransactionTypeExpense {
+			delta = delta.Neg()
+		}
+		if err := s.accountRepo.AdjustBalance(ctx, account.ID, delta); err != nil {
+			s.logger.Error().Err(err).
+				Str("transaction_id", tx.ID.String()).
+				Msg("failed to update account balance for imported transaction")
+		}
+
+		result.TotalImported++
+		result.Transactions = append(result.Transactions, tx)
+
+		// Learn categorization pattern if categorized
+		if tx.CategoryID != nil && s.categorizationSvc != nil {
+			s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, "bank_sync")
+		}
+	}
+
+	progressCallback(total, total)
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("bank_account_id", bankAccountID.String()).
+		Int("total_imported", result.TotalImported).
+		Int("duplicates", result.Duplicates).
+		Int("errors", len(result.Errors)).
+		Msg("completed transaction import with progress")
+
+	return result, nil
 }

@@ -266,8 +266,12 @@ export default function TransactionsPage() {
   }
 
   function openEditCategoryDialog(tx: Transaction) {
+    if (!tx?.id) {
+      toast.error("Transação inválida");
+      return;
+    }
     setEditingCategoryId(tx.id);
-    setSelectedCategoryForEdit(tx.category?.id || "");
+    setSelectedCategoryForEdit(tx.category?.id ?? "");
     setEditCategoryDialogOpen(true);
   }
 
@@ -894,7 +898,12 @@ export default function TransactionsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditCategoryDialog(tx)}>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditCategoryDialog(tx);
+                                }}
+                              >
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Editar Categoria
                               </DropdownMenuItem>
@@ -952,11 +961,11 @@ export default function TransactionsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Sem categoria</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
+                  {categories?.map((c) => (
+                    <SelectItem key={c?.id || Math.random()} value={c?.id || ""}>
+                      {c?.name || "Sem nome"}
                     </SelectItem>
-                  ))}
+                  )) || null}
                 </SelectContent>
               </Select>
             </div>

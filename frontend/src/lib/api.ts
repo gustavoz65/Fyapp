@@ -3,6 +3,20 @@ import type { APIError } from "@/types";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
+// Helper para obter a URL base da API sem o sufixo /api/v1
+export function getApiBaseUrl(): string {
+  const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+
+  return url.replace(/\/api\/v1$/, "");
+}
+
+// Helper para obter a URL do WebSocket, substituindo http/https por ws/wss
+export function getWebSocketUrl(): string {
+  const baseUrl = getApiBaseUrl();
+  // Substitui http/https por ws/wss
+  return baseUrl.replace(/^http/, "ws");
+}
+
 let redirectToLogin: (() => void) | null = null;
 
 export function setRedirectCallback(callback: () => void) {

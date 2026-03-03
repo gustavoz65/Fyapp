@@ -37,8 +37,9 @@ func NewDashboardService(
 	}
 }
 
-// GetDashboardSummary returns a comprehensive dashboard summary
-func (s *DashboardService) GetDashboardSummary(ctx context.Context, userID uuid.UUID) (*model.DashboardSummary, error) {
+// GetDashboardSummary returns a comprehensive dashboard summary for the given date range.
+// The comparison period is automatically computed as the same-length interval before startDate.
+func (s *DashboardService) GetDashboardSummary(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) (*model.DashboardSummary, error) {
 	summary := &model.DashboardSummary{}
 
 	// Get total balance
@@ -57,39 +58,36 @@ func (s *DashboardService) GetDashboardSummary(ctx context.Context, userID uuid.
 		summary.TotalInAccounts = int(accountCount)
 	}
 
-	// Get current month income/expense
-	now := time.Now()
-	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-	endOfMonth := startOfMonth.AddDate(0, 1, -1)
-
-	monthIncome, err := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, startOfMonth, endOfMonth)
+	// Income/expense for the requested period
+	monthIncome, err := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, startDate, endDate)
 	if err != nil {
-		s.logger.Warn().Err(err).Msg("failed to get month income")
+		s.logger.Warn().Err(err).Msg("failed to get period income")
 	} else {
 		summary.MonthIncome = monthIncome
 	}
 
-	monthExpense, err := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, startOfMonth, endOfMonth)
+	monthExpense, err := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, startDate, endDate)
 	if err != nil {
-		s.logger.Warn().Err(err).Msg("failed to get month expense")
+		s.logger.Warn().Err(err).Msg("failed to get period expense")
 	} else {
 		summary.MonthExpense = monthExpense
 	}
 
 	summary.MonthBalance = summary.MonthIncome.Sub(summary.MonthExpense)
 
-	// Compare with last month
-	startOfLastMonth := startOfMonth.AddDate(0, -1, 0)
-	endOfLastMonth := startOfMonth.AddDate(0, 0, -1)
+	// Compute previous period (same duration, shifted back)
+	periodDuration := endDate.Sub(startDate)
+	prevEnd := startDate.Add(-time.Second)
+	prevStart := prevEnd.Add(-periodDuration)
 
-	lastMonthIncome, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, startOfLastMonth, endOfLastMonth)
-	lastMonthExpense, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, startOfLastMonth, endOfLastMonth)
+	prevIncome, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, prevStart, prevEnd)
+	prevExpense, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, prevStart, prevEnd)
 
-	if !lastMonthIncome.IsZero() {
-		summary.IncomeChange = summary.MonthIncome.Sub(lastMonthIncome).Div(lastMonthIncome).Mul(decimal.NewFromInt(100))
+	if !prevIncome.IsZero() {
+		summary.IncomeChange = summary.MonthIncome.Sub(prevIncome).Div(prevIncome).Mul(decimal.NewFromInt(100))
 	}
-	if !lastMonthExpense.IsZero() {
-		summary.ExpenseChange = summary.MonthExpense.Sub(lastMonthExpense).Div(lastMonthExpense).Mul(decimal.NewFromInt(100))
+	if !prevExpense.IsZero() {
+		summary.ExpenseChange = summary.MonthExpense.Sub(prevExpense).Div(prevExpense).Mul(decimal.NewFromInt(100))
 	}
 
 	// Get budget status
@@ -131,10 +129,10 @@ func (s *DashboardService) GetDashboardSummary(ctx context.Context, userID uuid.
 		}
 	}
 
-	// Get recent transactions
-	recentTransactions, err := s.transactionRepo.GetRecentTransactions(ctx, userID, 5)
+	// Get recent transactions within the period (with category info)
+	recentTransactions, err := s.transactionRepo.GetRecentByPeriod(ctx, userID, startDate, endDate, 10)
 	if err != nil {
-		s.logger.Warn().Err(err).Msg("failed to get recent transactions")
+		s.logger.Warn().Err(err).Msg("failed to get recent transactions by period")
 	} else {
 		summary.RecentTransactions = make([]model.Transaction, len(recentTransactions))
 		for i, tx := range recentTransactions {
@@ -142,8 +140,8 @@ func (s *DashboardService) GetDashboardSummary(ctx context.Context, userID uuid.
 		}
 	}
 
-	// Get top expense categories
-	topCategories, err := s.transactionRepo.GetSumByCategory(ctx, userID, startOfMonth, endOfMonth)
+	// Get top expense categories for the period
+	topCategories, err := s.transactionRepo.GetSumByCategory(ctx, userID, startDate, endDate)
 	if err != nil {
 		s.logger.Warn().Err(err).Msg("failed to get top categories")
 	} else {

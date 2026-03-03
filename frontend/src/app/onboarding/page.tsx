@@ -86,18 +86,18 @@ export default function OnboardingPage() {
       router.push("/login");
       return;
     }
-    if (user) {
-      const key = `onboarding_completed_${user.id}`;
-      if (localStorage.getItem(key)) {
+    // Verifica via API se o usuário já tem contas — mais confiável que localStorage
+    api.get<{ data?: unknown[] } | unknown[]>("/accounts").then((res) => {
+      const accounts = Array.isArray(res) ? res : (res as { data?: unknown[] }).data ?? [];
+      if (accounts.length > 0) {
         router.push("/dashboard");
       }
-    }
-  }, [isAuthenticated, authLoading, user, router]);
+    }).catch(() => {
+      // Se falhar a verificação, deixa no onboarding
+    });
+  }, [isAuthenticated, authLoading, router]);
 
   function completeOnboarding() {
-    if (user) {
-      localStorage.setItem(`onboarding_completed_${user.id}`, "true");
-    }
     router.push("/dashboard");
   }
 

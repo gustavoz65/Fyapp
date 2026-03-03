@@ -28,13 +28,8 @@ export default function LoginPage() {
     try {
       // Validar com Zod
       const validated = loginSchema.parse({ email, password });
-      const loggedUser = await login(validated);
-
-      // Verificar se o onboarding foi completado
-      const onboardingCompleted = localStorage.getItem(
-        `onboarding_completed_${loggedUser.id}`,
-      );
-      router.push(onboardingCompleted ? "/dashboard" : "/onboarding");
+      await login(validated);
+      router.push("/dashboard");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
@@ -56,17 +51,13 @@ export default function LoginPage() {
       const idToken = await result.user.getIdToken();
 
       // 3. Enviar para o backend
-      const loggedUser = await socialLogin({
+      await socialLogin({
         provider: "google",
         id_token: idToken,
         device_info: navigator.userAgent,
       });
 
-      // 4. Verificar se o onboarding foi completado
-      const onboardingCompleted = localStorage.getItem(
-        `onboarding_completed_${loggedUser.id}`,
-      );
-      router.push(onboardingCompleted ? "/dashboard" : "/onboarding");
+      router.push("/dashboard");
     } catch (error) {
       console.error("Erro no login com Google:", error);
       if (error instanceof Error) {

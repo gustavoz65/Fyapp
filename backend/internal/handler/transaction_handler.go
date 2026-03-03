@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/gustavoz65/Fyapp/internal/errs"
+	"github.com/gustavoz65/Fyapp/internal/lib/utils/job"
 	"github.com/gustavoz65/Fyapp/internal/middleware"
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/service"
@@ -17,10 +19,14 @@ import (
 
 type TransactionHandler struct {
 	transactionService *service.TransactionService
+	jobService         *job.JobService
 }
 
-func NewTransactionHandler(transactionService *service.TransactionService) *TransactionHandler {
-	return &TransactionHandler{transactionService: transactionService}
+func NewTransactionHandler(transactionService *service.TransactionService, jobService *job.JobService) *TransactionHandler {
+	return &TransactionHandler{
+		transactionService: transactionService,
+		jobService:         jobService,
+	}
 }
 
 func (h *TransactionHandler) GetAll(c echo.Context) error {
@@ -268,24 +274,58 @@ func (h *TransactionHandler) Import(c echo.Context) error {
 		return errs.NewBadRequestError("file size exceeds 10MB limit", false, nil, nil, nil)
 	}
 
-	// Open file
+	// Open file and read CSV data
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	// Import transactions
-	result, err := h.transactionService.ImportTransactions(
-		c.Request().Context(),
-		userID,
-		bankAccountID,
-		src,
-		bankType,
-	)
+	// Read CSV content into memory
+	csvData, err := io.ReadAll(src)
+	if err != nil {
+		return errs.NewBadRequestError("failed to read file", false, nil, nil, nil)
+	}
+
+	// Generate job ID
+	jobID := uuid.New().String()
+
+	// Create async task
+	task, err := job.NewImportTransactionsTask(job.ImportTransactionsPayload{
+		JobID:         jobID,
+		UserID:        userID.String(),
+		BankAccountID: bankAccountID.String(),
+		BankType:      bankType,
+		CSVData:       string(csvData),
+	})
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, result)
+	// Enqueue task
+	if _, err := h.jobService.Client.Enqueue(task); err != nil {
+		return err
+	}
+
+	// Return job ID immediately
+	return c.JSON(http.StatusAccepted, map[string]interface{}{
+		"job_id":  jobID,
+		"status":  "processing",
+		"message": "Import job criado. Use o job_id para consultar o progresso.",
+	})
+}
+
+// GetImportStatus returns the status of an import job
+func (h *TransactionHandler) GetImportStatus(c echo.Context) error {
+	jobID := c.Param("job_id")
+	if jobID == "" {
+		return errs.NewBadRequestError("job_id is required", false, nil, nil, nil)
+	}
+
+	status, err := h.jobService.GetImportStatus(c.Request().Context(), jobID)
+	if err != nil {
+		return errs.NewNotFoundError("Job não encontrado ou expirado", false, nil)
+	}
+
+	return c.JSON(http.StatusOK, status)
 }

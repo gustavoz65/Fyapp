@@ -30,6 +30,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	e.Use(middleware.LoggerMiddleware(logger))
 	e.Use(middleware.SecurityHeadersMiddleware())
 	e.Use(middleware.CORSMiddleware(cfg.Server.CORSAllowedOrigins))
+	e.Use(middleware.CSRFTokenGenerator())
 
 	// Repositories
 	userRepo := repository.NewUserRepository(db, logger)
@@ -49,7 +50,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	userService := service.NewUserService(userRepo, logger)
 	categorizationService := service.NewCategorizationService(categoryPatternRepo, logger)
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
-	accountService := service.NewBankAccountService(accountRepo, logger)
+	accountService := service.NewBankAccountService(accountRepo, transactionRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)
 	notificationService := service.NewNotificationService(notificationRepo, userRepo, logger, srv.Job.Client)
 	budgetService := service.NewBudgetService(budgetRepo, notificationService, logger)
@@ -128,6 +129,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	accounts.GET("/balance", accountHandler.GetTotalBalance, readRL)
 	accounts.GET("/:id", accountHandler.GetByID, readRL)
 	accounts.POST("", accountHandler.Create, mutationRL)
+	accounts.POST("/:id/recalculate", accountHandler.RecalculateBalance, mutationRL)
 	accounts.PUT("/:id", accountHandler.Update, mutationRL)
 	accounts.DELETE("/:id", accountHandler.Delete, mutationRL)
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
 	"github.com/gustavoz65/Fyapp/internal/errs"
 )
 

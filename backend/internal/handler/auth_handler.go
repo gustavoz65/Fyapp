@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	refreshTokenCookieName = "refresh_token"
+	refreshTokenCookieName   = "refresh_token"
 	refreshTokenCookieMaxAge = 7 * 24 * 60 * 60 // 7 dias em segundos
 )
 

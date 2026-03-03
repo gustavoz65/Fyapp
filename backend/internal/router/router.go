@@ -60,7 +60,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
-	transactionHandler := handler.NewTransactionHandler(transactionService)
+	transactionHandler := handler.NewTransactionHandler(transactionService, srv.Job)
 	accountHandler := handler.NewBankAccountHandler(accountService)
 	categoryHandler := handler.NewCategoryHandler(categoryService, categorizationService)
 	budgetHandler := handler.NewBudgetHandler(budgetService)
@@ -68,6 +68,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 	recurringHandler := handler.NewRecurringTransactionHandler(recurringService)
+	wsHandler := handler.NewWebSocketHandler(srv.Job, logger)
 
 	// Health check
 	healthHandler := handler.NewHealthHandler(srv)
@@ -91,6 +92,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	auditMiddleware := middleware.NewAuditMiddleware(auditLogRepo, logger)
 	mutationRL := middleware.MutationRateLimit(srv.Redis)
 	readRL := middleware.ReadRateLimit(srv.Redis)
+
+	// WebSocket routes (with auth)
+	ws := e.Group("/ws", authMiddleware)
+	ws.GET("/import-progress", wsHandler.ImportProgress)
 
 	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())
 	authProtected.POST("/change-password", authHandler.ChangePassword, mutationRL)
@@ -132,6 +137,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.GET("/:id", transactionHandler.GetByID, readRL)
 	transactions.POST("", transactionHandler.Create, mutationRL)
 	transactions.POST("/import", transactionHandler.Import, mutationRL)
+	transactions.GET("/import/:job_id", transactionHandler.GetImportStatus, readRL)
 	transactions.PUT("/:id", transactionHandler.Update, mutationRL)
 	transactions.DELETE("/:id", transactionHandler.Delete, mutationRL)
 	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid, mutationRL)

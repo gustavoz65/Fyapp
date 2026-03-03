@@ -28,7 +28,11 @@ func NewWebSocketHandler(jobService *job.JobService, logger *zerolog.Logger) *We
 // ImportProgress handles WebSocket connections for import progress updates
 func (h *WebSocketHandler) ImportProgress(c echo.Context) error {
 	websocket.Handler(func(ws *websocket.Conn) {
-		defer ws.Close()
+		defer func() {
+			if err := ws.Close(); err != nil {
+				h.logger.Error().Err(err).Msg("Failed to close WebSocket connection")
+			}
+		}()
 
 		// Get job ID from query param
 		jobID := c.QueryParam("job_id")

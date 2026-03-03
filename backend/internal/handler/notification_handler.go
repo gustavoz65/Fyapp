@@ -5,10 +5,11 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+
 	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/gustavoz65/Fyapp/internal/middleware"
 	"github.com/gustavoz65/Fyapp/internal/service"
-	"github.com/labstack/echo/v4"
 )
 
 type NotificationHandler struct {

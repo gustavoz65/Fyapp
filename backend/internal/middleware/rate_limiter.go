@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/gustavoz65/Fyapp/internal/repository"
 )
 
 var rateLimitScript = redis.NewScript(`

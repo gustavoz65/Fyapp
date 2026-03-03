@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Landmark } from "lucide-react";
+import { Landmark, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { BankAccount, CreateBankAccountRequest, UpdateBankAccountRequest } from "@/types";
 import { formatCurrency, getAccountTypeLabel } from "@/lib/format";
@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -27,12 +26,22 @@ const accountTypes = [
   { value: "other", label: "Outro" },
 ];
 
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "message" in error) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
+
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [totalBalance, setTotalBalance] = useState("0");
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BankAccount | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const pendingDeleteRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+
   const [form, setForm] = useState({
     name: "", bank_name: "", account_type: "checking" as string,
     initial_balance: "0", color: "#3b82f6", icon: "landmark",
@@ -71,8 +80,9 @@ export default function AccountsPage() {
     setDialogOpen(true);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       if (editing) {
         const body: UpdateBankAccountRequest = {
@@ -80,9 +90,8 @@ export default function AccountsPage() {
           color: form.color, icon: form.icon,
         };
         await api.put(`/accounts/${editing.id}`, body);
-        toast.success("Conta atualizada");
+        toast.success("Conta atualizada com sucesso");
       } else {
-        // Validar com Zod
         const validated = createAccountSchema.parse({
           name: form.name,
           bank_name: form.bank_name || undefined,
@@ -101,7 +110,7 @@ export default function AccountsPage() {
           icon: validated.icon,
         };
         await api.post("/accounts", body);
-        toast.success("Conta criada");
+        toast.success("Conta criada com sucesso");
       }
       setDialogOpen(false);
       fetchAccounts();
@@ -109,27 +118,66 @@ export default function AccountsPage() {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
       } else {
-        toast.error("Erro ao salvar conta");
+        toast.error(getApiErrorMessage(error, "Erro ao salvar conta. Tente novamente."));
       }
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  async function handleDelete(id: string) {
-    try {
-      await api.delete(`/accounts/${id}`);
-      toast.success("Conta removida");
-      fetchAccounts();
-    } catch {
-      toast.error("Erro ao remover conta");
+  function handleDelete(id: string) {
+    const accountToDelete = accounts.find((a) => a.id === id);
+    if (!accountToDelete) return;
+
+    // Remove optimisticamente
+    setAccounts((prev) => prev.filter((a) => a.id !== id));
+
+    // Cancela delete pendente anterior
+    if (pendingDeleteRef.current) {
+      clearTimeout(pendingDeleteRef.current.timer);
     }
+
+    const timer = setTimeout(async () => {
+      try {
+        await api.delete(`/accounts/${id}`);
+        pendingDeleteRef.current = null;
+        fetchAccounts();
+      } catch {
+        setAccounts((prev) => [...prev, accountToDelete]);
+        toast.error("Erro ao remover conta. Tente novamente.");
+      }
+    }, 5000);
+
+    pendingDeleteRef.current = { id, timer };
+
+    toast("Conta removida", {
+      description: accountToDelete.name,
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          if (pendingDeleteRef.current?.id === id) {
+            clearTimeout(pendingDeleteRef.current.timer);
+            pendingDeleteRef.current = null;
+            setAccounts((prev) => [...prev, accountToDelete]);
+            toast.success("Ação desfeita com sucesso");
+          }
+        },
+      },
+      duration: 5000,
+    });
   }
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Contas</h1>
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
         </div>
+        <Skeleton className="h-28" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
         </div>
@@ -148,7 +196,9 @@ export default function AccountsPage() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="lg" onClick={openCreate}><Plus className="h-4 w-4 mr-2" />Nova Conta</Button>
+            <Button size="lg" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" />Nova Conta
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -156,17 +206,26 @@ export default function AccountsPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                <Label>Nome da conta</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Ex: Nubank, Bradesco..."
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Banco</Label>
-                <Input value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} />
+                <Input
+                  value={form.bank_name}
+                  onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
+                  placeholder="Nome do banco (opcional)"
+                />
               </div>
               {!editing && (
                 <>
                   <div className="space-y-2">
-                    <Label>Tipo</Label>
+                    <Label>Tipo de conta</Label>
                     <Select value={form.account_type} onValueChange={(v) => setForm({ ...form, account_type: v })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -178,15 +237,38 @@ export default function AccountsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Saldo Inicial</Label>
-                    <Input type="number" step="0.01" value={form.initial_balance} onChange={(e) => setForm({ ...form, initial_balance: e.target.value })} required />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={form.initial_balance}
+                      onChange={(e) => setForm({ ...form, initial_balance: e.target.value })}
+                      placeholder="0,00"
+                      required
+                    />
                   </div>
                 </>
               )}
               <div className="space-y-2">
-                <Label>Cor</Label>
-                <Input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+                <Label>Cor de identificação</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="color"
+                    value={form.color}
+                    onChange={(e) => setForm({ ...form, color: e.target.value })}
+                    className="h-10 w-16 p-1 cursor-pointer"
+                  />
+                  <span className="text-sm text-muted-foreground">Escolha uma cor para identificar a conta</span>
+                </div>
               </div>
-              <Button type="submit" className="w-full">{editing ? "Salvar" : "Criar"}</Button>
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {editing ? "Salvar alterações" : "Criar conta"}
+                </Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
@@ -198,55 +280,64 @@ export default function AccountsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-4xl font-bold tracking-tight">{formatCurrency(totalBalance)}</p>
-          <p className="text-sm text-muted-foreground mt-2">{accounts.length} contas ativas</p>
+          <p className="text-sm text-muted-foreground mt-2">{accounts.length} conta{accounts.length !== 1 ? "s" : ""} ativa{accounts.length !== 1 ? "s" : ""}</p>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {accounts.map((account) => (
-          <Card key={account.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: account.color + "20", color: account.color }}>
-                  <Landmark className="h-4 w-4" />
+      {accounts.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="py-16 flex flex-col items-center gap-4 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Landmark className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Nenhuma conta cadastrada</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Adicione sua primeira conta para começar a controlar suas finanças
+              </p>
+            </div>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar primeira conta
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {accounts.map((account) => (
+            <Card key={account.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: account.color + "20", color: account.color }}>
+                    <Landmark className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-medium">{account.name}</CardTitle>
+                    {account.bank_name && <p className="text-xs text-muted-foreground">{account.bank_name}</p>}
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-sm font-medium">{account.name}</CardTitle>
-                  {account.bank_name && <p className="text-xs text-muted-foreground">{account.bank_name}</p>}
+                <Badge variant="outline">{getAccountTypeLabel(account.account_type)}</Badge>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{formatCurrency(account.current_balance)}</p>
+                <div className="mt-3 flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(account)}>
+                    <Pencil className="h-3 w-3 mr-1" />Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(account.id)}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />Remover
+                  </Button>
                 </div>
-              </div>
-              <Badge variant="outline">{getAccountTypeLabel(account.account_type)}</Badge>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCurrency(account.current_balance)}</p>
-              <div className="mt-3 flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => openEdit(account)}>
-                  <Pencil className="h-3 w-3 mr-1" />Editar
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-destructive">
-                      <Trash2 className="h-3 w-3 mr-1" />Remover
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Remover conta?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Essa ação não pode ser desfeita. A conta &quot;{account.name}&quot; será removida.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDelete(account.id)}>Remover</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

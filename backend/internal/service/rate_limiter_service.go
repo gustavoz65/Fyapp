@@ -3,8 +3,9 @@ package service
 import (
 	"time"
 
-	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/labstack/echo/v4"
+
+	"github.com/gustavoz65/Fyapp/internal/repository"
 )
 
 type RateLimiterService struct {

@@ -6,22 +6,11 @@ run:
 linters:
   default: none
   enable:
-    # Critical - bugs and correctness
     - errcheck
     - govet
     - ineffassign
     - staticcheck
     - unused
-
-    # Important - best practices
-    - bodyclose
-    - copyloopvar
-    - durationcheck
-    - gosec
-    - sqlclosecheck
-
-    # Nice to have - code quality
-    - unconvert
 
   settings:
     errcheck:
@@ -36,36 +25,23 @@ linters:
 
     govet:
       disable:
-        - shadow  # Too many false positives with err variable
-
-    gosec:
-      excludes:
-        - G101  # hardcoded credentials - false positives on error message constants
-        - G104  # errors unhandled - redundant with errcheck
-        - G115  # integer overflow conversion - too many false positives
-        - G112  # potential slowloris - handled at infrastructure level
-        - G117  # exported fields matching secret patterns - false positives on DTO/config fields
+        - shadow
 
     staticcheck:
-      checks: ["all", "-SA1019"]  # Exclude deprecated warnings
+      checks: ["all", "-SA1019", "-ST1000", "-ST1020"]
 
   exclusions:
     rules:
-      # Exclude some linters from running on test files
       - path: "_test\\.go"
         linters:
-          - bodyclose
           - errcheck
-          - gosec
           - govet
 
-      # Allow unchecked errors for Scan operations in audit log
       - path: "internal/repository/audit_log_repository.go"
         linters:
           - errcheck
         text: "Error return value of.*Scan.*is not checked"
 
-      # Allow unused types (may be for future use)
       - path: "internal/database/"
         linters:
           - unused

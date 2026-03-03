@@ -1,3 +1,4 @@
+// Pacote repository fornece implementações da camada de acesso a dados.
 package repository
 
 import (
@@ -6,8 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gustavoz65/Fyapp/internal/database"
 	"github.com/rs/zerolog"
+
+	"github.com/gustavoz65/Fyapp/internal/database"
 )
 
 // BaseRepository provides common database operations

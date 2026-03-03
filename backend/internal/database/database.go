@@ -1,3 +1,4 @@
+// Pacote database fornece utilitários de conexão e consulta ao banco de dados.
 package database
 
 import (
@@ -8,8 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/rs/zerolog"
+
+	"github.com/gustavoz65/Fyapp/internal/config"
 
 	_ "github.com/go-sql-driver/mysql"
 )

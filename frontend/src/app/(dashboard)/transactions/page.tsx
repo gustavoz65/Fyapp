@@ -45,7 +45,15 @@ import type {
   PaginatedResponse,
   Transaction,
 } from "@/types";
-import { ArrowDownLeft, ArrowUpRight, Check, Plus, Sparkles } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Check,
+  Loader2,
+  Plus,
+  ReceiptText,
+  Sparkles,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -56,12 +64,21 @@ interface CategorySuggestion {
   match_count: number;
 }
 
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "message" in error) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
+}
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterType, setFilterType] = useState<string>("all");
@@ -152,8 +169,9 @@ export default function TransactionsPage() {
     }, 500);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const validated = createTransactionSchema.parse({
         bank_account_id: form.bank_account_id,
@@ -182,7 +200,7 @@ export default function TransactionsPage() {
         auto_pay: form.auto_pay,
       };
       await api.post("/transactions", body);
-      toast.success("Transação criada");
+      toast.success("Transação criada com sucesso");
       resetForm();
       setDialogOpen(false);
       fetchData();
@@ -190,18 +208,23 @@ export default function TransactionsPage() {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
       } else {
-        toast.error("Erro ao criar transação");
+        toast.error(getApiErrorMessage(error, "Erro ao criar transação. Tente novamente."));
       }
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   async function markAsPaid(id: string) {
+    setMarkingPaidId(id);
     try {
       await api.patch(`/transactions/${id}/pay`);
-      toast.success("Marcado como pago");
+      toast.success("Transação marcada como paga");
       fetchData();
-    } catch {
-      toast.error("Erro ao marcar como pago");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao marcar como pago."));
+    } finally {
+      setMarkingPaidId(null);
     }
   }
 
@@ -212,8 +235,29 @@ export default function TransactionsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Transações</h1>
-        <Skeleton className="h-[400px]" />
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+          <Skeleton className="h-10 w-40" />
+        </div>
+        <Card>
+          <CardHeader>
+            <div className="flex gap-3">
+              <Skeleton className="h-9 w-36" />
+              <Skeleton className="h-9 w-36" />
+              <Skeleton className="h-9 w-36" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {["a", "b", "c", "d", "e"].map((k) => (
+                <Skeleton key={k} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -261,15 +305,13 @@ export default function TransactionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Conta</Label>
+                <Label>Conta *</Label>
                 <Select
                   value={form.bank_account_id}
-                  onValueChange={(v) =>
-                    setForm({ ...form, bank_account_id: v })
-                  }
+                  onValueChange={(v) => setForm({ ...form, bank_account_id: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder="Selecione a conta..." />
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.map((a) => (
@@ -281,10 +323,11 @@ export default function TransactionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Descrição</Label>
+                <Label>Descrição *</Label>
                 <Input
                   value={form.description}
                   onChange={(e) => handleDescriptionChange(e.target.value)}
+                  placeholder="Ex: Supermercado, Salário..."
                   required
                 />
               </div>
@@ -303,7 +346,7 @@ export default function TransactionsPage() {
                   onValueChange={(v) => setForm({ ...form, category_id: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Opcional" />
+                    <SelectValue placeholder="Selecione (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
                     {categorySuggestions.length > 0 && (
@@ -313,10 +356,7 @@ export default function TransactionsPage() {
                           Sugestões
                         </div>
                         {categorySuggestions.map((s) => (
-                          <SelectItem
-                            key={`sug-${s.category_id}`}
-                            value={s.category_id}
-                          >
+                          <SelectItem key={`sug-${s.category_id}`} value={s.category_id}>
                             ✨ {s.category_name}
                           </SelectItem>
                         ))}
@@ -336,36 +376,33 @@ export default function TransactionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Valor</Label>
+                <Label>Valor (R$) *</Label>
                 <Input
                   type="number"
                   step="0.01"
                   min="0.01"
                   value={form.amount}
                   onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  placeholder="0,00"
                   required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Data</Label>
+                  <Label>Data da transação</Label>
                   <Input
                     type="date"
                     value={form.transaction_date}
-                    onChange={(e) =>
-                      setForm({ ...form, transaction_date: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Vencimento</Label>
+                  <Label>Data de vencimento</Label>
                   <Input
                     type="date"
                     value={form.due_date}
-                    onChange={(e) =>
-                      setForm({ ...form, due_date: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                   />
                 </div>
               </div>
@@ -377,10 +414,7 @@ export default function TransactionsPage() {
                     setForm({ ...form, is_paid: checked === true })
                   }
                 />
-                <Label
-                  htmlFor="is_paid"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <Label htmlFor="is_paid" className="text-sm font-medium leading-none">
                   Marcar como pago
                 </Label>
               </div>
@@ -392,16 +426,27 @@ export default function TransactionsPage() {
                     setForm({ ...form, auto_pay: checked === true })
                   }
                 />
-                <Label
-                  htmlFor="auto_pay"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <Label htmlFor="auto_pay" className="text-sm font-medium leading-none">
                   Pagamento automático no vencimento
                 </Label>
               </div>
-              <Button type="submit" className="w-full">
-                Criar Transação
-              </Button>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setDialogOpen(false);
+                    resetForm();
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Criar transação
+                </Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
@@ -412,48 +457,39 @@ export default function TransactionsPage() {
           <div className="flex flex-wrap gap-3">
             <Select
               value={filterType}
-              onValueChange={(v) => {
-                setFilterType(v);
-                setPage(1);
-              }}
+              onValueChange={(v) => { setFilterType(v); setPage(1); }}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos tipos</SelectItem>
+                <SelectItem value="all">Todos os tipos</SelectItem>
                 <SelectItem value="income">Receita</SelectItem>
                 <SelectItem value="expense">Despesa</SelectItem>
               </SelectContent>
             </Select>
             <Select
               value={filterPaid}
-              onValueChange={(v) => {
-                setFilterPaid(v);
-                setPage(1);
-              }}
+              onValueChange={(v) => { setFilterPaid(v); setPage(1); }}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
                 <SelectItem value="unpaid">Pendente</SelectItem>
               </SelectContent>
             </Select>
             <Select
               value={filterSource}
-              onValueChange={(v) => {
-                setFilterSource(v);
-                setPage(1);
-              }}
+              onValueChange={(v) => { setFilterSource(v); setPage(1); }}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas origens</SelectItem>
+                <SelectItem value="all">Todas as origens</SelectItem>
                 <SelectItem value="manual">Manual</SelectItem>
                 <SelectItem value="bank_sync">Banco</SelectItem>
                 <SelectItem value="recurring">Recorrente</SelectItem>
@@ -462,119 +498,134 @@ export default function TransactionsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-center text-muted-foreground"
-                  >
-                    Nenhuma transação encontrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell className="text-sm">
-                      {formatDate(tx.transaction_date)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {tx.type === "income" ? (
-                          <ArrowDownLeft className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <ArrowUpRight className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className="text-sm font-medium">
-                          {tx.description}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={tx.type === "income" ? "default" : "secondary"}
-                      >
-                        {getTransactionTypeLabel(tx.type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {tx.category?.name || "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          tx.source === "manual"
-                            ? "outline"
-                            : tx.source === "bank_sync"
-                              ? "default"
-                              : "secondary"
-                        }
-                      >
-                        {getTransactionSourceLabel(tx.source)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={tx.is_paid ? "default" : "destructive"}>
-                        {tx.is_paid ? "Pago" : "Pendente"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell
-                      className={`text-right font-semibold ${tx.type === "income" ? "text-green-500" : "text-red-500"}`}
-                    >
-                      {tx.type === "income" ? "+" : "-"}
-                      {formatCurrency(tx.amount)}
-                    </TableCell>
-                    <TableCell>
-                      {!tx.is_paid && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => markAsPaid(tx.id)}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
+          {transactions.length === 0 ? (
+            <div className="py-16 flex flex-col items-center gap-4 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <ReceiptText className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Nenhuma transação encontrada</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {filterType !== "all" || filterPaid !== "all" || filterSource !== "all"
+                    ? "Tente ajustar os filtros para ver mais resultados"
+                    : "Registre sua primeira transação para começar a acompanhar suas finanças"}
+                </p>
+              </div>
+              {filterType === "all" && filterPaid === "all" && filterSource === "all" && (
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar primeira transação
+                </Button>
               )}
-            </TableBody>
-          </Table>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Anterior
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Página {page} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                Próxima
-              </Button>
             </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Origem</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="text-sm">
+                        {formatDate(tx.transaction_date)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {tx.type === "income" ? (
+                            <ArrowDownLeft className="h-4 w-4 text-green-500 shrink-0" />
+                          ) : (
+                            <ArrowUpRight className="h-4 w-4 text-red-500 shrink-0" />
+                          )}
+                          <span className="text-sm font-medium">{tx.description}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={tx.type === "income" ? "default" : "secondary"}>
+                          {getTransactionTypeLabel(tx.type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {tx.category?.name || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            tx.source === "manual"
+                              ? "outline"
+                              : tx.source === "bank_sync"
+                                ? "default"
+                                : "secondary"
+                          }
+                        >
+                          {getTransactionSourceLabel(tx.source)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={tx.is_paid ? "default" : "destructive"}>
+                          {tx.is_paid ? "Pago" : "Pendente"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-semibold ${tx.type === "income" ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {tx.type === "income" ? "+" : "-"}
+                        {formatCurrency(tx.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {!tx.is_paid && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={markingPaidId === tx.id}
+                            onClick={() => markAsPaid(tx.id)}
+                            title="Marcar como pago"
+                          >
+                            {markingPaidId === tx.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage(page - 1)}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Página {page} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(page + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

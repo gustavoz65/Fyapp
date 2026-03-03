@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
+
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/gustavoz65/Fyapp/internal/utils"
-	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
 )
 
 type AuditMiddleware struct {

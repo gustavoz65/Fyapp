@@ -6,9 +6,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/labstack/echo/v4"
 	"github.com/shopspring/decimal"
+
+	"github.com/gustavoz65/Fyapp/internal/errs"
 )
 
 const (

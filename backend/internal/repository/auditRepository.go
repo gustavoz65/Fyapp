@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+
 	models "github.com/gustavoz65/Fyapp/internal/model"
 )
 

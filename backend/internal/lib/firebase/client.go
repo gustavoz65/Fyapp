@@ -1,3 +1,4 @@
+// Pacote firebase fornece integração com o cliente Firebase para autenticação e notificações.
 package firebase
 
 import (
@@ -7,8 +8,9 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
-	"github.com/gustavoz65/Fyapp/internal/config"
 	"google.golang.org/api/option"
+
+	"github.com/gustavoz65/Fyapp/internal/config"
 )
 
 type Client struct {

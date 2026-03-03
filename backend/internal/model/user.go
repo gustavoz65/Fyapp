@@ -1,3 +1,4 @@
+// Pacote model define os modelos de domínio e objetos de transferência de dados da aplicação.
 package model
 
 import (

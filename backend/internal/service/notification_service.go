@@ -6,10 +6,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Fyapp/internal/model"
-	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
+
+	"github.com/gustavoz65/Fyapp/internal/model"
+	"github.com/gustavoz65/Fyapp/internal/repository"
 )
 
 type NotificationService struct {

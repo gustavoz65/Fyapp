@@ -60,7 +60,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
-	transactionHandler := handler.NewTransactionHandler(transactionService, srv.Job)
+	transactionHandler := handler.NewTransactionHandler(transactionService, accountService, srv.Job)
 	accountHandler := handler.NewBankAccountHandler(accountService)
 	categoryHandler := handler.NewCategoryHandler(categoryService, categorizationService)
 	budgetHandler := handler.NewBudgetHandler(budgetService)

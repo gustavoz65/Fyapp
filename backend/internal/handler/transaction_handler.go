@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/shopspring/decimal"
 
 	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/gustavoz65/Fyapp/internal/lib/utils/job"
@@ -19,12 +23,14 @@ import (
 
 type TransactionHandler struct {
 	transactionService *service.TransactionService
+	accountService     *service.BankAccountService
 	jobService         *job.JobService
 }
 
-func NewTransactionHandler(transactionService *service.TransactionService, jobService *job.JobService) *TransactionHandler {
+func NewTransactionHandler(transactionService *service.TransactionService, accountService *service.BankAccountService, jobService *job.JobService) *TransactionHandler {
 	return &TransactionHandler{
 		transactionService: transactionService,
+		accountService:     accountService,
 		jobService:         jobService,
 	}
 }
@@ -237,17 +243,6 @@ func (h *TransactionHandler) GetUpcoming(c echo.Context) error {
 func (h *TransactionHandler) Import(c echo.Context) error {
 	userID := middleware.GetUserID(c)
 
-	// Get bank account ID from form data
-	bankAccountIDStr := c.FormValue("bank_account_id")
-	if bankAccountIDStr == "" {
-		return errs.NewBadRequestError("bank_account_id is required", false, nil, nil, nil)
-	}
-
-	bankAccountID, err := uuid.Parse(bankAccountIDStr)
-	if err != nil {
-		return errs.NewBadRequestError("invalid bank_account_id format", false, nil, nil, nil)
-	}
-
 	// Get bank type (default to generic)
 	bankType := c.FormValue("bank_type")
 	if bankType == "" {
@@ -287,6 +282,75 @@ func (h *TransactionHandler) Import(c echo.Context) error {
 		return errs.NewBadRequestError("failed to read file", false, nil, nil, nil)
 	}
 
+	// Handle account creation or use existing account
+	var bankAccountID uuid.UUID
+	createAccount := c.FormValue("create_account") == "true"
+
+	if createAccount {
+		// Create new account
+		accountName := c.FormValue("account_name")
+		if accountName == "" {
+			return errs.NewBadRequestError("account_name é obrigatório ao criar nova conta", false, nil, nil, nil)
+		}
+
+		// Extract initial balance from CSV if it's Banco do Brasil
+		initialBalance, err := h.extractInitialBalance(string(csvData), bankType)
+		if err != nil {
+			// If we can't extract balance, default to zero
+			initialBalance = "0"
+		}
+
+		// Parse initial balance
+		initialBalanceDecimal, err := decimal.NewFromString(initialBalance)
+		if err != nil {
+			initialBalanceDecimal = decimal.Zero
+		}
+
+		// Create bank account
+		req := &model.CreateBankAccountRequest{
+			Name:           accountName,
+			AccountType:    model.AccountTypeChecking, // Default to checking
+			InitialBalance: initialBalanceDecimal,
+			Currency:       "BRL",
+			Color:          "#10B981",
+			Icon:           "bank",
+		}
+
+		// Set bank name based on bank type
+		switch bankType {
+		case "nubank":
+			req.BankName = "Nubank"
+			req.BankCode = "260"
+		case "bb":
+			req.BankName = "Banco do Brasil"
+			req.BankCode = "001"
+		case "inter":
+			req.BankName = "Inter"
+			req.BankCode = "077"
+		case "itau":
+			req.BankName = "Itaú"
+			req.BankCode = "341"
+		}
+
+		account, err := h.accountService.Create(c.Request().Context(), userID, req)
+		if err != nil {
+			return errs.NewBadRequestError(fmt.Sprintf("Erro ao criar conta: %v", err), false, nil, nil, nil)
+		}
+
+		bankAccountID = account.ID
+	} else {
+		// Use existing account
+		bankAccountIDStr := c.FormValue("bank_account_id")
+		if bankAccountIDStr == "" {
+			return errs.NewBadRequestError("bank_account_id é obrigatório", false, nil, nil, nil)
+		}
+
+		bankAccountID, err = uuid.Parse(bankAccountIDStr)
+		if err != nil {
+			return errs.NewBadRequestError("formato de bank_account_id inválido", false, nil, nil, nil)
+		}
+	}
+
 	// Generate job ID
 	jobID := uuid.New().String()
 
@@ -309,9 +373,11 @@ func (h *TransactionHandler) Import(c echo.Context) error {
 
 	// Return job ID immediately
 	return c.JSON(http.StatusAccepted, map[string]interface{}{
-		"job_id":  jobID,
-		"status":  "processing",
-		"message": "Import job criado. Use o job_id para consultar o progresso.",
+		"job_id":          jobID,
+		"status":          "processing",
+		"message":         "Import job criado. Use o job_id para consultar o progresso.",
+		"bank_account_id": bankAccountID.String(),
+		"account_created": createAccount,
 	})
 }
 
@@ -328,4 +394,41 @@ func (h *TransactionHandler) GetImportStatus(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, status)
+}
+
+// extractInitialBalance extracts the initial balance from BB CSV "Saldo Anterior" line
+func (h *TransactionHandler) extractInitialBalance(csvData, bankType string) (string, error) {
+	// Only extract for Banco do Brasil
+	if bankType != "bb" {
+		return "0", fmt.Errorf("balance extraction only supported for Banco do Brasil")
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(csvData))
+	for scanner.Scan() {
+		line := scanner.Text()
+		lowerLine := strings.ToLower(line)
+
+		// Look for "Saldo Anterior" line
+		if strings.Contains(lowerLine, "saldo anterior") {
+			// Try to extract the balance value
+			// Format might be like: "Saldo Anterior,1234.56" or similar
+			parts := strings.Split(line, ",")
+			if len(parts) >= 2 {
+				// Get the last part which should be the balance
+				balanceStr := strings.TrimSpace(parts[len(parts)-1])
+				// Remove any currency symbols or text
+				balanceStr = strings.ReplaceAll(balanceStr, "R$", "")
+				balanceStr = strings.TrimSpace(balanceStr)
+				// Replace comma with dot for decimal separator
+				balanceStr = strings.ReplaceAll(balanceStr, ",", ".")
+
+				// Validate it's a number
+				if _, err := decimal.NewFromString(balanceStr); err == nil {
+					return balanceStr, nil
+				}
+			}
+		}
+	}
+
+	return "0", fmt.Errorf("saldo anterior not found in CSV")
 }

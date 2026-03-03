@@ -122,6 +122,8 @@ export default function TransactionsPage() {
     bank_account_id: "",
     bank_type: "generic",
     file: null as File | null,
+    create_account: false,
+    new_account_name: "",
   });
 
   const fetchData = useCallback(async () => {
@@ -277,8 +279,19 @@ export default function TransactionsPage() {
 
   async function handleImport(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!importForm.file || !importForm.bank_account_id) {
-      toast.error("Selecione a conta e o arquivo CSV");
+
+    if (!importForm.file) {
+      toast.error("Selecione o arquivo CSV");
+      return;
+    }
+
+    if (!importForm.create_account && !importForm.bank_account_id) {
+      toast.error("Selecione uma conta ou marque 'Criar nova conta'");
+      return;
+    }
+
+    if (importForm.create_account && !importForm.new_account_name.trim()) {
+      toast.error("Digite o nome da nova conta");
       return;
     }
 
@@ -289,7 +302,12 @@ export default function TransactionsPage() {
     try {
       const formData = new FormData();
       formData.append("file", importForm.file);
-      formData.append("bank_account_id", importForm.bank_account_id);
+      if (importForm.create_account) {
+        formData.append("create_account", "true");
+        formData.append("account_name", importForm.new_account_name);
+      } else {
+        formData.append("bank_account_id", importForm.bank_account_id);
+      }
       formData.append("bank_type", importForm.bank_type);
 
       const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import`, {
@@ -338,7 +356,13 @@ export default function TransactionsPage() {
           );
           ws.close();
           setImportDialogOpen(false);
-          setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+          setImportForm({
+            bank_account_id: "",
+            bank_type: "generic",
+            file: null,
+            create_account: false,
+            new_account_name: "",
+          });
           setIsImporting(false);
           setImportProgress(0);
           setImportMessage("");
@@ -399,7 +423,13 @@ export default function TransactionsPage() {
             `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
           );
           setImportDialogOpen(false);
-          setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+          setImportForm({
+            bank_account_id: "",
+            bank_type: "generic",
+            file: null,
+            create_account: false,
+            new_account_name: "",
+          });
           setIsImporting(false);
           setImportProgress(0);
           setImportMessage("");
@@ -485,25 +515,61 @@ export default function TransactionsPage() {
               )}
               <form onSubmit={handleImport} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Conta *</Label>
-                  <Select
-                    value={importForm.bank_account_id}
-                    onValueChange={(v) =>
-                      setImportForm({ ...importForm, bank_account_id: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a conta..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="create_account"
+                      checked={importForm.create_account}
+                      onCheckedChange={(checked) =>
+                        setImportForm({
+                          ...importForm,
+                          create_account: checked === true,
+                          bank_account_id: checked === true ? "" : importForm.bank_account_id
+                        })
+                      }
+                    />
+                    <Label htmlFor="create_account" className="text-sm font-medium leading-none">
+                      Criar nova conta
+                    </Label>
+                  </div>
                 </div>
+
+                {!importForm.create_account ? (
+                  <div className="space-y-2">
+                    <Label>Conta *</Label>
+                    <Select
+                      value={importForm.bank_account_id}
+                      onValueChange={(v) =>
+                        setImportForm({ ...importForm, bank_account_id: v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a conta..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Nome da nova conta *</Label>
+                    <Input
+                      value={importForm.new_account_name}
+                      onChange={(e) =>
+                        setImportForm({ ...importForm, new_account_name: e.target.value })
+                      }
+                      placeholder="Ex: Banco do Brasil - Conta Corrente"
+                      required={importForm.create_account}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Uma nova conta será criada automaticamente com o saldo baseado no extrato
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Tipo de Banco</Label>
                   <Select
@@ -552,6 +618,8 @@ export default function TransactionsPage() {
                         bank_account_id: "",
                         bank_type: "generic",
                         file: null,
+                        create_account: false,
+                        new_account_name: "",
                       });
                     }}
                   >

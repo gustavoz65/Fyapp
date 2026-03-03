@@ -354,12 +354,16 @@ func (h *TransactionHandler) Import(c echo.Context) error {
 	// Generate job ID
 	jobID := uuid.New().String()
 
+	// Check if force reimport
+	forceReimport := c.FormValue("force_reimport") == "true"
+
 	// Create async task
 	task, err := job.NewImportTransactionsTask(job.ImportTransactionsPayload{
 		JobID:         jobID,
 		UserID:        userID.String(),
 		BankAccountID: bankAccountID.String(),
 		BankType:      bankType,
+		ForceReimport: forceReimport,
 		CSVData:       string(csvData),
 	})
 	if err != nil {
@@ -394,6 +398,25 @@ func (h *TransactionHandler) GetImportStatus(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, status)
+}
+
+// DeleteAllByAccount deleta todas as transações de uma conta
+func (h *TransactionHandler) DeleteAllByAccount(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	accountID, err := uuid.Parse(c.Param("account_id"))
+	if err != nil {
+		return errs.NewBadRequestError("ID de conta inválido", false, nil, nil, nil)
+	}
+
+	if err := h.transactionService.DeleteAllByAccount(c.Request().Context(), userID, accountID); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message":    "Todas as transações foram deletadas",
+		"account_id": accountID.String(),
+	})
 }
 
 // extractInitialBalance extracts the initial balance from BB CSV "Saldo Anterior" line

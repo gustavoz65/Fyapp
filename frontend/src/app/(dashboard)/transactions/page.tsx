@@ -62,6 +62,7 @@ import {
   Plus,
   ReceiptText,
   Sparkles,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -124,6 +125,7 @@ export default function TransactionsPage() {
     file: null as File | null,
     create_account: false,
     new_account_name: "",
+    force_reimport: false,
   });
 
   const fetchData = useCallback(async () => {
@@ -309,6 +311,9 @@ export default function TransactionsPage() {
         formData.append("bank_account_id", importForm.bank_account_id);
       }
       formData.append("bank_type", importForm.bank_type);
+      if (importForm.force_reimport) {
+        formData.append("force_reimport", "true");
+      }
 
       const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import`, {
         method: "POST",
@@ -362,6 +367,7 @@ export default function TransactionsPage() {
             file: null,
             create_account: false,
             new_account_name: "",
+            force_reimport: false,
           });
           setIsImporting(false);
           setImportProgress(0);
@@ -429,6 +435,7 @@ export default function TransactionsPage() {
             file: null,
             create_account: false,
             new_account_name: "",
+            force_reimport: false,
           });
           setIsImporting(false);
           setImportProgress(0);
@@ -447,6 +454,20 @@ export default function TransactionsPage() {
         setIsImporting(false);
       }
     }, 1000); // Poll every second
+  }
+
+  async function handleDeleteAll(accountId: string) {
+    if (!confirm("Tem certeza que deseja deletar TODAS as transações desta conta? Esta ação não pode ser desfeita!")) {
+      return;
+    }
+
+    try {
+      await api.delete(`/transactions/account/${accountId}`);
+      toast.success("Todas as transações foram deletadas");
+      fetchData();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao deletar transações"));
+    }
   }
 
   function isSuggested(categoryId: string): boolean {
@@ -607,6 +628,21 @@ export default function TransactionsPage() {
                     Formatos aceitos: CSV (máx. 10MB)
                   </p>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="force_reimport"
+                    checked={importForm.force_reimport}
+                    onCheckedChange={(checked) =>
+                      setImportForm({
+                        ...importForm,
+                        force_reimport: checked === true,
+                      })
+                    }
+                  />
+                  <Label htmlFor="force_reimport" className="text-sm font-medium leading-none">
+                    Forçar reimportação (ignora duplicatas)
+                  </Label>
+                </div>
                 <div className="flex gap-2 pt-2">
                   <Button
                     type="button"
@@ -620,6 +656,7 @@ export default function TransactionsPage() {
                         file: null,
                         create_account: false,
                         new_account_name: "",
+                        force_reimport: false,
                       });
                     }}
                   >
@@ -633,6 +670,31 @@ export default function TransactionsPage() {
               </form>
             </DialogContent>
           </Dialog>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg" variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Deletar Todas
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {accounts.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground">
+                  Nenhuma conta disponível
+                </div>
+              ) : (
+                accounts.map((account) => (
+                  <DropdownMenuItem
+                    key={account.id}
+                    onClick={() => handleDeleteAll(account.id)}
+                    className="text-destructive cursor-pointer"
+                  >
+                    Deletar de: {account.name}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Dialog
             open={dialogOpen}
             onOpenChange={(open) => {

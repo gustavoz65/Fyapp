@@ -19,7 +19,8 @@ type ImportTransactionsPayload struct {
 	UserID        string `json:"user_id"`
 	BankAccountID string `json:"bank_account_id"`
 	BankType      string `json:"bank_type"`
-	CSVData       string `json:"csv_data"` // Base64 or raw CSV content
+	ForceReimport bool   `json:"force_reimport"`
+	CSVData       string `json:"csv_data"`
 }
 
 type ImportStatus struct {
@@ -92,6 +93,7 @@ func (j *JobService) handleImportTransactionsTask(ctx context.Context, t *asynq.
 		bankAccountID,
 		reader,
 		p.BankType,
+		p.ForceReimport,
 		func(current, total int) {
 			// Update progress in real-time
 			progress := 0

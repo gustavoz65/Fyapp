@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { z } from "zod";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
-import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import { auth, googleProvider } from "@/lib/firebase";
 import { loginSchema } from "@/lib/schemas";
+import { useAuth } from "@/providers/auth-provider";
+import { signInWithPopup } from "firebase/auth";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -28,8 +28,13 @@ export default function LoginPage() {
     try {
       // Validar com Zod
       const validated = loginSchema.parse({ email, password });
-      await login(validated);
-      router.push("/dashboard");
+      const loggedUser = await login(validated);
+
+      // Verificar se o onboarding foi completado
+      const onboardingCompleted = localStorage.getItem(
+        `onboarding_completed_${loggedUser.id}`,
+      );
+      router.push(onboardingCompleted ? "/dashboard" : "/onboarding");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
@@ -51,14 +56,17 @@ export default function LoginPage() {
       const idToken = await result.user.getIdToken();
 
       // 3. Enviar para o backend
-      await socialLogin({
+      const loggedUser = await socialLogin({
         provider: "google",
         id_token: idToken,
         device_info: navigator.userAgent,
       });
 
-      // 4. Redirecionar para dashboard
-      router.push("/dashboard");
+      // 4. Verificar se o onboarding foi completado
+      const onboardingCompleted = localStorage.getItem(
+        `onboarding_completed_${loggedUser.id}`,
+      );
+      router.push(onboardingCompleted ? "/dashboard" : "/onboarding");
     } catch (error) {
       console.error("Erro no login com Google:", error);
       if (error instanceof Error) {
@@ -79,8 +87,18 @@ export default function LoginPage() {
         <div className="absolute inset-0 opacity-5">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+              <pattern
+                id="grid"
+                width="40"
+                height="40"
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  d="M 40 0 L 0 0 0 40"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
@@ -97,25 +115,33 @@ export default function LoginPage() {
             </p>
           </div>
           <p className="text-xl text-foreground/80 leading-relaxed">
-            Transforme a forma como você gerencia suas finanças. Simplicidade, segurança e controle total em uma plataforma moderna.
+            Transforme a forma como você gerencia suas finanças. Simplicidade,
+            segurança e controle total em uma plataforma moderna.
           </p>
           <div className="space-y-4 pt-4">
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-              <p className="text-foreground/70">Dashboard intuitivo com insights em tempo real</p>
+              <p className="text-foreground/70">
+                Dashboard intuitivo com insights em tempo real
+              </p>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-              <p className="text-foreground/70">Segurança bancária para proteger seus dados</p>
+              <p className="text-foreground/70">
+                Segurança bancária para proteger seus dados
+              </p>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-              <p className="text-foreground/70">Controle total sobre orçamentos e metas</p>
+              <p className="text-foreground/70">
+                Controle total sobre orçamentos e metas
+              </p>
             </div>
           </div>
           <blockquote className="border-l-4 border-primary/50 pl-6 py-4 bg-primary/5 rounded-r-lg">
             <p className="italic text-foreground/80">
-              &quot;FiNext mudou completamente minha relação com o dinheiro. Finalmente tenho controle real das minhas finanças.&quot;
+              &quot;FiNext mudou completamente minha relação com o dinheiro.
+              Finalmente tenho controle real das minhas finanças.&quot;
             </p>
             <footer className="mt-3 text-sm font-semibold text-primary">
               - Maria Silva, Usuária Premium
@@ -128,7 +154,9 @@ export default function LoginPage() {
       <div className="flex w-full lg:w-1/2 items-center justify-center p-6">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight">Entrar na sua conta</h2>
+            <h2 className="text-3xl font-bold tracking-tight">
+              Entrar na sua conta
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Digite seu email abaixo para entrar
             </p>
@@ -204,18 +232,27 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Não tem uma conta?{" "}
-            <Link href="/register" className="font-semibold text-primary hover:underline">
+            <Link
+              href="/register"
+              className="font-semibold text-primary hover:underline"
+            >
               Criar conta
             </Link>
           </p>
 
           <p className="text-center text-xs text-muted-foreground">
             Ao continuar, você concorda com nossos{" "}
-            <Link href="#" className="underline underline-offset-4 hover:text-primary">
+            <Link
+              href="#"
+              className="underline underline-offset-4 hover:text-primary"
+            >
               Termos de Serviço
             </Link>{" "}
             e{" "}
-            <Link href="#" className="underline underline-offset-4 hover:text-primary">
+            <Link
+              href="#"
+              className="underline underline-offset-4 hover:text-primary"
+            >
               Política de Privacidade
             </Link>
             .

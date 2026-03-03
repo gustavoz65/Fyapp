@@ -1,18 +1,35 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import type { User, LoginRequest, RegisterRequest, SocialLoginRequest } from "@/types";
-import { getCurrentUser, login as loginFn, logout as logoutFn, register as registerFn, socialLogin as socialLoginFn } from "@/lib/auth";
 import { setRedirectCallback } from "@/lib/api";
+import {
+  getCurrentUser,
+  login as loginFn,
+  logout as logoutFn,
+  register as registerFn,
+  socialLogin as socialLoginFn,
+} from "@/lib/auth";
+import type {
+  LoginRequest,
+  RegisterRequest,
+  SocialLoginRequest,
+  User,
+} from "@/types";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (data: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
-  socialLogin: (data: SocialLoginRequest) => Promise<void>;
+  login: (data: LoginRequest) => Promise<User>;
+  register: (data: RegisterRequest) => Promise<User>;
+  socialLogin: (data: SocialLoginRequest) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -29,7 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRedirectCallback(() => {
       // Rotas públicas que não devem redirecionar
       const publicRoutes = ["/", "/login", "/register"];
-      const isPublicRoute = publicRoutes.some(route => pathname === route || pathname?.startsWith(route));
+      const isPublicRoute = publicRoutes.some(
+        (route) => pathname === route || pathname?.startsWith(route),
+      );
 
       if (!isPublicRoute) {
         router.push("/login");
@@ -73,16 +92,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (data: LoginRequest) => {
     const response = await loginFn(data);
     setUser(response.user);
+    return response.user;
   };
 
   const register = async (data: RegisterRequest) => {
     const response = await registerFn(data);
     setUser(response.user);
+    return response.user;
   };
 
   const socialLogin = async (data: SocialLoginRequest) => {
     const response = await socialLoginFn(data);
     setUser(response.user);
+    return response.user;
   };
 
   const logout = async () => {

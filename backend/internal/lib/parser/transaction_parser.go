@@ -35,9 +35,9 @@ type CSVMapping struct {
 var BankMappings = map[string]CSVMapping{
 	"nubank": {
 		DateColumn:        0,
-		DescriptionColumn: 2,
-		AmountColumn:      3,
-		DateFormat:        "2006-01-02",
+		DescriptionColumn: 3,
+		AmountColumn:      1,
+		DateFormat:        "02/01/2006",
 	},
 	"inter": {
 		DateColumn:        0,

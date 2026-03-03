@@ -149,17 +149,31 @@ func ReadRateLimit(rdb *redis.Client) echo.MiddlewareFunc {
 	})
 }
 
-// RefreshRateLimit aplica rate limiting para refresh de tokens
-// Mais permissivo que login, mas protege contra abuso
 func RefreshRateLimit(rdb *redis.Client) echo.MiddlewareFunc {
 	return RateLimit(rdb, repository.RateLimiter{
-		Max:      30, // 30 refreshes por minuto
+		Max:      30,
 		Duration: time.Minute,
 		KeyFunc: func(c echo.Context) string {
-			// Usar IP para rate limiting de refresh
 			return fmt.Sprintf("refresh:%s", c.RealIP())
 		},
 		Endpoint:    "refresh",
+		SkipOnerror: true,
+	})
+}
+
+func UploadRateLimit(rdb *redis.Client) echo.MiddlewareFunc {
+	return RateLimit(rdb, repository.RateLimiter{
+		Max:      10,
+		Duration: time.Minute,
+		KeyFunc: func(c echo.Context) string {
+			if userID := c.Get("user_id"); userID != nil {
+				if uid, ok := userID.(uuid.UUID); ok {
+					return fmt.Sprintf("upload:user:%s", uid.String())
+				}
+			}
+			return fmt.Sprintf("upload:ip:%s", c.RealIP())
+		},
+		Endpoint:    "upload",
 		SkipOnerror: true,
 	})
 }

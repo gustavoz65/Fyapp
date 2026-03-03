@@ -35,6 +35,9 @@ type ServerConfig struct {
 	WriteTimeout       int      `koanf:"write_timeout"`
 	IdleTimeout        int      `koanf:"idle_timeout"`
 	CORSAllowedOrigins []string `koanf:"cors_allowed_origins"`
+	TLSEnabled         bool     `koanf:"tls_enabled"`
+	TLSCertFile        string   `koanf:"tls_cert_file"`
+	TLSKeyFile         string   `koanf:"tls_key_file"`
 }
 
 type DatabaseConfig struct {
@@ -92,6 +95,9 @@ func transformEnvKey(s string) string {
 		"server_write_timeout":                                "server.write_timeout",
 		"server_idle_timeout":                                 "server.idle_timeout",
 		"server_cors_allowed_origins":                         "server.cors_allowed_origins",
+		"server_tls_enabled":                                  "server.tls_enabled",
+		"server_tls_cert_file":                                "server.tls_cert_file",
+		"server_tls_key_file":                                 "server.tls_key_file",
 		"database_host":                                       "database.host",
 		"database_port":                                       "database.port",
 		"database_user":                                       "database.user",

@@ -243,43 +243,46 @@ func (h *TransactionHandler) GetUpcoming(c echo.Context) error {
 func (h *TransactionHandler) Import(c echo.Context) error {
 	userID := middleware.GetUserID(c)
 
-	// Get bank type (default to generic)
 	bankType := c.FormValue("bank_type")
 	if bankType == "" {
 		bankType = "generic"
 	}
 
-	// Get file from multipart form
 	file, err := c.FormFile("file")
 	if err != nil {
 		return errs.NewBadRequestError("file is required", false, nil, nil, nil)
 	}
 
-	// Validate file type (CSV only for now)
 	if file.Header.Get("Content-Type") != "text/csv" &&
-		file.Header.Get("Content-Type") != "application/vnd.ms-excel" {
-		// Also check file extension
+		file.Header.Get("Content-Type") != "application/vnd.ms-excel" &&
+		file.Header.Get("Content-Type") != "application/csv" {
 		if len(file.Filename) < 4 || file.Filename[len(file.Filename)-4:] != ".csv" {
-			return errs.NewBadRequestError("only CSV files are supported", false, nil, nil, nil)
+			return errs.NewBadRequestError("apenas arquivos CSV são suportados", false, nil, nil, nil)
 		}
 	}
 
-	// Limit file size to 10MB
-	if file.Size > 10*1024*1024 {
-		return errs.NewBadRequestError("file size exceeds 10MB limit", false, nil, nil, nil)
+	const maxFileSize = 5 * 1024 * 1024
+	if file.Size > maxFileSize {
+		return errs.NewBadRequestError("tamanho do arquivo excede o limite de 5MB", false, nil, nil, nil)
 	}
 
-	// Open file and read CSV data
+	if file.Size == 0 {
+		return errs.NewBadRequestError("arquivo está vazio", false, nil, nil, nil)
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	// Read CSV content into memory
-	csvData, err := io.ReadAll(src)
+	csvData, err := io.ReadAll(io.LimitReader(src, maxFileSize))
 	if err != nil {
-		return errs.NewBadRequestError("failed to read file", false, nil, nil, nil)
+		return errs.NewBadRequestError("falha ao ler arquivo", false, nil, nil, nil)
+	}
+
+	if err := h.validateCSVContent(string(csvData)); err != nil {
+		return err
 	}
 
 	// Handle account creation or use existing account
@@ -419,9 +422,41 @@ func (h *TransactionHandler) DeleteAllByAccount(c echo.Context) error {
 	})
 }
 
-// extractInitialBalance extracts the initial balance from BB CSV "Saldo Anterior" line
+func (h *TransactionHandler) validateCSVContent(csvData string) error {
+	const maxLines = 50000
+	const maxLineLength = 10000
+
+	scanner := bufio.NewScanner(strings.NewReader(csvData))
+	lineCount := 0
+
+	for scanner.Scan() {
+		lineCount++
+		if lineCount > maxLines {
+			return errs.NewBadRequestError("CSV excede o limite de 50.000 linhas", false, nil, nil, nil)
+		}
+
+		line := scanner.Text()
+		if len(line) > maxLineLength {
+			return errs.NewBadRequestError("CSV contém linhas muito longas", false, nil, nil, nil)
+		}
+
+		if strings.Contains(line, "\x00") {
+			return errs.NewBadRequestError("CSV contém caracteres inválidos", false, nil, nil, nil)
+		}
+	}
+
+	if lineCount == 0 {
+		return errs.NewBadRequestError("CSV está vazio", false, nil, nil, nil)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return errs.NewBadRequestError("erro ao processar CSV", false, nil, nil, nil)
+	}
+
+	return nil
+}
+
 func (h *TransactionHandler) extractInitialBalance(csvData, bankType string) (string, error) {
-	// Only extract for Banco do Brasil
 	if bankType != "bb" {
 		return "0", fmt.Errorf("balance extraction only supported for Banco do Brasil")
 	}
@@ -431,21 +466,14 @@ func (h *TransactionHandler) extractInitialBalance(csvData, bankType string) (st
 		line := scanner.Text()
 		lowerLine := strings.ToLower(line)
 
-		// Look for "Saldo Anterior" line
 		if strings.Contains(lowerLine, "saldo anterior") {
-			// Try to extract the balance value
-			// Format might be like: "Saldo Anterior,1234.56" or similar
 			parts := strings.Split(line, ",")
 			if len(parts) >= 2 {
-				// Get the last part which should be the balance
 				balanceStr := strings.TrimSpace(parts[len(parts)-1])
-				// Remove any currency symbols or text
 				balanceStr = strings.ReplaceAll(balanceStr, "R$", "")
 				balanceStr = strings.TrimSpace(balanceStr)
-				// Replace comma with dot for decimal separator
 				balanceStr = strings.ReplaceAll(balanceStr, ",", ".")
 
-				// Validate it's a number
 				if _, err := decimal.NewFromString(balanceStr); err == nil {
 					return balanceStr, nil
 				}

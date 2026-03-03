@@ -118,6 +118,9 @@ export default function DashboardPage() {
     ? ((currentMonthBalance - previousMonthBalance) / Math.abs(previousMonthBalance)) * 100
     : currentMonthBalance !== 0 ? 100 : 0;
 
+  const totalBalance = parseFloat(data.total_balance || "0");
+  const isNegativeBalance = totalBalance < 0;
+
   const metrics = [
     {
       title: "Saldo Total",
@@ -125,6 +128,7 @@ export default function DashboardPage() {
       change: `${balanceChangePercent > 0 ? "+" : ""}${balanceChangePercent.toFixed(1)}%`,
       trend: balanceChangePercent >= 0 ? ("up" as const) : ("down" as const),
       icon: Wallet,
+      isNegative: isNegativeBalance,
     },
     {
       title: "Receitas do Mês",
@@ -188,16 +192,19 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric, index) => {
           const Icon = metric.icon;
+          const isNegative = "isNegative" in metric && metric.isNegative;
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow">
+            <Card key={index} className={`hover:shadow-md transition-shadow ${isNegative ? "border-red-500 bg-red-50 dark:bg-red-950/20" : ""}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {metric.title}
                 </CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Icon className={`h-4 w-4 ${isNegative ? "text-red-500" : "text-muted-foreground"}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metric.value}</div>
+                <div className={`text-2xl font-bold ${isNegative ? "text-red-600 dark:text-red-400" : ""}`}>
+                  {metric.value}
+                </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   {metric.trend === "up" ? (
                     <TrendingUp className="h-3 w-3 mr-1 text-green-500" />

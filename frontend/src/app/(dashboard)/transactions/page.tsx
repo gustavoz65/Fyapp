@@ -12,6 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -50,6 +57,8 @@ import {
   ArrowUpRight,
   Check,
   Loader2,
+  MoreVertical,
+  Pencil,
   Plus,
   ReceiptText,
   Sparkles,
@@ -81,7 +90,12 @@ export default function TransactionsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<number>(0);
+  const [importMessage, setImportMessage] = useState<string>("");
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
+  const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<string>("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterType, setFilterType] = useState<string>("all");
@@ -236,6 +250,27 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleUpdateCategory(txId: string, categoryId: string) {
+    try {
+      await api.put(`/transactions/${txId}`, {
+        category_id: categoryId || undefined,
+      });
+      toast.success("Categoria atualizada com sucesso");
+      setEditCategoryDialogOpen(false);
+      setEditingCategoryId(null);
+      setSelectedCategoryForEdit("");
+      fetchData();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao atualizar categoria"));
+    }
+  }
+
+  function openEditCategoryDialog(tx: Transaction) {
+    setEditingCategoryId(tx.id);
+    setSelectedCategoryForEdit(tx.category?.id || "");
+    setEditCategoryDialogOpen(true);
+  }
+
   async function handleImport(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!importForm.file || !importForm.bank_account_id) {
@@ -244,6 +279,9 @@ export default function TransactionsPage() {
     }
 
     setIsImporting(true);
+    setImportProgress(0);
+    setImportMessage("Enviando arquivo...");
+
     try {
       const formData = new FormData();
       formData.append("file", importForm.file);
@@ -264,17 +302,117 @@ export default function TransactionsPage() {
       }
 
       const result = await response.json();
-      toast.success(
-        `Importação concluída! ${result.total_imported} transações importadas, ${result.duplicates} duplicadas.`
-      );
-      setImportDialogOpen(false);
-      setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
-      fetchData();
+      const jobId = result.job_id;
+
+      setImportMessage("Processando transações...");
+
+      // Connect to WebSocket for real-time progress
+      const token = localStorage.getItem("token");
+      const wsUrl = `ws://localhost:3000/ws/import-progress?job_id=${jobId}`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+      };
+
+      ws.onmessage = (event) => {
+        const status = JSON.parse(event.data);
+
+        if (status.error) {
+          toast.error(status.error);
+          ws.close();
+          setIsImporting(false);
+          return;
+        }
+
+        setImportProgress(status.progress || 0);
+        setImportMessage(status.message || "Processando...");
+
+        if (status.status === "completed") {
+          toast.success(
+            `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
+          );
+          ws.close();
+          setImportDialogOpen(false);
+          setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+          fetchData();
+        } else if (status.status === "failed") {
+          toast.error(status.message || "Erro ao importar transações");
+          ws.close();
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        toast.error("Erro na conexão WebSocket. Usando polling...");
+        ws.close();
+        // Fallback to polling
+        pollImportStatus(jobId);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected");
+      };
+
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Erro ao importar transações"));
-    } finally {
       setIsImporting(false);
+      setImportProgress(0);
+      setImportMessage("");
     }
+  }
+
+  // Fallback polling function if WebSocket fails
+  async function pollImportStatus(jobId: string) {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/v1/transactions/import/${jobId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        if (!response.ok) {
+          clearInterval(interval);
+          setIsImporting(false);
+          toast.error("Job não encontrado");
+          return;
+        }
+
+        const status = await response.json();
+        setImportProgress(status.progress || 0);
+        setImportMessage(status.message || "Processando...");
+
+        if (status.status === "completed") {
+          clearInterval(interval);
+          toast.success(
+            `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
+          );
+          setImportDialogOpen(false);
+          setImportForm({ bank_account_id: "", bank_type: "generic", file: null });
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+          fetchData();
+        } else if (status.status === "failed") {
+          clearInterval(interval);
+          toast.error(status.message || "Erro ao importar transações");
+          setIsImporting(false);
+          setImportProgress(0);
+          setImportMessage("");
+        }
+      } catch (error) {
+        clearInterval(interval);
+        toast.error("Erro ao consultar status da importação");
+        setIsImporting(false);
+      }
+    }, 1000); // Poll every second
   }
 
   function isSuggested(categoryId: string): boolean {
@@ -332,6 +470,15 @@ export default function TransactionsPage() {
               <DialogHeader>
                 <DialogTitle>Importar Extrato Bancário</DialogTitle>
               </DialogHeader>
+              {isImporting && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{importMessage}</span>
+                    <span className="font-medium">{importProgress}%</span>
+                  </div>
+                  <Progress value={importProgress} className="h-2" />
+                </div>
+              )}
               <form onSubmit={handleImport} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Conta *</Label>
@@ -724,21 +871,36 @@ export default function TransactionsPage() {
                         {formatCurrency(tx.amount)}
                       </TableCell>
                       <TableCell>
-                        {!tx.is_paid && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={markingPaidId === tx.id}
-                            onClick={() => markAsPaid(tx.id)}
-                            title="Marcar como pago"
-                          >
-                            {markingPaidId === tx.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {!tx.is_paid && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={markingPaidId === tx.id}
+                              onClick={() => markAsPaid(tx.id)}
+                              title="Marcar como pago"
+                            >
+                              {markingPaidId === tx.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditCategoryDialog(tx)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Editar Categoria
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -771,6 +933,61 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para editar categoria */}
+      <Dialog open={editCategoryDialogOpen} onOpenChange={setEditCategoryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select
+                value={selectedCategoryForEdit}
+                onValueChange={setSelectedCategoryForEdit}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sem categoria</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setEditCategoryDialogOpen(false);
+                  setEditingCategoryId(null);
+                  setSelectedCategoryForEdit("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => {
+                  if (editingCategoryId) {
+                    handleUpdateCategory(editingCategoryId, selectedCategoryForEdit);
+                  }
+                }}
+              >
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

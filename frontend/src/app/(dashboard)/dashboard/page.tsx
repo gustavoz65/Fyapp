@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,7 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -41,31 +43,137 @@ import {
   YAxis,
 } from "recharts";
 
+type Period =
+  | "this_month"
+  | "last_month"
+  | "last_3_months"
+  | "last_6_months"
+  | "all_time"
+  | "custom";
+
+interface DateRange {
+  start: string; // formato YYYY-MM-DD
+  end: string;
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function getDateRange(period: Period, custom: DateRange): DateRange {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+
+  if (period === "custom") return custom;
+  if (period === "all_time") {
+    return { start: "2000-01-01", end: toDateStr(now) };
+  }
+  if (period === "this_month") {
+    const start = new Date(y, m, 1);
+    const end = new Date(y, m + 1, 0);
+    return { start: toDateStr(start), end: toDateStr(end) };
+  }
+  if (period === "last_month") {
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0);
+    return { start: toDateStr(start), end: toDateStr(end) };
+  }
+  if (period === "last_3_months") {
+    const start = new Date(y, m - 2, 1);
+    const end = new Date(y, m + 1, 0);
+    return { start: toDateStr(start), end: toDateStr(end) };
+  }
+  const start = new Date(y, m - 5, 1);
+  const end = new Date(y, m + 1, 0);
+  return { start: toDateStr(start), end: toDateStr(end) };
+}
+
+const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: "this_month", label: "Este mês" },
+  { value: "last_month", label: "Mês passado" },
+  { value: "last_3_months", label: "3 meses" },
+  { value: "last_6_months", label: "6 meses" },
+  { value: "all_time", label: "Todo período" },
+  { value: "custom", label: "Personalizado" },
+];
+
+function periodComparisonLabel(period: Period): string {
+  return period === "this_month" || period === "last_month"
+    ? "vs mês anterior"
+    : "vs período anterior";
+}
+
+type HealthStatus = "good" | "warning" | "critical";
+
+const statusColor: Record<HealthStatus, string> = {
+  good: "text-green-500",
+  warning: "text-yellow-500",
+  critical: "text-red-500",
+};
+
+function TrendIcon({
+  status,
+  trend,
+}: {
+  status: HealthStatus;
+  trend: "up" | "down";
+}) {
+  const cls = `h-3 w-3 mr-1 ${statusColor[status]}`;
+  const showUp = status === "good" || (status === "warning" && trend === "up");
+  return showUp ? <TrendingUp className={cls} /> : <TrendingDown className={cls} />;
+}
+
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyIncomeExpense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [summaryData, monthly] = await Promise.all([
-        api.get<DashboardSummary>("/dashboard"),
-        api.get<MonthlyIncomeExpense[]>(
-          "/dashboard/monthly-comparison?months=6",
-        ),
-      ]);
-      setSummary(summaryData);
-      setMonthlyData(monthly ?? []);
-    } catch {
-      // Will show empty state
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [period, setPeriod] = useState<Period>("this_month");
+  const [customRange, setCustomRange] = useState<DateRange>({
+    start: toDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+    end: toDateStr(new Date()),
+  });
+
+  const fetchData = useCallback(
+    async (p: Period, custom: DateRange) => {
+      setIsLoading(true);
+      try {
+        const { start, end } = getDateRange(p, custom);
+        const [summaryData, monthly] = await Promise.all([
+          api.get<DashboardSummary>(
+            `/dashboard?start_date=${start}&end_date=${end}`,
+          ),
+          api.get<MonthlyIncomeExpense[]>(
+            "/dashboard/monthly-comparison?months=6",
+          ),
+        ]);
+        setSummary(summaryData);
+        setMonthlyData(monthly ?? []);
+      } catch {
+        // ignora erro — componente exibe estado vazio
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(period, customRange);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handlePeriodChange(p: Period) {
+    setPeriod(p);
+    if (p !== "custom") {
+      fetchData(p, customRange);
+    }
+  }
+
+  function handleCustomApply() {
+    fetchData("custom", customRange);
+  }
 
   if (isLoading) {
     return (
@@ -107,57 +215,43 @@ export default function DashboardPage() {
 
   const data = summary || defaultSummary;
 
-  // Calcular variação do saldo comparando com o mês anterior
-  const currentMonthBalance = parseFloat(data.month_income || "0") - parseFloat(data.month_expense || "0");
-  const previousMonthData = monthlyData.length >= 2 ? monthlyData[monthlyData.length - 2] : null;
-  const previousMonthBalance = previousMonthData
-    ? parseFloat(previousMonthData.income || "0") - parseFloat(previousMonthData.expense || "0")
-    : 0;
-
-  const balanceChangePercent = previousMonthBalance !== 0
-    ? ((currentMonthBalance - previousMonthBalance) / Math.abs(previousMonthBalance)) * 100
-    : currentMonthBalance !== 0 ? 100 : 0;
-
-  const totalBalance = parseFloat(data.total_balance || "0");
+  const totalBalance = Number.parseFloat(data.total_balance || "0");
   const isNegativeBalance = totalBalance < 0;
 
-  type HealthStatus = "good" | "warning" | "critical";
+  const incomeChange = Number.parseFloat(data.income_change || "0");
+  const expenseChange = Number.parseFloat(data.expense_change || "0");
+  const goalsProgress = Number.parseFloat(data.goals_progress || "0");
 
-  // Saldo Total
-  // critical → saldo negativo | warning → positivo mas caindo | good → positivo e crescendo
-  const balanceStatus: HealthStatus =
-    isNegativeBalance ? "critical" : balanceChangePercent < 0 ? "warning" : "good";
+  let balanceStatus: HealthStatus = "warning";
+  if (isNegativeBalance) balanceStatus = "critical";
+  else if (incomeChange >= 0) balanceStatus = "good";
 
-  // Receitas do Mês
-  // good → crescendo | warning → caindo até -30% | critical → caindo mais de -30%
-  const incomeChange = parseFloat(data.income_change || "0");
-  const incomeStatus: HealthStatus =
-    incomeChange > 0 ? "good" : incomeChange > -30 ? "warning" : "critical";
+  let incomeStatus: HealthStatus = "critical";
+  if (incomeChange > 0) incomeStatus = "good";
+  else if (incomeChange > -30) incomeStatus = "warning";
 
-  // Despesas do Mês (lógica invertida: gastar menos é bom)
-  // good → caindo | warning → subindo até +30% | critical → subindo mais de +30%
-  const expenseChange = parseFloat(data.expense_change || "0");
-  const expenseStatus: HealthStatus =
-    expenseChange < 0 ? "good" : expenseChange < 30 ? "warning" : "critical";
+  let expenseStatus: HealthStatus = "good";
+  if (expenseChange >= 30) expenseStatus = "critical";
+  else if (expenseChange >= 0) expenseStatus = "warning";
 
-  // Metas Ativas
-  // good → >50% concluído | warning → 20-50% | critical → <20%
-  const goalsProgress = parseFloat(data.goals_progress || "0");
-  const goalsStatus: HealthStatus =
-    goalsProgress > 50 ? "good" : goalsProgress > 20 ? "warning" : "critical";
+  let goalsStatus: HealthStatus = "critical";
+  if (goalsProgress > 50) goalsStatus = "good";
+  else if (goalsProgress > 20) goalsStatus = "warning";
+
+  const compLabel = periodComparisonLabel(period);
 
   const metrics = [
     {
       title: "Saldo Total",
       value: formatCurrency(data.total_balance),
-      change: `${balanceChangePercent > 0 ? "+" : ""}${balanceChangePercent.toFixed(1)}%`,
-      trend: balanceChangePercent >= 0 ? ("up" as const) : ("down" as const),
+      change: `${incomeChange > 0 ? "+" : ""}${incomeChange.toFixed(1)}%`,
+      trend: incomeChange >= 0 ? ("up" as const) : ("down" as const),
       icon: Wallet,
       isNegative: isNegativeBalance,
       status: balanceStatus,
     },
     {
-      title: "Receitas do Mês",
+      title: "Receitas do Período",
       value: formatCurrency(data.month_income),
       change: data.income_change
         ? `${incomeChange > 0 ? "+" : ""}${incomeChange.toFixed(1)}%`
@@ -167,7 +261,7 @@ export default function DashboardPage() {
       status: incomeStatus,
     },
     {
-      title: "Despesas do Mês",
+      title: "Despesas do Período",
       value: formatCurrency(data.month_expense),
       change: data.expense_change
         ? `${expenseChange > 0 ? "+" : ""}${expenseChange.toFixed(1)}%`
@@ -186,14 +280,13 @@ export default function DashboardPage() {
     },
   ];
 
-  // Transform monthly data for the chart
   const chartData = monthlyData
     .map((item) => ({
       month: new Date(item.month).toLocaleDateString("pt-BR", {
         month: "short",
       }),
-      income: parseFloat(item.income || "0"),
-      expense: parseFloat(item.expense || "0"),
+      income: Number.parseFloat(item.income || "0"),
+      expense: Number.parseFloat(item.expense || "0"),
     }))
     .reverse();
 
@@ -201,58 +294,92 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-8">
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Visão geral das suas finanças
-        </p>
+      {/* Header + seletor de período */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Visão geral das suas finanças
+          </p>
+        </div>
+
+        {/* Seletor de período */}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="flex flex-wrap gap-1">
+            {PERIOD_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                size="sm"
+                variant={period === opt.value ? "default" : "outline"}
+                onClick={() => handlePeriodChange(opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+
+          {period === "custom" && (
+            <div className="flex flex-wrap items-end gap-2 mt-1">
+              <div className="space-y-1">
+                <Label className="text-xs">De</Label>
+                <Input
+                  type="date"
+                  className="h-8 w-36 text-xs"
+                  value={customRange.start}
+                  onChange={(e) =>
+                    setCustomRange((r) => ({ ...r, start: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Até</Label>
+                <Input
+                  type="date"
+                  className="h-8 w-36 text-xs"
+                  value={customRange.end}
+                  onChange={(e) =>
+                    setCustomRange((r) => ({ ...r, end: e.target.value }))
+                  }
+                />
+              </div>
+              <Button size="sm" onClick={handleCustomApply}>
+                Aplicar
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Metric Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {metrics.map((metric, index) => {
+        {metrics.map((metric) => {
           const Icon = metric.icon;
           const isNegative = "isNegative" in metric && metric.isNegative;
           return (
-            <Card key={index} className={`hover:shadow-md transition-shadow ${isNegative ? "border-red-500 bg-red-50 dark:bg-red-950/20" : ""}`}>
+            <Card
+              key={metric.title}
+              className={`hover:shadow-md transition-shadow ${isNegative ? "border-red-500 bg-red-50 dark:bg-red-950/20" : ""}`}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {metric.title}
                 </CardTitle>
-                <Icon className={`h-4 w-4 ${isNegative ? "text-red-500" : "text-muted-foreground"}`} />
+                <Icon
+                  className={`h-4 w-4 ${isNegative ? "text-red-500" : "text-muted-foreground"}`}
+                />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${isNegative ? "text-red-600 dark:text-red-400" : ""}`}>
+                <div
+                  className={`text-2xl font-bold ${isNegative ? "text-red-600 dark:text-red-400" : ""}`}
+                >
                   {metric.value}
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  {(() => {
-                    const colorMap = {
-                      good: "text-green-500",
-                      warning: "text-yellow-500",
-                      critical: "text-red-500",
-                    };
-                    const color = colorMap[metric.status];
-
-                    const showUp =
-                      metric.status === "good" ||
-                      (metric.status === "warning" && metric.trend === "up");
-                    return showUp ? (
-                      <TrendingUp className={`h-3 w-3 mr-1 ${color}`} />
-                    ) : (
-                      <TrendingDown className={`h-3 w-3 mr-1 ${color}`} />
-                    );
-                  })()}
-                  <span
-                    className={{
-                      good: "text-green-500",
-                      warning: "text-yellow-500",
-                      critical: "text-red-500",
-                    }[metric.status]}
-                  >
+                  <TrendIcon status={metric.status} trend={metric.trend} />
+                  <span className={statusColor[metric.status]}>
                     {metric.change}
                   </span>
-                  <span className="ml-1">do mês anterior</span>
+                  <span className="ml-1">{compLabel}</span>
                 </div>
               </CardContent>
             </Card>
@@ -273,28 +400,12 @@ export default function DashboardPage() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="#16a34a"
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="#16a34a"
-                    stopOpacity={0}
-                  />
+                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="#ef4444"
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="#ef4444"
-                    stopOpacity={0}
-                  />
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -338,7 +449,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Tabs with Table */}
+      {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -347,98 +458,96 @@ export default function DashboardPage() {
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
 
+        {/* Transações Recentes */}
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Transações Recentes</CardTitle>
               <CardDescription>
-                Últimas movimentações financeiras
+                Últimas movimentações no período selecionado
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox />
-                    </TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Conta</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentTransactions.length === 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center text-muted-foreground py-8"
-                      >
-                        Nenhuma transação recente
-                      </TableCell>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Conta</TableHead>
                     </TableRow>
-                  ) : (
-                    recentTransactions.map((transaction) => (
-                      <TableRow
-                        key={transaction.id}
-                        className="hover:bg-muted/50"
-                      >
-                        <TableCell>
-                          <Checkbox />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {transaction.description}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              transaction.type === "income"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {transaction.type === "income"
-                              ? "Receita"
-                              : "Despesa"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              transaction.is_paid ? "outline" : "secondary"
-                            }
-                          >
-                            {transaction.is_paid ? "Pago" : "Pendente"}
-                          </Badge>
-                        </TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {recentTransactions.length === 0 ? (
+                      <TableRow>
                         <TableCell
-                          className={
-                            transaction.type === "income"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
+                          colSpan={6}
+                          className="text-center text-muted-foreground py-8"
                         >
-                          {transaction.type === "income" ? "+" : "-"}
-                          {formatCurrency(transaction.amount)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {transaction.category?.name || "-"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {transaction.bank_account?.name || "-"}
+                          Nenhuma transação no período selecionado
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      recentTransactions.map((transaction) => (
+                        <TableRow
+                          key={transaction.id}
+                          className="hover:bg-muted/50"
+                        >
+                          <TableCell className="font-medium">
+                            {transaction.description}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                transaction.type === "income"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {transaction.type === "income"
+                                ? "Receita"
+                                : "Despesa"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                transaction.is_paid ? "outline" : "secondary"
+                              }
+                            >
+                              {transaction.is_paid ? "Pago" : "Pendente"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell
+                            className={
+                              transaction.type === "income"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {transaction.type === "income" ? "+" : "-"}
+                            {formatCurrency(transaction.amount)}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {transaction.category?.name || "-"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {transaction.bank_account?.name || "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Desempenho */}
         <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
@@ -455,22 +564,85 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
 
+        {/* Categorias */}
         <TabsContent value="categories" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Categorias Principais</CardTitle>
               <CardDescription>
-                Distribuição de gastos por categoria
+                Onde você mais gastou no período selecionado
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                Dados de categorias serão exibidos aqui
-              </div>
+              {!data.top_categories || data.top_categories.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-8 text-center">
+                  Nenhuma despesa categorizada no período selecionado
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {data.top_categories.map((cat, i) => {
+                    const colors = [
+                      "#ef4444",
+                      "#f97316",
+                      "#eab308",
+                      "#22c55e",
+                      "#06b6d4",
+                      "#6366f1",
+                      "#a855f7",
+                      "#ec4899",
+                    ];
+                    const color = colors[i % colors.length];
+                    const pct = Math.min(
+                      Number.parseFloat(cat.percentage || "0"),
+                      100,
+                    );
+                    return (
+                      <div
+                        key={cat.category_id || cat.category_name}
+                        className="space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="font-medium">
+                              {cat.category_name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {cat.count}{" "}
+                              {cat.count === 1 ? "transação" : "transações"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              {pct.toFixed(1)}%
+                            </span>
+                            <span className="font-semibold text-red-600 dark:text-red-400">
+                              {formatCurrency(cat.amount)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5">
+                          <div
+                            className="h-1.5 rounded-full transition-all"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: color,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Relatórios */}
         <TabsContent value="reports" className="space-y-4">
           <Card>
             <CardHeader>

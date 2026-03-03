@@ -108,8 +108,12 @@ func (j *JobService) Stop() {
 	j.Logger.Info().Msg("Stopping background job server")
 	j.Scheduler.Shutdown()
 	j.Server.Shutdown()
-	j.Client.Close()
-	j.Redis.Close()
+	if err := j.Client.Close(); err != nil {
+		j.Logger.Error().Err(err).Msg("Failed to close Asynq client")
+	}
+	if err := j.Redis.Close(); err != nil {
+		j.Logger.Error().Err(err).Msg("Failed to close Redis client")
+	}
 }
 
 // SetImportStatus stores import status in Redis

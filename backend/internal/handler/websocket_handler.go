@@ -48,8 +48,6 @@ func (h *WebSocketHandler) ImportProgress(c echo.Context) error {
 		ticker := time.NewTicker(500 * time.Millisecond) // Poll every 500ms
 		defer ticker.Stop()
 
-		var lastStatus string
-
 		for {
 			select {
 			case <-ticker.C:
@@ -84,15 +82,12 @@ func (h *WebSocketHandler) ImportProgress(c echo.Context) error {
 				// Check if import is completed or failed
 				if statusStr, ok := status["status"].(string); ok {
 					if statusStr == "completed" || statusStr == "failed" {
-						if lastStatus != statusStr {
-							h.logger.Info().
-								Str("job_id", jobID).
-								Str("status", statusStr).
-								Msg("Import job finished, closing WebSocket")
-							lastStatus = statusStr
-							time.Sleep(1 * time.Second) // Give client time to receive final status
-							return
-						}
+						h.logger.Info().
+							Str("job_id", jobID).
+							Str("status", statusStr).
+							Msg("Import job finished, closing WebSocket")
+						time.Sleep(1 * time.Second) // Give client time to receive final status
+						return
 					}
 				}
 

@@ -31,7 +31,7 @@ type CSVMapping struct {
 	DateFormat        string
 }
 
-// DefaultMappings for common Brazilian banks
+// BankMappings contains default CSV column mappings for common Brazilian banks
 var BankMappings = map[string]CSVMapping{
 	"nubank": {
 		DateColumn:        0,

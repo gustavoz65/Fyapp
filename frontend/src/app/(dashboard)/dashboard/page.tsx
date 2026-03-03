@@ -233,7 +233,11 @@ export default function DashboardPage() {
                       critical: "text-red-500",
                     };
                     const color = colorMap[metric.status];
-                    return metric.trend === "up" ? (
+
+                    const showUp =
+                      metric.status === "good" ||
+                      (metric.status === "warning" && metric.trend === "up");
+                    return showUp ? (
                       <TrendingUp className={`h-3 w-3 mr-1 ${color}`} />
                     ) : (
                       <TrendingDown className={`h-3 w-3 mr-1 ${color}`} />

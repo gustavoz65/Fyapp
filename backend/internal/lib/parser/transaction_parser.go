@@ -53,8 +53,8 @@ var BankMappings = map[string]CSVMapping{
 	},
 	"bb": {
 		DateColumn:        0,
-		DescriptionColumn: 2, // Detalhes column
-		AmountColumn:      4, // Valor column
+		DescriptionColumn: 2,            // Detalhes column
+		AmountColumn:      4,            // Valor column
 		TypeColumn:        &[]int{5}[0], // Tipo Lançamento (Entrada/Saída)
 		DateFormat:        "02/01/2006",
 	},
@@ -169,9 +169,10 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 	// Override type if TypeColumn is specified (e.g., Banco do Brasil)
 	if mapping.TypeColumn != nil && len(record) > *mapping.TypeColumn {
 		typeStr := strings.TrimSpace(strings.ToLower(record[*mapping.TypeColumn]))
-		if typeStr == "entrada" || typeStr == "receita" || typeStr == "credit" {
+		switch typeStr {
+		case "entrada", "receita", "credit":
 			transactionType = "income"
-		} else if typeStr == "saída" || typeStr == "saida" || typeStr == "despesa" || typeStr == "debit" {
+		case "saída", "saida", "despesa", "debit":
 			transactionType = "expense"
 		}
 	}

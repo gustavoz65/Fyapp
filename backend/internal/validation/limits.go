@@ -64,15 +64,15 @@ const (
 
 // Mensagens de erro para limites
 const (
-	ErrMaxMoneyValueExceeded      = "O valor máximo permitido é R$ 10.000.000,00"
-	ErrMaxCreditLimitExceeded     = "O limite de crédito máximo permitido é R$ 1.000.000,00"
-	ErrMaxBudgetAmountExceeded    = "O valor máximo para orçamento é R$ 500.000,00"
-	ErrMaxGoalAmountExceeded      = "O valor máximo para meta é R$ 50.000.000,00"
-	ErrMaxBankAccountsExceeded    = "Você atingiu o limite máximo de 20 contas bancárias"
-	ErrMaxTransactionsPerDay      = "Você atingiu o limite de 100 transações por dia"
-	ErrMaxRecurringTransactions   = "Você atingiu o limite de 50 transações recorrentes ativas"
-	ErrMaxActiveBudgetsExceeded   = "Você atingiu o limite de 20 orçamentos ativos"
-	ErrMaxActiveGoalsExceeded     = "Você atingiu o limite de 15 metas ativas"
-	ErrMaxTransfersPerDay         = "Você atingiu o limite de 50 transferências por dia"
-	ErrMinPositiveValueRequired   = "O valor mínimo permitido é R$ 0,01"
+	ErrMaxMoneyValueExceeded    = "O valor máximo permitido é R$ 10.000.000,00"
+	ErrMaxCreditLimitExceeded   = "O limite de crédito máximo permitido é R$ 1.000.000,00"
+	ErrMaxBudgetAmountExceeded  = "O valor máximo para orçamento é R$ 500.000,00"
+	ErrMaxGoalAmountExceeded    = "O valor máximo para meta é R$ 50.000.000,00"
+	ErrMaxBankAccountsExceeded  = "Você atingiu o limite máximo de 20 contas bancárias"
+	ErrMaxTransactionsPerDay    = "Você atingiu o limite de 100 transações por dia"
+	ErrMaxRecurringTransactions = "Você atingiu o limite de 50 transações recorrentes ativas"
+	ErrMaxActiveBudgetsExceeded = "Você atingiu o limite de 20 orçamentos ativos"
+	ErrMaxActiveGoalsExceeded   = "Você atingiu o limite de 15 metas ativas"
+	ErrMaxTransfersPerDay       = "Você atingiu o limite de 50 transferências por dia"
+	ErrMinPositiveValueRequired = "O valor mínimo permitido é R$ 0,01"
 )

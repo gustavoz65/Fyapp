@@ -107,12 +107,23 @@ export default function DashboardPage() {
 
   const data = summary || defaultSummary;
 
+  // Calcular variação do saldo comparando com o mês anterior
+  const currentMonthBalance = parseFloat(data.month_income || "0") - parseFloat(data.month_expense || "0");
+  const previousMonthData = monthlyData.length >= 2 ? monthlyData[monthlyData.length - 2] : null;
+  const previousMonthBalance = previousMonthData
+    ? parseFloat(previousMonthData.income || "0") - parseFloat(previousMonthData.expense || "0")
+    : 0;
+
+  const balanceChangePercent = previousMonthBalance !== 0
+    ? ((currentMonthBalance - previousMonthBalance) / Math.abs(previousMonthBalance)) * 100
+    : currentMonthBalance !== 0 ? 100 : 0;
+
   const metrics = [
     {
       title: "Saldo Total",
       value: formatCurrency(data.total_balance),
-      change: "+12.5%",
-      trend: "up" as const,
+      change: `${balanceChangePercent > 0 ? "+" : ""}${balanceChangePercent.toFixed(1)}%`,
+      trend: balanceChangePercent >= 0 ? ("up" as const) : ("down" as const),
       icon: Wallet,
     },
     {

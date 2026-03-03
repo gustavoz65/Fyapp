@@ -1,9 +1,13 @@
 package job
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 	zerolog "github.com/rs/zerolog"
 
 	"github.com/gustavoz65/Fyapp/internal/config"
@@ -14,6 +18,7 @@ type JobService struct {
 	Client             *asynq.Client
 	Server             *asynq.Server
 	Scheduler          *asynq.Scheduler
+	Redis              *redis.Client
 	Logger             *zerolog.Logger
 	RecurringService   *service.RecurringTransactionService
 	TransactionService *service.TransactionService
@@ -45,10 +50,18 @@ func NewJobService(logger *zerolog.Logger, cfg *config.Config) *JobService {
 		&asynq.SchedulerOpts{Location: location},
 	)
 
+	// Create Redis client for status storage
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Address,
+		Password: cfg.Redis.Password,
+		DB:       0,
+	})
+
 	return &JobService{
 		Client:    client,
 		Server:    server,
 		Scheduler: scheduler,
+		Redis:     redisClient,
 		Logger:    logger,
 	}
 }
@@ -66,6 +79,7 @@ func (j *JobService) Start() error {
 	mux.HandleFunc(TaskWelcome, j.handleWelcomeEmailTask)
 	mux.HandleFunc(TaskProcessRecurrings, j.handleProcessRecurringsTask)
 	mux.HandleFunc(TaskAutoReconcile, j.handleAutoReconcileTask)
+	mux.HandleFunc(TaskImportTransactions, j.handleImportTransactionsTask)
 
 	task, _ := NewProcessRecurringsTask()
 	if _, err := j.Scheduler.Register("0 0 * * *", task); err != nil {
@@ -95,4 +109,33 @@ func (j *JobService) Stop() {
 	j.Scheduler.Shutdown()
 	j.Server.Shutdown()
 	j.Client.Close()
+	j.Redis.Close()
+}
+
+// SetImportStatus stores import status in Redis
+func (j *JobService) SetImportStatus(ctx context.Context, jobID string, status interface{}) error {
+	key := fmt.Sprintf("import_status:%s", jobID)
+	data, err := json.Marshal(status)
+	if err != nil {
+		return fmt.Errorf("failed to marshal status: %w", err)
+	}
+
+	// Store with 1 hour expiration
+	return j.Redis.Set(ctx, key, data, time.Hour).Err()
+}
+
+// GetImportStatus retrieves import status from Redis
+func (j *JobService) GetImportStatus(ctx context.Context, jobID string) (map[string]interface{}, error) {
+	key := fmt.Sprintf("import_status:%s", jobID)
+	data, err := j.Redis.Get(ctx, key).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var status map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &status); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal status: %w", err)
+	}
+
+	return status, nil
 }

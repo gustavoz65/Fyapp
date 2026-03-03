@@ -54,6 +54,15 @@ func (h *TransactionHandler) GetAll(c echo.Context) error {
 		filter.Type = &t
 	}
 
+	sourceVal, err := qv.GetEnum("source", false, []string{"manual", "bank_sync", "recurring"})
+	if err != nil {
+		return err
+	}
+	if sourceVal != nil {
+		s := model.TransactionSource(*sourceVal)
+		filter.Source = &s
+	}
+
 	// Validar date params
 	filter.StartDate, err = qv.GetDate("start_date", false)
 	if err != nil {
@@ -217,4 +226,66 @@ func (h *TransactionHandler) GetUpcoming(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, transactions)
+}
+
+func (h *TransactionHandler) Import(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	// Get bank account ID from form data
+	bankAccountIDStr := c.FormValue("bank_account_id")
+	if bankAccountIDStr == "" {
+		return errs.NewBadRequestError("bank_account_id is required", false, nil, nil, nil)
+	}
+
+	bankAccountID, err := uuid.Parse(bankAccountIDStr)
+	if err != nil {
+		return errs.NewBadRequestError("invalid bank_account_id format", false, nil, nil, nil)
+	}
+
+	// Get bank type (default to generic)
+	bankType := c.FormValue("bank_type")
+	if bankType == "" {
+		bankType = "generic"
+	}
+
+	// Get file from multipart form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return errs.NewBadRequestError("file is required", false, nil, nil, nil)
+	}
+
+	// Validate file type (CSV only for now)
+	if file.Header.Get("Content-Type") != "text/csv" &&
+		file.Header.Get("Content-Type") != "application/vnd.ms-excel" {
+		// Also check file extension
+		if len(file.Filename) < 4 || file.Filename[len(file.Filename)-4:] != ".csv" {
+			return errs.NewBadRequestError("only CSV files are supported", false, nil, nil, nil)
+		}
+	}
+
+	// Limit file size to 10MB
+	if file.Size > 10*1024*1024 {
+		return errs.NewBadRequestError("file size exceeds 10MB limit", false, nil, nil, nil)
+	}
+
+	// Open file
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	// Import transactions
+	result, err := h.transactionService.ImportTransactions(
+		c.Request().Context(),
+		userID,
+		bankAccountID,
+		src,
+		bankType,
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, result)
 }

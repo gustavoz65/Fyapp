@@ -49,6 +49,32 @@ func AuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 	}
 }
 
+// WebSocketAuthMiddleware valida o token JWT via query parameter para WebSocket
+func WebSocketAuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			token := c.QueryParam("token")
+			if token == "" {
+				return errs.NewUnauthorizedError("Token de autenticacao nao fornecido", false)
+			}
+
+			claims, err := authService.ValidateAccessToken(token)
+			if err != nil {
+				if err == service.ErrTokenExpired {
+					return errs.NewUnauthorizedError("Token expirado", false)
+				}
+				return errs.NewUnauthorizedError("Token invalido", false)
+			}
+
+			c.Set(userIDKey, claims.UserID)
+			c.Set(emailKey, claims.Email)
+			c.Set(roleKey, claims.Role)
+
+			return next(c)
+		}
+	}
+}
+
 // RequireRole verifica se o usuario tem uma das roles permitidas
 func RequireRole(roles ...model.UserRole) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {

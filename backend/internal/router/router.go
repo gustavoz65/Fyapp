@@ -93,8 +93,9 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	mutationRL := middleware.MutationRateLimit(srv.Redis)
 	readRL := middleware.ReadRateLimit(srv.Redis)
 
-	// WebSocket routes (with auth)
-	ws := e.Group("/ws", authMiddleware)
+	// WebSocket routes (with auth via query parameter)
+	wsAuthMiddleware := middleware.WebSocketAuthMiddleware(authService)
+	ws := e.Group("/ws", wsAuthMiddleware)
 	ws.GET("/import-progress", wsHandler.ImportProgress)
 
 	authProtected := api.Group("/auth", authMiddleware, auditMiddleware.Handler())

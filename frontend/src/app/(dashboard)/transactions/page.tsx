@@ -311,7 +311,8 @@ export default function TransactionsPage() {
       setImportMessage("Processando transações...");
 
       // Connect to WebSocket for real-time progress
-      const wsUrl = `${getWebSocketUrl()}/ws/import-progress?job_id=${jobId}`;
+      const token = localStorage.getItem("access_token");
+      const wsUrl = `${getWebSocketUrl()}/ws/import-progress?job_id=${jobId}&token=${token}`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {

@@ -16,19 +16,7 @@ var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
-	registerDecimalValidations(validate)
 	registerCustomValidations(validate)
-}
-
-// registerDecimalValidations registra validações customizadas para o tipo decimal.Decimal
-// O validator padrão não suporta decimal.Decimal para tags como gt, gte, lt, lte
-func registerDecimalValidations(v *validator.Validate) {
-	v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
-		if valuer, ok := field.Interface().(decimal.Decimal); ok {
-			return valuer.InexactFloat64()
-		}
-		return nil
-	}, decimal.Decimal{})
 }
 
 type Validatable interface {
@@ -133,7 +121,8 @@ func registerCustomValidations(v *validator.Validate) {
 
 func validateMaxMoney(fl validator.FieldLevel) bool {
 	field := fl.Field()
-	// Trata ponteiros (ex: *decimal.Decimal nos Updates)
+
+	// Trata ponteiros
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			return true
@@ -141,16 +130,19 @@ func validateMaxMoney(fl validator.FieldLevel) bool {
 		field = field.Elem()
 	}
 
+	// Pega o decimal.Decimal diretamente
 	value, ok := field.Interface().(decimal.Decimal)
 	if !ok {
-		return false
+		return true // Se não conseguir converter, deixa passar (outras validações cuidam disso)
 	}
+
 	return value.LessThanOrEqual(MaxMoneyValue)
 }
 
 func validateMaxCredit(fl validator.FieldLevel) bool {
 	field := fl.Field()
-	// Trata ponteiros (ex: *decimal.Decimal)
+
+	// Trata ponteiros
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			return true
@@ -160,14 +152,16 @@ func validateMaxCredit(fl validator.FieldLevel) bool {
 
 	value, ok := field.Interface().(decimal.Decimal)
 	if !ok {
-		return false
+		return true
 	}
+
 	return value.LessThanOrEqual(MaxCreditLimit)
 }
 
 func validateMaxBudget(fl validator.FieldLevel) bool {
 	field := fl.Field()
-	// Trata ponteiros (ex: *decimal.Decimal nos Updates)
+
+	// Trata ponteiros
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			return true
@@ -177,14 +171,16 @@ func validateMaxBudget(fl validator.FieldLevel) bool {
 
 	value, ok := field.Interface().(decimal.Decimal)
 	if !ok {
-		return false
+		return true
 	}
+
 	return value.LessThanOrEqual(MaxBudgetAmount)
 }
 
 func validateMaxGoal(fl validator.FieldLevel) bool {
 	field := fl.Field()
-	// Trata ponteiros (ex: *decimal.Decimal nos Updates)
+
+	// Trata ponteiros
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
 			return true
@@ -194,16 +190,28 @@ func validateMaxGoal(fl validator.FieldLevel) bool {
 
 	value, ok := field.Interface().(decimal.Decimal)
 	if !ok {
-		return false
+		return true
 	}
+
 	return value.LessThanOrEqual(MaxGoalAmount)
 }
 
 func validateMinPositive(fl validator.FieldLevel) bool {
-	value, ok := fl.Field().Interface().(decimal.Decimal)
-	if !ok {
-		return false
+	field := fl.Field()
+
+	// Trata ponteiros
+	if field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			return true
+		}
+		field = field.Elem()
 	}
+
+	value, ok := field.Interface().(decimal.Decimal)
+	if !ok {
+		return true
+	}
+
 	return value.GreaterThanOrEqual(MinPositiveValue)
 }
 

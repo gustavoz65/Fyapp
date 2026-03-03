@@ -4,11 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
+
 	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/gustavoz65/Fyapp/internal/service"
-	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog"
 )
 
 // ErrorHandler converte erros em respostas HTTP estruturadas

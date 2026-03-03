@@ -1,3 +1,4 @@
+// Pacote logger fornece utilitários de logging estruturado para a aplicação.
 package logger
 
 import (
@@ -7,11 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/newrelic/go-agent/v3/integrations/logcontext-v2/zerologWriter"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/pkgerrors"
+
+	"github.com/gustavoz65/Fyapp/internal/config"
 )
 
 type LoggerService struct {

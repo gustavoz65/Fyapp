@@ -1,3 +1,4 @@
+// Pacote utils fornece funções utilitárias usadas em toda a aplicação.
 package utils
 
 import (

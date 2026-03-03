@@ -1,3 +1,4 @@
+// Pacote config fornece carregamento e gerenciamento de configurações da aplicação.
 package config
 
 import (

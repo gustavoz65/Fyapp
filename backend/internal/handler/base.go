@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/newrelic/go-agent/v3/newrelic"
+
 	"github.com/gustavoz65/Fyapp/internal/middleware"
 	"github.com/gustavoz65/Fyapp/internal/server"
 	"github.com/gustavoz65/Fyapp/internal/validation"
-	"github.com/labstack/echo/v4"
-	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 type Handler struct {

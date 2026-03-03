@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/gustavoz65/Fyapp/internal/model"
-	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/rs/zerolog"
 	"github.com/shopspring/decimal"
+
+	"github.com/gustavoz65/Fyapp/internal/model"
+	"github.com/gustavoz65/Fyapp/internal/repository"
 )
 
 type BankAccountService struct {

@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+	zerolog "github.com/rs/zerolog"
+
 	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/gustavoz65/Fyapp/internal/database"
 	"github.com/gustavoz65/Fyapp/internal/lib/firebase"
 	"github.com/gustavoz65/Fyapp/internal/lib/utils/job"
 	"github.com/gustavoz65/Fyapp/internal/logger"
-	"github.com/redis/go-redis/v9"
-	zerolog "github.com/rs/zerolog"
 )
 
 type Server struct {

@@ -8,8 +8,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/rs/zerolog"
+
+	"github.com/gustavoz65/Fyapp/internal/config"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"

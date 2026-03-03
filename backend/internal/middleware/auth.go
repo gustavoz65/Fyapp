@@ -1,13 +1,15 @@
+// Pacote middleware fornece middlewares HTTP para a aplicação.
 package middleware
 
 import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+
 	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/service"
-	"github.com/labstack/echo/v4"
 )
 
 const (

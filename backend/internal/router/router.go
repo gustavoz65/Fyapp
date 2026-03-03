@@ -1,6 +1,10 @@
 package router
 
 import (
+	"github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog"
+
 	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/gustavoz65/Fyapp/internal/database"
 	"github.com/gustavoz65/Fyapp/internal/handler"
@@ -9,9 +13,6 @@ import (
 	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/gustavoz65/Fyapp/internal/server"
 	"github.com/gustavoz65/Fyapp/internal/service"
-	"github.com/labstack/echo/v4"
-	echomiddleware "github.com/labstack/echo/v4/middleware"
-	"github.com/rs/zerolog"
 )
 
 // New cria e configura o router Echo com todas as rotas

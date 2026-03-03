@@ -1,3 +1,4 @@
+// Pacote errs define os tipos de erro da aplicação e helpers de erros HTTP.
 package errs
 
 import (

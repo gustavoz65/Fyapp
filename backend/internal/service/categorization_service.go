@@ -6,9 +6,10 @@ import (
 	"unicode"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
-	"github.com/rs/zerolog"
 )
 
 type CategorizationService struct {

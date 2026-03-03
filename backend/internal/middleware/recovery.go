@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/gustavoz65/Fyapp/internal/errs"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
+
+	"github.com/gustavoz65/Fyapp/internal/errs"
 )
 
 // RecoveryMiddleware captura panics e retorna erro 500

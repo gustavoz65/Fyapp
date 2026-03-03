@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+
 	"github.com/gustavoz65/Fyapp/internal/database"
 	"github.com/gustavoz65/Fyapp/internal/model"
-	"github.com/rs/zerolog"
 )
 
 type AuditLogRepositoryImpl struct {

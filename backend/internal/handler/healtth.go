@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/gustavoz65/Fyapp/internal/middleware"
 	"github.com/gustavoz65/Fyapp/internal/server"
-	"github.com/labstack/echo/v4"
 )
 
 type HealthHandler struct {

@@ -97,6 +97,14 @@ func (s *Server) Start() error {
 		IdleTimeout:  time.Duration(s.Config.Server.IdleTimeout) * time.Second,
 	}
 
+	if s.Config.Server.TLSEnabled {
+		if s.Config.Server.TLSCertFile == "" || s.Config.Server.TLSKeyFile == "" {
+			return fmt.Errorf("TLS habilitado mas cert_file ou key_file não configurados")
+		}
+		s.Logger.Info().Msgf("starting HTTPS server on port %s", s.Config.Server.Port)
+		return s.httpServer.ListenAndServeTLS(s.Config.Server.TLSCertFile, s.Config.Server.TLSKeyFile)
+	}
+
 	s.Logger.Info().Msgf("starting HTTP server on port %s", s.Config.Server.Port)
 	return s.httpServer.ListenAndServe()
 }

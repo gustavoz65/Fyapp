@@ -95,7 +95,7 @@ export default function TransactionsPage() {
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false);
-  const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<string>("");
+  const [selectedCategoryForEdit, setSelectedCategoryForEdit] = useState<string>("none");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterType, setFilterType] = useState<string>("all");
@@ -253,12 +253,12 @@ export default function TransactionsPage() {
   async function handleUpdateCategory(txId: string, categoryId: string) {
     try {
       await api.put(`/transactions/${txId}`, {
-        category_id: categoryId || undefined,
+        category_id: categoryId === "none" ? undefined : categoryId,
       });
       toast.success("Categoria atualizada com sucesso");
       setEditCategoryDialogOpen(false);
       setEditingCategoryId(null);
-      setSelectedCategoryForEdit("");
+      setSelectedCategoryForEdit("none");
       fetchData();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Erro ao atualizar categoria"));
@@ -271,7 +271,7 @@ export default function TransactionsPage() {
       return;
     }
     setEditingCategoryId(tx.id);
-    setSelectedCategoryForEdit(tx.category?.id ?? "");
+    setSelectedCategoryForEdit(tx.category?.id || "none");
     setEditCategoryDialogOpen(true);
   }
 
@@ -960,12 +960,12 @@ export default function TransactionsPage() {
                   <SelectValue placeholder="Selecione uma categoria..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem categoria</SelectItem>
-                  {categories?.map((c) => (
-                    <SelectItem key={c?.id || Math.random()} value={c?.id || ""}>
-                      {c?.name || "Sem nome"}
+                  <SelectItem value="none">Sem categoria</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
                     </SelectItem>
-                  )) || null}
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -977,7 +977,7 @@ export default function TransactionsPage() {
                 onClick={() => {
                   setEditCategoryDialogOpen(false);
                   setEditingCategoryId(null);
-                  setSelectedCategoryForEdit("");
+                  setSelectedCategoryForEdit("none");
                 }}
               >
                 Cancelar

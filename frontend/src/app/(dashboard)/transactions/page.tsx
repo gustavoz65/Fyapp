@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api } from "@/lib/api";
+import { api, getApiBaseUrl, getWebSocketUrl } from "@/lib/api";
 import {
   formatCurrency,
   formatDate,
@@ -288,10 +288,10 @@ export default function TransactionsPage() {
       formData.append("bank_account_id", importForm.bank_account_id);
       formData.append("bank_type", importForm.bank_type);
 
-      const response = await fetch("http://localhost:3000/api/v1/transactions/import", {
+      const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
         body: formData,
       });
@@ -307,8 +307,7 @@ export default function TransactionsPage() {
       setImportMessage("Processando transações...");
 
       // Connect to WebSocket for real-time progress
-      const token = localStorage.getItem("token");
-      const wsUrl = `ws://localhost:3000/ws/import-progress?job_id=${jobId}`;
+      const wsUrl = `${getWebSocketUrl()}/ws/import-progress?job_id=${jobId}`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -372,9 +371,9 @@ export default function TransactionsPage() {
   async function pollImportStatus(jobId: string) {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/v1/transactions/import/${jobId}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import/${jobId}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
         });
 

@@ -100,19 +100,6 @@ func (h *BankAccountHandler) Delete(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-func (h *BankAccountHandler) GetTotalBalance(c echo.Context) error {
-	userID := middleware.GetUserID(c)
-
-	total, err := h.accountService.GetTotalBalance(c.Request().Context(), userID)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"total_balance": total,
-	})
-}
-
 func (h *BankAccountHandler) RecalculateBalance(c echo.Context) error {
 	userID := middleware.GetUserID(c)
 
@@ -127,4 +114,17 @@ func (h *BankAccountHandler) RecalculateBalance(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, account)
+}
+
+func (h *BankAccountHandler) GetTotalBalance(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	total, err := h.accountService.GetTotalBalance(c.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"total_balance": total,
+	})
 }

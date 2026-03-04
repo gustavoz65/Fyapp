@@ -18,6 +18,19 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "FiNext - Gestão Financeira Inteligente",
   description: "Transforme a forma como você gerencia suas finanças com FiNext",
+  manifest: "/manifest.json",
+  themeColor: "#0f172a",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "FiNext",
+  },
 };
 export default function RootLayout({
   children,

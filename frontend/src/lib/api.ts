@@ -3,25 +3,48 @@ import type { APIError } from "@/types";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
-// Helper para obter a URL base da API sem o sufixo /api/v1
+// Obtém a URL base da API sem o sufixo /api/v1
 export function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
   return url.replace(/\/api\/v1$/, "");
 }
 
-// Helper para obter a URL do WebSocket, substituindo http/https por ws/wss
+// Obtém a URL do WebSocket, substituindo http/https por ws/wss
 export function getWebSocketUrl(): string {
   const baseUrl = getApiBaseUrl();
-  // Substitui http/https por ws/wss
+  // Converte protocolo http/https para ws/wss
   return baseUrl.replace(/^http/, "ws");
 }
 
 let redirectToLogin: (() => void) | null = null;
 let storedCsrfToken: string | null = null;
 
+// Retorna o token CSRF armazenado ou do cookie
 export function getCsrfToken(): string | null {
   return storedCsrfToken || getCookie("csrf_token");
+}
+
+// Busca o token CSRF do backend via endpoint dedicado (necessário em cross-origin)
+export async function initCSRF(): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/csrf-token`, {
+      credentials: "include",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.csrf_token) {
+        storedCsrfToken = data.csrf_token;
+      }
+    }
+    // Também tenta ler do header de resposta
+    const headerToken = res.headers.get("X-CSRF-Token");
+    if (headerToken) {
+      storedCsrfToken = headerToken;
+    }
+  } catch {
+    // falha silenciosa — fallback para cookie
+  }
 }
 
 export function setRedirectCallback(callback: () => void) {
@@ -90,7 +113,7 @@ class ApiClient {
 
     if (!res.ok) {
       clearTokens();
-      throw new Error("Token refresh failed");
+      throw new Error("Falha ao renovar token");
     }
 
     const data = await res.json();
@@ -170,14 +193,14 @@ class ApiClient {
         if (redirectToLogin) {
           redirectToLogin();
         }
-        throw new Error("Session expired");
+        throw new Error("Sessão expirada");
       }
     }
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({
         code: "UNKNOWN",
-        message: "An unexpected error occurred",
+        message: "Ocorreu um erro inesperado",
       }));
       throw error as APIError;
     }

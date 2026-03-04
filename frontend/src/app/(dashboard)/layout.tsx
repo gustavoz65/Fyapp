@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { initCSRF } from "@/lib/api";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
@@ -20,6 +21,12 @@ export default function DashboardLayout({
       router.replace("/login");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initCSRF();
+    }
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (

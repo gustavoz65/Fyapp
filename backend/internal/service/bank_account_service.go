@@ -14,12 +14,14 @@ import (
 
 type BankAccountService struct {
 	accountRepo *repository.BankAccountRepository
+	txRepo      *repository.TransactionRepository
 	logger      *zerolog.Logger
 }
 
-func NewBankAccountService(accountRepo *repository.BankAccountRepository, logger *zerolog.Logger) *BankAccountService {
+func NewBankAccountService(accountRepo *repository.BankAccountRepository, txRepo *repository.TransactionRepository, logger *zerolog.Logger) *BankAccountService {
 	return &BankAccountService{
 		accountRepo: accountRepo,
+		txRepo:      txRepo,
 		logger:      logger,
 	}
 }
@@ -219,4 +221,33 @@ func (s *BankAccountService) AdjustBalance(ctx context.Context, accountID uuid.U
 		return fmt.Errorf("failed to adjust balance: %w", err)
 	}
 	return nil
+}
+
+// RecalculateBalance recomputes current_balance from initial_balance + all paid transactions
+func (s *BankAccountService) RecalculateBalance(ctx context.Context, userID, accountID uuid.UUID) (*model.BankAccount, error) {
+	account, err := s.accountRepo.GetByIDAndUser(ctx, accountID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	netFromTransactions, err := s.txRepo.GetNetBalanceForAccount(ctx, accountID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute net balance: %w", err)
+	}
+
+	newBalance := account.InitialBalance.Add(netFromTransactions)
+
+	if err := s.accountRepo.UpdateBalance(ctx, accountID, newBalance); err != nil {
+		return nil, fmt.Errorf("failed to update balance: %w", err)
+	}
+
+	account.CurrentBalance = newBalance
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("account_id", accountID.String()).
+		Str("new_balance", newBalance.String()).
+		Msg("account balance recalculated")
+
+	return account, nil
 }

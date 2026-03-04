@@ -112,3 +112,19 @@ func (h *BankAccountHandler) GetTotalBalance(c echo.Context) error {
 		"total_balance": total,
 	})
 }
+
+func (h *BankAccountHandler) RecalculateBalance(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	accountID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return errs.NewBadRequestError("ID de conta invalido", false, nil, nil, nil)
+	}
+
+	account, err := h.accountService.RecalculateBalance(c.Request().Context(), userID, accountID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, account)
+}

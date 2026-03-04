@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 // @ts-ignore
-import withPWA from "next-pwa";
+import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   turbopack: {},
@@ -57,20 +57,7 @@ const nextConfig: NextConfig = {
 export default withPWA({
   dest: "public",
   register: true,
-  skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.*/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "fy-cache",
-        expiration: {
-          maxEntries: 200,
-        },
-      },
-    },
-  ],
   fallbacks: {
     document: "/offline.html",
   },

@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	ErrBankAccountNotFound = errors.New("bank account not found")
+	ErrBankAccountNotFound = errors.New("conta bancária não encontrada")
 )
 
 type BankAccountRepository struct {
@@ -29,7 +29,7 @@ func NewBankAccountRepository(db *database.Database, logger *zerolog.Logger) *Ba
 	}
 }
 
-// Create creates a new bank account
+// Create cria uma nova conta bancária
 func (r *BankAccountRepository) Create(ctx context.Context, account *model.BankAccount) error {
 	account.ID = uuid.New()
 	account.CurrentBalance = account.InitialBalance
@@ -80,7 +80,7 @@ func (r *BankAccountRepository) Create(ctx context.Context, account *model.BankA
 	return nil
 }
 
-// GetByID retrieves a bank account by ID
+// GetByID busca uma conta bancária pelo ID
 func (r *BankAccountRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.BankAccount, error) {
 	query := `
 		SELECT id, user_id, name, bank_name, bank_code, account_type,
@@ -95,7 +95,7 @@ func (r *BankAccountRepository) GetByID(ctx context.Context, id uuid.UUID) (*mod
 	return r.scanBankAccount(r.QueryRowContext(ctx, query, id.String()))
 }
 
-// GetByIDAndUser retrieves a bank account by ID ensuring it belongs to the user
+// GetByIDAndUser busca uma conta bancária pelo ID garantindo que pertence ao usuário
 func (r *BankAccountRepository) GetByIDAndUser(ctx context.Context, id, userID uuid.UUID) (*model.BankAccount, error) {
 	query := `
 		SELECT id, user_id, name, bank_name, bank_code, account_type,
@@ -110,7 +110,7 @@ func (r *BankAccountRepository) GetByIDAndUser(ctx context.Context, id, userID u
 	return r.scanBankAccount(r.QueryRowContext(ctx, query, id.String(), userID.String()))
 }
 
-// GetAllByUser retrieves all bank accounts for a user
+// GetAllByUser retorna todas as contas bancárias do usuário
 func (r *BankAccountRepository) GetAllByUser(ctx context.Context, userID uuid.UUID) ([]*model.BankAccount, error) {
 	query := `
 		SELECT id, user_id, name, bank_name, bank_code, account_type,
@@ -132,12 +132,12 @@ func (r *BankAccountRepository) GetAllByUser(ctx context.Context, userID uuid.UU
 	return r.scanBankAccounts(rows)
 }
 
-// GetActiveByUser retrieves only active bank accounts for a user
+// GetActiveByUser retorna apenas contas bancárias ativas do usuário
 func (r *BankAccountRepository) GetActiveByUser(ctx context.Context, userID uuid.UUID) ([]*model.BankAccount, error) {
 	return r.GetAllByUser(ctx, userID)
 }
 
-// GetByType retrieves bank accounts by type for a user
+// GetByType busca contas bancárias por tipo para um usuário
 func (r *BankAccountRepository) GetByType(ctx context.Context, userID uuid.UUID, accountType model.AccountType) ([]*model.BankAccount, error) {
 	query := `
 		SELECT id, user_id, name, bank_name, bank_code, account_type,
@@ -159,7 +159,7 @@ func (r *BankAccountRepository) GetByType(ctx context.Context, userID uuid.UUID,
 	return r.scanBankAccounts(rows)
 }
 
-// Update updates a bank account
+// Update atualiza uma conta bancária
 func (r *BankAccountRepository) Update(ctx context.Context, account *model.BankAccount) error {
 	account.UpdatedAt = time.Now()
 
@@ -207,7 +207,7 @@ func (r *BankAccountRepository) Update(ctx context.Context, account *model.BankA
 	return nil
 }
 
-// UpdateBalance updates the current balance of a bank account
+// UpdateBalance atualiza o saldo atual de uma conta bancária
 func (r *BankAccountRepository) UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error {
 	query := `UPDATE bank_accounts SET current_balance = ?, updated_at = ? WHERE id = ?`
 
@@ -219,7 +219,7 @@ func (r *BankAccountRepository) UpdateBalance(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
-// AdjustBalance adjusts the current balance by a delta amount
+// AdjustBalance ajusta o saldo atual por um valor delta
 func (r *BankAccountRepository) AdjustBalance(ctx context.Context, id uuid.UUID, delta decimal.Decimal) error {
 	query := `
 		UPDATE bank_accounts
@@ -235,7 +235,7 @@ func (r *BankAccountRepository) AdjustBalance(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
-// Delete soft deletes a bank account
+// Delete desativa (soft delete) uma conta bancária
 func (r *BankAccountRepository) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	query := `
 		UPDATE bank_accounts
@@ -256,7 +256,32 @@ func (r *BankAccountRepository) Delete(ctx context.Context, id, userID uuid.UUID
 	return nil
 }
 
-// GetTotalBalance retrieves the total balance of all accounts for a user
+// RecalculateBalance recalcula o saldo atual com base em todas as transações pagas
+func (r *BankAccountRepository) RecalculateBalance(ctx context.Context, id, userID uuid.UUID) (*model.BankAccount, error) {
+	query := `
+		UPDATE bank_accounts
+		SET current_balance = initial_balance + COALESCE((
+			SELECT SUM(CASE WHEN type = 'expense' THEN -amount ELSE amount END)
+			FROM transactions
+			WHERE bank_account_id = ? AND is_paid = TRUE
+		), 0), updated_at = ?
+		WHERE id = ? AND user_id = ?
+	`
+
+	result, err := r.ExecContext(ctx, query, id.String(), time.Now(), id.String(), userID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to recalculate balance: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return nil, ErrBankAccountNotFound
+	}
+
+	return r.GetByIDAndUser(ctx, id, userID)
+}
+
+// GetTotalBalance retorna o saldo total de todas as contas do usuário
 func (r *BankAccountRepository) GetTotalBalance(ctx context.Context, userID uuid.UUID) (decimal.Decimal, error) {
 	query := `
 		SELECT COALESCE(SUM(current_balance), 0)
@@ -278,7 +303,7 @@ func (r *BankAccountRepository) GetTotalBalance(ctx context.Context, userID uuid
 	return balance, nil
 }
 
-// CountAccounts counts the number of active accounts for a user
+// CountAccounts conta o número de contas ativas do usuário
 func (r *BankAccountRepository) CountAccounts(ctx context.Context, userID uuid.UUID) (int64, error) {
 	query := `SELECT COUNT(*) FROM bank_accounts WHERE user_id = ? AND is_active = TRUE`
 
@@ -291,7 +316,7 @@ func (r *BankAccountRepository) CountAccounts(ctx context.Context, userID uuid.U
 	return count, nil
 }
 
-// Helper functions
+// Funções auxiliares
 
 func (r *BankAccountRepository) scanBankAccount(row *sql.Row) (*model.BankAccount, error) {
 	account := &model.BankAccount{}

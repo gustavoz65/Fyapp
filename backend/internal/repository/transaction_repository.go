@@ -139,62 +139,62 @@ func (r *TransactionRepository) GetByIDAndUser(ctx context.Context, id, userID u
 
 // GetByFilter retrieves transactions based on filter criteria
 func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.TransactionFilter) ([]*model.Transaction, int64, error) {
-	// Build WHERE clause
-	conditions := []string{"user_id = ?"}
+	// Build WHERE clause (prefixed with t. for JOIN compatibility)
+	conditions := []string{"t.user_id = ?"}
 	args := []interface{}{filter.UserID.String()}
 
 	if filter.AccountID != nil {
-		conditions = append(conditions, "bank_account_id = ?")
+		conditions = append(conditions, "t.bank_account_id = ?")
 		args = append(args, filter.AccountID.String())
 	}
 
 	if filter.CategoryID != nil {
-		conditions = append(conditions, "category_id = ?")
+		conditions = append(conditions, "t.category_id = ?")
 		args = append(args, filter.CategoryID.String())
 	}
 
 	if filter.Type != nil {
-		conditions = append(conditions, "type = ?")
+		conditions = append(conditions, "t.type = ?")
 		args = append(args, *filter.Type)
 	}
 
 	if filter.Source != nil {
-		conditions = append(conditions, "source = ?")
+		conditions = append(conditions, "t.source = ?")
 		args = append(args, *filter.Source)
 	}
 
 	if filter.StartDate != nil {
-		conditions = append(conditions, "transaction_date >= ?")
+		conditions = append(conditions, "t.transaction_date >= ?")
 		args = append(args, *filter.StartDate)
 	}
 
 	if filter.EndDate != nil {
-		conditions = append(conditions, "transaction_date <= ?")
+		conditions = append(conditions, "t.transaction_date <= ?")
 		args = append(args, *filter.EndDate)
 	}
 
 	if filter.IsPaid != nil {
-		conditions = append(conditions, "is_paid = ?")
+		conditions = append(conditions, "t.is_paid = ?")
 		args = append(args, *filter.IsPaid)
 	}
 
 	if filter.IsRecurring != nil {
-		conditions = append(conditions, "is_recurring = ?")
+		conditions = append(conditions, "t.is_recurring = ?")
 		args = append(args, *filter.IsRecurring)
 	}
 
 	if filter.MinAmount != nil {
-		conditions = append(conditions, "amount >= ?")
+		conditions = append(conditions, "t.amount >= ?")
 		args = append(args, filter.MinAmount.String())
 	}
 
 	if filter.MaxAmount != nil {
-		conditions = append(conditions, "amount <= ?")
+		conditions = append(conditions, "t.amount <= ?")
 		args = append(args, filter.MaxAmount.String())
 	}
 
 	if filter.SearchTerm != "" {
-		conditions = append(conditions, "(description LIKE ? OR notes LIKE ?)")
+		conditions = append(conditions, "(t.description LIKE ? OR t.notes LIKE ?)")
 		searchTerm := "%" + filter.SearchTerm + "%"
 		args = append(args, searchTerm, searchTerm)
 	}
@@ -202,14 +202,14 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	whereClause := strings.Join(conditions, " AND ")
 
 	// Count total
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM transactions WHERE %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM transactions t WHERE %s", whereClause)
 	var total int64
 	err := r.QueryRowContext(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count transactions: %w", err)
 	}
 
-	// Pagination
+	// Pagination (sort by t. prefix for ambiguous fields)
 	pagination := PaginationParams{
 		Page:     filter.Page,
 		PageSize: filter.PageSize,
@@ -218,14 +218,16 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	}
 	pagination.Validate([]string{"transaction_date", "amount", "created_at", "description"})
 
-	// Get data
+	// Get data with LEFT JOIN to populate category
 	query := fmt.Sprintf(`
-		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
-			total_installments, installment_group_id, tags, attachment_url,
-			external_id, created_at, updated_at
-		FROM transactions
+		SELECT t.id, t.user_id, t.bank_account_id, t.category_id, t.type, t.amount,
+			t.description, t.notes, t.source, t.transaction_date, t.due_date, t.payment_date,
+			t.is_paid, t.auto_pay, t.is_recurring, t.recurring_id, t.installment_number,
+			t.total_installments, t.installment_group_id, t.tags, t.attachment_url,
+			t.external_id, t.created_at, t.updated_at,
+			c.id, c.name, c.type, c.color, c.icon, c.is_system, c.is_active
+		FROM transactions t
+		LEFT JOIN categories c ON t.category_id = c.id
 		WHERE %s
 		%s
 		%s
@@ -237,7 +239,7 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	}
 	defer rows.Close()
 
-	transactions, err := r.scanTransactions(rows)
+	transactions, err := r.scanTransactionsWithCategory(rows)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -311,6 +313,31 @@ func (r *TransactionRepository) GetRecentTransactions(ctx context.Context, userI
 	defer rows.Close()
 
 	return r.scanTransactions(rows)
+}
+
+// GetRecentByPeriod retrieves the most recent transactions within a date range, with category info
+func (r *TransactionRepository) GetRecentByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time, limit int) ([]*model.Transaction, error) {
+	query := `
+		SELECT t.id, t.user_id, t.bank_account_id, t.category_id, t.type, t.amount,
+			t.description, t.notes, t.source, t.transaction_date, t.due_date, t.payment_date,
+			t.is_paid, t.auto_pay, t.is_recurring, t.recurring_id, t.installment_number,
+			t.total_installments, t.installment_group_id, t.tags, t.attachment_url,
+			t.external_id, t.created_at, t.updated_at,
+			c.id, c.name, c.type, c.color, c.icon, c.is_system, c.is_active
+		FROM transactions t
+		LEFT JOIN categories c ON t.category_id = c.id
+		WHERE t.user_id = ? AND t.transaction_date BETWEEN ? AND ?
+		ORDER BY t.transaction_date DESC, t.created_at DESC
+		LIMIT ?
+	`
+
+	rows, err := r.QueryContext(ctx, query, userID.String(), startDate.Format("2006-01-02"), endDate.Format("2006-01-02"), limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent transactions by period: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanTransactionsWithCategory(rows)
 }
 
 // Update updates a transaction
@@ -408,6 +435,25 @@ func (r *TransactionRepository) Delete(ctx context.Context, id, userID uuid.UUID
 	}
 
 	return nil
+}
+
+// GetNetBalanceForAccount returns the net balance from all paid transactions for an account
+// net = SUM(income) - SUM(expense)
+func (r *TransactionRepository) GetNetBalanceForAccount(ctx context.Context, accountID uuid.UUID) (decimal.Decimal, error) {
+	query := `
+		SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0)
+		FROM transactions
+		WHERE bank_account_id = ? AND is_paid = TRUE
+	`
+
+	var net string
+	err := r.QueryRowContext(ctx, query, accountID.String()).Scan(&net)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get net balance for account: %w", err)
+	}
+
+	total, _ := decimal.NewFromString(net)
+	return total, nil
 }
 
 // GetSumByType returns the sum of transactions by type for a date range
@@ -635,6 +681,117 @@ func (r *TransactionRepository) scanTransactions(rows *sql.Rows) ([]*model.Trans
 
 		if len(tags) > 0 {
 			_ = json.Unmarshal(tags, &tx.Tags)
+		}
+
+		transactions = append(transactions, tx)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating transactions: %w", err)
+	}
+
+	return transactions, nil
+}
+
+// scanTransactionsWithCategory scans transaction rows that include a LEFT JOIN with categories
+func (r *TransactionRepository) scanTransactionsWithCategory(rows *sql.Rows) ([]*model.Transaction, error) {
+	var transactions []*model.Transaction
+
+	for rows.Next() {
+		tx := &model.Transaction{}
+		var categoryID, recurringID, installmentGroupID, notes, attachmentURL, externalID sql.NullString
+		var dueDate, paymentDate sql.NullTime
+		var installmentNumber, totalInstallments sql.NullInt32
+		var amount string
+		var tags []byte
+
+		// Category columns (nullable from LEFT JOIN)
+		var catID, catName, catType, catColor, catIcon sql.NullString
+		var catIsSystem, catIsActive sql.NullBool
+
+		err := rows.Scan(
+			&tx.ID,
+			&tx.UserID,
+			&tx.BankAccountID,
+			&categoryID,
+			&tx.Type,
+			&amount,
+			&tx.Description,
+			&notes,
+			&tx.Source,
+			&tx.TransactionDate,
+			&dueDate,
+			&paymentDate,
+			&tx.IsPaid,
+			&tx.AutoPay,
+			&tx.IsRecurring,
+			&recurringID,
+			&installmentNumber,
+			&totalInstallments,
+			&installmentGroupID,
+			&tags,
+			&attachmentURL,
+			&externalID,
+			&tx.CreatedAt,
+			&tx.UpdatedAt,
+			// Category fields
+			&catID,
+			&catName,
+			&catType,
+			&catColor,
+			&catIcon,
+			&catIsSystem,
+			&catIsActive,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan transaction: %w", err)
+		}
+
+		tx.Amount, _ = decimal.NewFromString(amount)
+
+		if categoryID.Valid {
+			id, _ := uuid.Parse(categoryID.String)
+			tx.CategoryID = &id
+		}
+		if recurringID.Valid {
+			id, _ := uuid.Parse(recurringID.String)
+			tx.RecurringID = &id
+		}
+		if installmentGroupID.Valid {
+			id, _ := uuid.Parse(installmentGroupID.String)
+			tx.InstallmentGroupID = &id
+		}
+
+		tx.Notes = StringPtr(notes)
+		tx.AttachmentURL = StringPtr(attachmentURL)
+		tx.ExternalID = StringPtr(externalID)
+		tx.InstallmentNumber = IntPtr(installmentNumber)
+		tx.TotalInstallments = IntPtr(totalInstallments)
+
+		if dueDate.Valid {
+			tx.DueDate = &dueDate.Time
+		}
+		if paymentDate.Valid {
+			tx.PaymentDate = &paymentDate.Time
+		}
+
+		if len(tags) > 0 {
+			_ = json.Unmarshal(tags, &tx.Tags)
+		}
+
+		// Populate Category if JOIN returned data
+		if catID.Valid && catName.Valid {
+			catUUID, _ := uuid.Parse(catID.String)
+			tx.Category = &model.Category{
+				ID:       catUUID,
+				Name:     catName.String,
+				Type:     model.CategoryType(catType.String),
+				Color:    catColor.String,
+				Icon:     catIcon.String,
+				IsSystem: catIsSystem.Bool,
+				IsActive: catIsActive.Bool,
+			}
 		}
 
 		transactions = append(transactions, tx)

@@ -54,10 +54,17 @@ func CSRFTokenGenerator() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			cookie, err := c.Cookie(csrfCookieName)
+			var token string
 			if err != nil || cookie.Value == "" {
-				token := generateCSRFToken()
+				token = generateCSRFToken()
 				setCSRFCookie(c, token)
+			} else {
+				token = cookie.Value
 			}
+
+			// Expõe o token no header de resposta para ser lido pelo frontend
+			// (necessário em setup cross-origin onde document.cookie não acessa o cookie do backend)
+			c.Response().Header().Set(csrfTokenHeader, token)
 
 			return next(c)
 		}

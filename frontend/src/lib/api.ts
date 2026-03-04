@@ -18,6 +18,11 @@ export function getWebSocketUrl(): string {
 }
 
 let redirectToLogin: (() => void) | null = null;
+let storedCsrfToken: string | null = null;
+
+export function getCsrfToken(): string | null {
+  return storedCsrfToken || getCookie("csrf_token");
+}
 
 export function setRedirectCallback(callback: () => void) {
   redirectToLogin = callback;
@@ -94,7 +99,9 @@ class ApiClient {
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const accessToken = getAccessToken();
-    const csrfToken = getCookie("csrf_token");
+    // Usa token armazenado do header de resposta anterior (funciona cross-origin)
+    // e cai back para cookie (funciona same-origin)
+    const csrfToken = storedCsrfToken || getCookie("csrf_token");
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
@@ -114,6 +121,12 @@ class ApiClient {
       credentials: "include",
     });
 
+    // Atualiza token CSRF armazenado a partir do header de resposta
+    const newCsrfToken = res.headers.get("X-CSRF-Token");
+    if (newCsrfToken) {
+      storedCsrfToken = newCsrfToken;
+    }
+
     if (res.status === 401) {
       try {
         if (!this.refreshPromise) {
@@ -128,11 +141,22 @@ class ApiClient {
           headers.Authorization = `Bearer ${newAccessToken}`;
         }
 
+        // Inclui token CSRF atualizado na tentativa
+        const retryToken = storedCsrfToken || getCookie("csrf_token");
+        if (retryToken && options.method && options.method !== "GET") {
+          headers["X-CSRF-Token"] = retryToken;
+        }
+
         const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
           ...options,
           headers,
           credentials: "include",
         });
+
+        const retryCsrfToken = retryRes.headers.get("X-CSRF-Token");
+        if (retryCsrfToken) {
+          storedCsrfToken = retryCsrfToken;
+        }
 
         if (!retryRes.ok) {
           const error = await retryRes.json().catch(() => ({}));

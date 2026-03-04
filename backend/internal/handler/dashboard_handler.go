@@ -23,7 +23,12 @@ func NewDashboardHandler(dashboardService *service.DashboardService) *DashboardH
 func (h *DashboardHandler) GetSummary(c echo.Context) error {
 	userID := middleware.GetUserID(c)
 
-	summary, err := h.dashboardService.GetDashboardSummary(c.Request().Context(), userID)
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		return err
+	}
+
+	summary, err := h.dashboardService.GetDashboardSummary(c.Request().Context(), userID, startDate, endDate)
 	if err != nil {
 		return err
 	}

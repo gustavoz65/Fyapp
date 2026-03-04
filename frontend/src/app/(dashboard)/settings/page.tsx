@@ -63,7 +63,7 @@ import type {
   UserSettings,
 } from "@/types";
 import { signInWithPopup } from "firebase/auth";
-import { KeyRound, Link2, Link2Off, Loader2, ShieldCheck } from "lucide-react";
+import { KeyRound, Link2, Link2Off, Loader2, Pencil, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -114,6 +114,7 @@ export default function SettingsPage() {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [definePasswordOpen, setDefinePasswordOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const [profileForm, setProfileForm] = useState({
     first_name: "",
@@ -209,6 +210,7 @@ export default function SettingsPage() {
       await changePassword(body);
       toast.success("Senha alterada com sucesso");
       setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      setChangePasswordOpen(false);
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Erro ao alterar senha. Verifique a senha atual."));
     } finally {
@@ -330,7 +332,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleProfileSave} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nome</Label>
                     <Input
@@ -356,7 +358,7 @@ export default function SettingsPage() {
                     placeholder="(11) 99999-9999"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Moeda</Label>
                     <Input
@@ -483,14 +485,14 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Senha */}
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+              <div className="flex items-center justify-between py-2 gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
                     <KeyRound className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Acesso por Senha</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground truncate">
                       {providers?.has_password
                         ? "Sua conta está protegida por senha"
                         : "Defina uma senha para ter outro método de acesso"}
@@ -498,11 +500,79 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 {providers?.has_password ? (
-                  <Badge variant="default">Ativo</Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="default">Ativo</Badge>
+                    {/* Modal Alterar Senha */}
+                    <Dialog open={changePasswordOpen} onOpenChange={(open) => {
+                      setChangePasswordOpen(open);
+                      if (!open) setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Pencil className="h-3 w-3 mr-1" />
+                          Alterar
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Alterar Senha</DialogTitle>
+                          <DialogDescription>
+                            Escolha uma senha forte com pelo menos 8 caracteres
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handlePasswordChange} className="space-y-4 pt-2">
+                          <div className="space-y-2">
+                            <Label>Senha Atual</Label>
+                            <Input
+                              type="password"
+                              value={passwordForm.current_password}
+                              onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                              placeholder="Digite sua senha atual"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Nova Senha</Label>
+                            <Input
+                              type="password"
+                              value={passwordForm.new_password}
+                              onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                              placeholder="Mínimo 8 caracteres"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Confirmar Nova Senha</Label>
+                            <Input
+                              type="password"
+                              value={passwordForm.confirm_password}
+                              onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                              placeholder="Repita a nova senha"
+                              required
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              onClick={() => setChangePasswordOpen(false)}
+                              disabled={isChangingPassword}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button type="submit" disabled={isChangingPassword}>
+                              {isChangingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                              Alterar Senha
+                            </Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 ) : (
                   <Dialog open={definePasswordOpen} onOpenChange={setDefinePasswordOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="shrink-0">
                         <KeyRound className="h-4 w-4 mr-1" />
                         Definir Senha
                       </Button>
@@ -619,54 +689,6 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Alterar Senha */}
-          {providers?.has_password && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Alterar Senha</CardTitle>
-                <CardDescription>Escolha uma senha forte com pelo menos 8 caracteres</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Senha Atual</Label>
-                    <Input
-                      type="password"
-                      value={passwordForm.current_password}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                      placeholder="Digite sua senha atual"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nova Senha</Label>
-                    <Input
-                      type="password"
-                      value={passwordForm.new_password}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                      placeholder="Mínimo 8 caracteres"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Confirmar Nova Senha</Label>
-                    <Input
-                      type="password"
-                      value={passwordForm.confirm_password}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-                      placeholder="Repita a nova senha"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={isChangingPassword}>
-                    {isChangingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {isChangingPassword ? "Alterando..." : "Alterar Senha"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
 
           <Separator />
 

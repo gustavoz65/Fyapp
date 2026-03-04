@@ -51,6 +51,7 @@ func CORSMiddleware(allowedOrigins []string) echo.MiddlewareFunc {
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
 			"X-Requested-With",
+			"X-CSRF-Token",
 			// Headers necessários para WebSocket
 			"Sec-WebSocket-Key",
 			"Sec-WebSocket-Version",
@@ -62,6 +63,7 @@ func CORSMiddleware(allowedOrigins []string) echo.MiddlewareFunc {
 		ExposeHeaders: []string{
 			"Content-Length",
 			"Content-Type",
+			"X-CSRF-Token",
 		},
 		AllowCredentials: allowCredentials,
 		MaxAge:           86400,

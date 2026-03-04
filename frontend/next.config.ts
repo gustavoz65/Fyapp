@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
+// @ts-ignore
+import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   async headers() {
     return [
       {
@@ -51,4 +54,24 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "fy-cache",
+        expiration: {
+          maxEntries: 200,
+        },
+      },
+    },
+  ],
+  fallbacks: {
+    document: "/offline.html",
+  },
+})(nextConfig);

@@ -1,6 +1,8 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -71,7 +73,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	recurringHandler := handler.NewRecurringTransactionHandler(recurringService)
 	wsHandler := handler.NewWebSocketHandler(srv.Job, logger)
 
-	// Health check
+	// Health check (verificação de saúde)
 	healthHandler := handler.NewHealthHandler(srv)
 	e.GET("/health", healthHandler.CheckHandler)
 
@@ -80,6 +82,12 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	authRateLimiter := middleware.AuthRateLimit(srv.Redis)
 	refreshRateLimiter := middleware.RefreshRateLimit(srv.Redis)
 	csrfTokenGen := middleware.CSRFTokenGenerator()
+
+	// Endpoint para obter o token CSRF (o middleware CSRFTokenGenerator já seta o header e o cookie)
+	api.GET("/csrf-token", func(c echo.Context) error {
+		token := c.Response().Header().Get("X-CSRF-Token")
+		return c.JSON(http.StatusOK, map[string]string{"csrf_token": token})
+	}, csrfTokenGen)
 
 	authWithRL := api.Group("/auth", authRateLimiter, csrfTokenGen)
 	authRefresh := api.Group("/auth", refreshRateLimiter, csrfTokenGen)
@@ -97,7 +105,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	readRL := middleware.ReadRateLimit(srv.Redis)
 	uploadRL := middleware.UploadRateLimit(srv.Redis)
 
-	// WebSocket routes (with auth via query parameter)
+	// Rotas WebSocket (com auth via query parameter)
 	wsAuthMiddleware := middleware.WebSocketAuthMiddleware(authService)
 	ws := e.Group("/ws", wsAuthMiddleware)
 	ws.GET("/import-progress", wsHandler.ImportProgress)

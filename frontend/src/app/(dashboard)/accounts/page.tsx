@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { Landmark, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Landmark, Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { BankAccount, CreateBankAccountRequest, UpdateBankAccountRequest } from "@/types";
 import { formatCurrency, getAccountTypeLabel } from "@/lib/format";
@@ -40,6 +40,9 @@ export default function AccountsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BankAccount | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recalculatingId, setRecalculatingId] = useState<string | null>(null);
+  const [cooldownEndTimes, setCooldownEndTimes] = useState<Record<string, number>>({});
+  const [, setTick] = useState(0);
   const pendingDeleteRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   const [form, setForm] = useState({
@@ -63,6 +66,18 @@ export default function AccountsPage() {
   }, []);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+
+  useEffect(() => {
+    if (Object.keys(cooldownEndTimes).length === 0) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [cooldownEndTimes]);
+
+  function cooldownRemaining(accountId: string): number {
+    const end = cooldownEndTimes[accountId];
+    if (!end) return 0;
+    return Math.max(0, Math.ceil((end - Date.now()) / 1000));
+  }
 
   function openCreate() {
     setEditing(null);
@@ -122,6 +137,28 @@ export default function AccountsPage() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleRecalculate(id: string) {
+    setRecalculatingId(id);
+    try {
+      await api.post<BankAccount>(`/accounts/${id}/recalculate`);
+      await fetchAccounts();
+      toast.success("Saldo recalculado com sucesso");
+      const end = Date.now() + 5000;
+      setCooldownEndTimes((prev) => ({ ...prev, [id]: end }));
+      setTimeout(() => {
+        setCooldownEndTimes((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }, 5000);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Erro ao recalcular saldo"));
+    } finally {
+      setRecalculatingId(null);
     }
   }
 
@@ -320,10 +357,29 @@ export default function AccountsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">{formatCurrency(account.current_balance)}</p>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(account)}>
                     <Pencil className="h-3 w-3 mr-1" />Editar
                   </Button>
+                  {(() => {
+                    const remaining = cooldownRemaining(account.id);
+                    const isLoading = recalculatingId === account.id;
+                    const isDisabled = isLoading || remaining > 0;
+                    return (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isDisabled}
+                        onClick={() => handleRecalculate(account.id)}
+                        title="Recalcular saldo com base nas transações"
+                      >
+                        {isLoading
+                          ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          : <RefreshCw className="h-3 w-3 mr-1" />}
+                        {remaining > 0 ? `${remaining}s` : "Recalcular"}
+                      </Button>
+                    );
+                  })()}
                   <Button
                     variant="ghost"
                     size="sm"

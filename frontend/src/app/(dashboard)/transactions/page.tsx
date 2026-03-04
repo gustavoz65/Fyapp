@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api, getApiBaseUrl, getWebSocketUrl } from "@/lib/api";
+import { api, getApiBaseUrl, getCsrfToken, getWebSocketUrl } from "@/lib/api";
 import {
   formatCurrency,
   formatDate,
@@ -315,11 +315,16 @@ export default function TransactionsPage() {
         formData.append("force_reimport", "true");
       }
 
+      const importHeaders: Record<string, string> = {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      };
+      const csrfToken = getCsrfToken();
+      if (csrfToken) importHeaders["X-CSRF-Token"] = csrfToken;
+
       const response = await fetch(`${getApiBaseUrl()}/api/v1/transactions/import`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
+        headers: importHeaders,
+        credentials: "include",
         body: formData,
       });
 
@@ -506,14 +511,14 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-8 pb-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Transações</h1>
           <p className="text-muted-foreground mt-2">
             Gerencie todas as suas transações
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
             <DialogTrigger asChild>
               <Button size="lg" variant="outline">
@@ -945,14 +950,15 @@ export default function TransactionsPage() {
             </div>
           ) : (
             <>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead className="hidden sm:table-cell">Tipo</TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead>Origem</TableHead>
+                    <TableHead className="hidden md:table-cell">Origem</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead></TableHead>
@@ -974,7 +980,7 @@ export default function TransactionsPage() {
                           <span className="text-sm font-medium">{tx.description}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Badge variant={tx.type === "income" ? "default" : "secondary"}>
                           {getTransactionTypeLabel(tx.type)}
                         </Badge>
@@ -982,7 +988,7 @@ export default function TransactionsPage() {
                       <TableCell className="text-sm text-muted-foreground">
                         {tx.category?.name || "—"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <Badge
                           variant={
                             tx.source === "manual"
@@ -1049,6 +1055,7 @@ export default function TransactionsPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-4">
                   <Button

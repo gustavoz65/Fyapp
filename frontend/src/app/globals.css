@@ -80,37 +80,37 @@
 }
 
 .dark {
-  --background: #0a0a0a;
+  --background: #1a1a1a;
   --foreground: #ededed;
-  --card: #111111;
+  --card: #242424;
   --card-foreground: #ededed;
-  --popover: #111111;
+  --popover: #242424;
   --popover-foreground: #ededed;
   --primary: #8fa05c;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1a1a1a;
+  --primary-foreground: #1a1a1a;
+  --secondary: #2a2a2a;
   --secondary-foreground: #ededed;
-  --muted: #1a1a1a;
-  --muted-foreground: #888888;
+  --muted: #2a2a2a;
+  --muted-foreground: #a0a0a0;
   --accent: #8fa05c;
-  --accent-foreground: #0a0a0a;
-  --destructive: #ef4444;
+  --accent-foreground: #1a1a1a;
+  --destructive: #e46161;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.08);
   --ring: #8fa05c;
   --chart-1: #8fa05c;
   --chart-2: #7e8c54;
   --chart-3: #6b7a47;
   --chart-4: #5a6a3d;
   --chart-5: #495a32;
-  --sidebar: #0a0a0a;
+  --sidebar: #1a1a1a;
   --sidebar-foreground: #ededed;
   --sidebar-primary: #8fa05c;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1a1a1a;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #2a2a2a;
   --sidebar-accent-foreground: #ededed;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #8fa05c;
 }
 
@@ -118,12 +118,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: "Inter", sans-serif;
     font-size: 16px;
     line-height: 1.6;
   }
+
   h1,
   h2,
   h3,
@@ -134,30 +136,36 @@
     font-family: "Playfair Display", serif;
     letter-spacing: -0.02em;
   }
+
   h1 {
     @apply text-5xl md:text-7xl;
     font-weight: 800;
     line-height: 1.1;
   }
+
   h2 {
     @apply text-4xl md:text-5xl;
     font-weight: 700;
     line-height: 1.2;
   }
+
   h3 {
     @apply text-2xl md:text-3xl;
     font-weight: 700;
     line-height: 1.3;
   }
+
   p {
     @apply text-foreground/80 leading-relaxed;
     font-family: "Inter", sans-serif;
   }
+
   .brand-text {
     font-family: "Playfair Display", serif;
     font-weight: 800;
     letter-spacing: -0.02em;
   }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),

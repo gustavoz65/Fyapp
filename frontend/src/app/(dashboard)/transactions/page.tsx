@@ -61,6 +61,7 @@ import {
   Pencil,
   Plus,
   ReceiptText,
+  Settings,
   Sparkles,
   Trash2,
   Upload,
@@ -519,13 +520,45 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-            <DialogTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button size="lg" variant="outline">
+                <Settings className="h-4 w-4 mr-2" />
+                Ações
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Importar Extrato
-              </Button>
-            </DialogTrigger>
+              </DropdownMenuItem>
+              {accounts.length > 0 && (
+                <>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={(e) => {
+                      e.preventDefault();
+                    }}
+                    disabled
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar Transações
+                  </DropdownMenuItem>
+                  {accounts.map((account) => (
+                    <DropdownMenuItem
+                      key={account.id}
+                      onClick={() => handleDeleteAll(account.id)}
+                      className="text-destructive cursor-pointer pl-8"
+                    >
+                      → {account.name}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Importar Extrato Bancário</DialogTitle>
@@ -564,9 +597,27 @@ export default function TransactionsPage() {
                     <Label>Conta *</Label>
                     <Select
                       value={importForm.bank_account_id}
-                      onValueChange={(v) =>
-                        setImportForm({ ...importForm, bank_account_id: v })
-                      }
+                      onValueChange={(v) => {
+                        const selectedAccount = accounts.find(a => a.id === v);
+                        let detectedBankType = "generic";
+
+                        // Auto-detectar tipo do banco baseado no bank_code
+                        if (selectedAccount?.bank_code) {
+                          const bankCodeMap: Record<string, string> = {
+                            "260": "nubank",
+                            "001": "bb",
+                            "077": "inter",
+                            "341": "itau",
+                          };
+                          detectedBankType = bankCodeMap[selectedAccount.bank_code] || "generic";
+                        }
+
+                        setImportForm({
+                          ...importForm,
+                          bank_account_id: v,
+                          bank_type: detectedBankType
+                        });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a conta..." />
@@ -574,48 +625,61 @@ export default function TransactionsPage() {
                       <SelectContent>
                         {accounts.map((a) => (
                           <SelectItem key={a.id} value={a.id}>
-                            {a.name}
+                            {a.name} {a.bank_name && `(${a.bank_name})`}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {importForm.bank_account_id && (
+                      <p className="text-xs text-muted-foreground">
+                        Tipo detectado: {
+                          importForm.bank_type === "nubank" ? "Nubank" :
+                          importForm.bank_type === "bb" ? "Banco do Brasil" :
+                          importForm.bank_type === "inter" ? "Inter" :
+                          importForm.bank_type === "itau" ? "Itaú" :
+                          "Genérico (CSV padrão)"
+                        }
+                      </p>
+                    )}
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Label>Nome da nova conta *</Label>
-                    <Input
-                      value={importForm.new_account_name}
-                      onChange={(e) =>
-                        setImportForm({ ...importForm, new_account_name: e.target.value })
-                      }
-                      placeholder="Ex: Banco do Brasil - Conta Corrente"
-                      required={importForm.create_account}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Uma nova conta será criada automaticamente com o saldo baseado no extrato
-                    </p>
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label>Nome da nova conta *</Label>
+                      <Input
+                        value={importForm.new_account_name}
+                        onChange={(e) =>
+                          setImportForm({ ...importForm, new_account_name: e.target.value })
+                        }
+                        placeholder="Ex: Banco do Brasil - Conta Corrente"
+                        required={importForm.create_account}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Uma nova conta será criada automaticamente com o saldo baseado no extrato
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Tipo de Banco *</Label>
+                      <Select
+                        value={importForm.bank_type}
+                        onValueChange={(v) =>
+                          setImportForm({ ...importForm, bank_type: v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="generic">Genérico (CSV padrão)</SelectItem>
+                          <SelectItem value="nubank">Nubank</SelectItem>
+                          <SelectItem value="bb">Banco do Brasil</SelectItem>
+                          <SelectItem value="inter">Inter</SelectItem>
+                          <SelectItem value="itau">Itaú</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 )}
-                <div className="space-y-2">
-                  <Label>Tipo de Banco</Label>
-                  <Select
-                    value={importForm.bank_type}
-                    onValueChange={(v) =>
-                      setImportForm({ ...importForm, bank_type: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="generic">Genérico (CSV padrão)</SelectItem>
-                      <SelectItem value="nubank">Nubank</SelectItem>
-                      <SelectItem value="bb">Banco do Brasil</SelectItem>
-                      <SelectItem value="inter">Inter</SelectItem>
-                      <SelectItem value="itau">Itaú</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label>Arquivo CSV *</Label>
                   <Input
@@ -675,31 +739,7 @@ export default function TransactionsPage() {
               </form>
             </DialogContent>
           </Dialog>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="lg" variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Deletar Todas
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {accounts.length === 0 ? (
-                <div className="p-2 text-sm text-muted-foreground">
-                  Nenhuma conta disponível
-                </div>
-              ) : (
-                accounts.map((account) => (
-                  <DropdownMenuItem
-                    key={account.id}
-                    onClick={() => handleDeleteAll(account.id)}
-                    className="text-destructive cursor-pointer"
-                  >
-                    Deletar de: {account.name}
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+
           <Dialog
             open={dialogOpen}
             onOpenChange={(open) => {

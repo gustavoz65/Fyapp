@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import {
   ArrowRight,
   Building2,
@@ -63,7 +63,7 @@ const LEFT_PANEL_CONTENT = {
 };
 
 export default function OnboardingPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuthStore();
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -102,7 +102,13 @@ export default function OnboardingPage() {
       });
   }, [isAuthenticated, authLoading, router]);
 
-  function completeOnboarding() {
+  async function completeOnboarding() {
+    try {
+      await api.patch("/users/me/onboarding-complete");
+      await refreshUser();
+    } catch {
+      // Falha silenciosa — redireciona mesmo assim
+    }
     router.push("/dashboard");
   }
 

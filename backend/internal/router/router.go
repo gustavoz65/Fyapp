@@ -123,6 +123,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	users.DELETE("/me", userHandler.DeactivateMe, mutationRL)
 	users.GET("/settings", userHandler.GetSettings, readRL)
 	users.PUT("/settings", userHandler.UpdateSettings, mutationRL)
+	users.PATCH("/me/onboarding-complete", userHandler.CompleteOnboarding, mutationRL)
 
 	categories := api.Group("/categories", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
 	categories.GET("", categoryHandler.GetAll, readRL)

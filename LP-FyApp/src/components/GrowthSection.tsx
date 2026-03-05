@@ -1,14 +1,14 @@
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp.up.railway.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp-production.up.railway.app";
 
 export default function GrowthSection() {
   return (
-    <section className="py-32 px-8 max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <div className="relative order-2 lg:order-1">
+    <section className="py-16 px-8 bg-linear-to-br from-[#FAFAF8] to-[#F5F1E8]">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="order-2 lg:order-1 bg-[#EDEBE3] rounded-3xl p-8">
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310419663031400654/9rw8cUK9yoafNAfP3CRw5n/fyapp-growth-illustration-J647hEMMMwFwwztfBg6Kws.webp"
             alt="Crescimento Financeiro"
-            className="w-full rounded-2xl shadow-2xl hover:scale-105 transition-transform duration-300"
+            className="w-full rounded-xl"
           />
         </div>
 

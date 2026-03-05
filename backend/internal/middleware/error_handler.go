@@ -102,6 +102,14 @@ func mapServiceError(err error) (int, string) {
 	case errors.Is(err, repository.ErrCannotModifySystem):
 		return http.StatusForbidden, "Nao e possivel modificar uma categoria do sistema"
 
+	// Erros de Firebase / social login
+	case errors.Is(err, service.ErrFirebaseNotConfigured):
+		return http.StatusServiceUnavailable, "Login social indisponível no momento"
+	case errors.Is(err, service.ErrInvalidIDToken):
+		return http.StatusUnauthorized, "Token do provedor inválido"
+	case errors.Is(err, service.ErrCannotUnlinkLastProvider):
+		return http.StatusBadRequest, "Não é possível desvincular o último método de autenticação"
+
 	// Erros de servico
 	case errors.Is(err, service.ErrCategoryInUse):
 		return http.StatusConflict, "Categoria esta em uso por Transações"

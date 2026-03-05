@@ -53,7 +53,7 @@ import {
   updateUserSettings,
 } from "@/lib/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import type {
   ChangePasswordRequest,
   LinkedProvider,
@@ -104,7 +104,7 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function SettingsPage() {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuthStore();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [providers, setProviders] = useState<ListProvidersResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);

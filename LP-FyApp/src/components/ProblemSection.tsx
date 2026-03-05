@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp.up.railway.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp-production.up.railway.app";
 
 const benefits = [
   "Visualize todos os seus gastos em um único dashboard",
@@ -47,7 +47,7 @@ export default function ProblemSection() {
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310419663031400654/9rw8cUK9yoafNAfP3CRw5n/fyapp-features-illustration-X72PdFpSHkAv6RDpzsykco.webp"
             alt="Recursos FyApp"
-            className="w-full rounded-2xl shadow-2xl hover:scale-105 transition-transform duration-300"
+            className="w-full rounded-2xl shadow-2xl"
           />
         </div>
       </div>

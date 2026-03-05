@@ -1,4 +1,6 @@
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp.up.railway.app";
+"use client";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp-production.up.railway.app";
 
 export default function Hero() {
   return (
@@ -48,7 +50,7 @@ export default function Hero() {
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310419663031400654/9rw8cUK9yoafNAfP3CRw5n/fyapp-hero-illustration-DEpLkYQmzhkmUiCqwRERat.webp"
             alt="FyApp Dashboard"
-            className="w-full rounded-2xl shadow-2xl hover:scale-105 transition-transform duration-300"
+            className="w-full rounded-2xl shadow-2xl"
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { Lock } from "lucide-react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp.up.railway.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp-production.up.railway.app";
 
 const securityFeatures = [
   "Criptografia de nível bancário (AES-256)",
@@ -48,7 +48,7 @@ export default function SecuritySection() {
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310419663031400654/9rw8cUK9yoafNAfP3CRw5n/fyapp-security-illustration-acUv2UXhPFgFD7SXqPsEPX.webp"
             alt="Segurança FyApp"
-            className="w-full rounded-2xl shadow-2xl hover:scale-105 transition-transform duration-300"
+            className="w-full rounded-2xl shadow-2xl"
           />
         </div>
       </div>

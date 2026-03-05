@@ -1,5 +1,5 @@
+import { AuthInitializer } from "@/components/auth-initializer";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/providers/auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
@@ -43,10 +43,9 @@ export default function RootLayout({
         className={`antialiased ${playfairDisplay.variable} ${inter.variable}`}
       >
         <ThemeProvider defaultTheme="light">
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
+          <AuthInitializer />
+          {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

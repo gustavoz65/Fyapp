@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fyapp.up.railway.app";
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://fyapp-production.up.railway.app";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -29,10 +30,12 @@ export default function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-8 flex justify-between items-center">
-        <a href="#" className="flex items-center gap-3 no-underline group">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#7E8C54] to-[#6B7844] rounded-md flex items-center justify-center text-white font-bold text-sm transition-all duration-300 group-hover:scale-110">
-            Fy
-          </div>
+        <a href="#" className="flex items-center gap-3 no-underline">
+          <img
+            src="/logoFy.png"
+            alt="FyApp"
+            className="h-8 w-8 object-contain"
+          />
           <span className="text-2xl font-bold text-[#7E8C54]">FyApp</span>
         </a>
 

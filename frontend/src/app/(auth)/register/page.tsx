@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { auth, googleProvider } from "@/lib/firebase";
 import { registerSchema } from "@/lib/schemas";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import { signInWithPopup } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { register, socialLogin } = useAuth();
+  const { register, socialLogin } = useAuthStore();
   const router = useRouter();
 
   function updateField(field: string, value: string) {

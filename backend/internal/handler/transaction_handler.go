@@ -422,6 +422,28 @@ func (h *TransactionHandler) DeleteAllByAccount(c echo.Context) error {
 	})
 }
 
+// BulkDelete deletes multiple transactions within a date range
+func (h *TransactionHandler) BulkDelete(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	var req service.BulkDeleteRequest
+	if err := c.Bind(&req); err != nil {
+		return errs.NewBadRequestError("Dados inválidos", false, nil, nil, nil)
+	}
+
+	// Validate required fields
+	if req.StartDate.IsZero() || req.EndDate.IsZero() {
+		return errs.NewBadRequestError("Data inicial e final são obrigatórias", false, nil, nil, nil)
+	}
+
+	result, err := h.transactionService.BulkDeleteByDateRange(c.Request().Context(), userID, &req)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
 func (h *TransactionHandler) validateCSVContent(csvData string) error {
 	const maxLines = 50000
 	const maxLineLength = 10000

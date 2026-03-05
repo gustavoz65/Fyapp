@@ -152,6 +152,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.PUT("/:id", transactionHandler.Update, mutationRL)
 	transactions.DELETE("/:id", transactionHandler.Delete, mutationRL)
 	transactions.DELETE("/account/:account_id", transactionHandler.DeleteAllByAccount, mutationRL)
+	transactions.POST("/bulk-delete", transactionHandler.BulkDelete, mutationRL)
 	transactions.PATCH("/:id/pay", transactionHandler.MarkAsPaid, mutationRL)
 
 	recurring := api.Group("/recurring-transactions", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)

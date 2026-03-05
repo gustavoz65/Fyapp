@@ -26,6 +26,14 @@ const accountTypes = [
   { value: "other", label: "Outro" },
 ];
 
+const bankOptions = [
+  { value: "", label: "Nenhum", code: "" },
+  { value: "Nubank", label: "Nubank", code: "260" },
+  { value: "Banco do Brasil", label: "Banco do Brasil", code: "001" },
+  { value: "Inter", label: "Inter", code: "077" },
+  { value: "Itaú", label: "Itaú", code: "341" },
+];
+
 function getApiErrorMessage(error: unknown, fallback: string): string {
   if (error && typeof error === "object" && "message" in error) {
     return (error as { message: string }).message;
@@ -46,7 +54,7 @@ export default function AccountsPage() {
   const pendingDeleteRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   const [form, setForm] = useState({
-    name: "", bank_name: "", account_type: "checking" as string,
+    name: "", bank_name: "", bank_code: "", account_type: "checking" as string,
     initial_balance: "0", color: "#3b82f6", icon: "landmark",
   });
 
@@ -81,14 +89,14 @@ export default function AccountsPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: "", bank_name: "", account_type: "checking", initial_balance: "0", color: "#3b82f6", icon: "landmark" });
+    setForm({ name: "", bank_name: "", bank_code: "", account_type: "checking", initial_balance: "0", color: "#3b82f6", icon: "landmark" });
     setDialogOpen(true);
   }
 
   function openEdit(account: BankAccount) {
     setEditing(account);
     setForm({
-      name: account.name, bank_name: account.bank_name || "",
+      name: account.name, bank_name: account.bank_name || "", bank_code: account.bank_code || "",
       account_type: account.account_type, initial_balance: account.initial_balance,
       color: account.color, icon: account.icon,
     });
@@ -101,7 +109,7 @@ export default function AccountsPage() {
     try {
       if (editing) {
         const body: UpdateBankAccountRequest = {
-          name: form.name, bank_name: form.bank_name || undefined,
+          name: form.name, bank_name: form.bank_name || undefined, bank_code: form.bank_code || undefined,
           color: form.color, icon: form.icon,
         };
         await api.put(`/accounts/${editing.id}`, body);
@@ -110,6 +118,7 @@ export default function AccountsPage() {
         const validated = createAccountSchema.parse({
           name: form.name,
           bank_name: form.bank_name || undefined,
+          bank_code: form.bank_code || undefined,
           account_type: form.account_type,
           initial_balance: form.initial_balance,
           color: form.color,
@@ -119,6 +128,7 @@ export default function AccountsPage() {
         const body: CreateBankAccountRequest = {
           name: validated.name,
           bank_name: validated.bank_name,
+          bank_code: validated.bank_code,
           account_type: validated.account_type as CreateBankAccountRequest["account_type"],
           initial_balance: validated.initial_balance,
           color: validated.color,
@@ -253,11 +263,29 @@ export default function AccountsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Banco</Label>
-                <Input
+                <Select
                   value={form.bank_name}
-                  onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
-                  placeholder="Nome do banco (opcional)"
-                />
+                  onValueChange={(value) => {
+                    const bank = bankOptions.find(b => b.value === value);
+                    setForm({
+                      ...form,
+                      bank_name: bank?.value || "",
+                      bank_code: bank?.code || ""
+                    });
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione o banco (opcional)" /></SelectTrigger>
+                  <SelectContent>
+                    {bankOptions.map((bank) => (
+                      <SelectItem key={bank.value} value={bank.value}>
+                        {bank.label} {bank.code && `(${bank.code})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Selecione o banco para ativar detecção automática de CSV
+                </p>
               </div>
               {!editing && (
                 <>

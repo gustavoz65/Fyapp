@@ -128,6 +128,16 @@ export default function TransactionsPage() {
     new_account_name: "",
     force_reimport: false,
   });
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteForm, setBulkDeleteForm] = useState({
+    account_id: "",
+    start_date: "",
+    end_date: "",
+  });
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [accountToDeleteAll, setAccountToDeleteAll] = useState<{ id: string; name: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -487,17 +497,25 @@ export default function TransactionsPage() {
     }, 1000); // Poll every second
   }
 
-  async function handleDeleteAll(accountId: string) {
-    if (!confirm("Tem certeza que deseja deletar TODAS as transações desta conta? Esta ação não pode ser desfeita!")) {
-      return;
-    }
+  function openDeleteAllDialog(accountId: string, accountName: string) {
+    setAccountToDeleteAll({ id: accountId, name: accountName });
+    setDeleteAllDialogOpen(true);
+  }
 
+  async function confirmDeleteAll() {
+    if (!accountToDeleteAll) return;
+
+    setIsDeletingAll(true);
     try {
-      await api.delete(`/transactions/account/${accountId}`);
+      await api.delete(`/transactions/account/${accountToDeleteAll.id}`);
       toast.success("Todas as transações foram deletadas");
+      setDeleteAllDialogOpen(false);
+      setAccountToDeleteAll(null);
       fetchData();
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Erro ao deletar transações"));
+    } finally {
+      setIsDeletingAll(false);
     }
   }
 
@@ -557,6 +575,10 @@ export default function TransactionsPage() {
                 <Upload className="h-4 w-4 mr-2" />
                 Importar Extrato
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setBulkDeleteDialogOpen(true)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Deletar em Lote
+              </DropdownMenuItem>
               {accounts.length > 0 && (
                 <>
                   <DropdownMenuItem
@@ -567,12 +589,12 @@ export default function TransactionsPage() {
                     disabled
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Deletar Transações
+                    Deletar Todas por Conta
                   </DropdownMenuItem>
                   {accounts.map((account) => (
                     <DropdownMenuItem
                       key={account.id}
-                      onClick={() => handleDeleteAll(account.id)}
+                      onClick={() => openDeleteAllDialog(account.id, account.name)}
                       className="text-destructive cursor-pointer pl-8"
                     >
                       → {account.name}
@@ -769,6 +791,161 @@ export default function TransactionsPage() {
                   </Button>
                 </div>
               </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Deletar Transações em Lote</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+
+                if (!bulkDeleteForm.start_date || !bulkDeleteForm.end_date) {
+                  toast.error("Preencha as datas de início e fim");
+                  return;
+                }
+
+                setIsBulkDeleting(true);
+                try {
+                  const body: any = {
+                    start_date: new Date(bulkDeleteForm.start_date).toISOString(),
+                    end_date: new Date(bulkDeleteForm.end_date).toISOString(),
+                  };
+
+                  if (bulkDeleteForm.account_id) {
+                    body.account_id = bulkDeleteForm.account_id;
+                  }
+
+                  const result = await api.post<{ deleted_count: number }>("/transactions/bulk-delete", body);
+
+                  toast.success(`${result.deleted_count} transação(ões) deletada(s) com sucesso`);
+                  setBulkDeleteDialogOpen(false);
+                  setBulkDeleteForm({ account_id: "", start_date: "", end_date: "" });
+                  fetchData();
+                } catch (error) {
+                  toast.error(getApiErrorMessage(error, "Erro ao deletar transações"));
+                } finally {
+                  setIsBulkDeleting(false);
+                }
+              }} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Conta (Opcional)</Label>
+                  <Select
+                    value={bulkDeleteForm.account_id}
+                    onValueChange={(v) => setBulkDeleteForm({ ...bulkDeleteForm, account_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as contas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas as contas</SelectItem>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} {a.bank_name && `(${a.bank_name})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Deixe vazio para deletar de todas as contas
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Data Inicial *</Label>
+                  <Input
+                    type="date"
+                    value={bulkDeleteForm.start_date}
+                    onChange={(e) => setBulkDeleteForm({ ...bulkDeleteForm, start_date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data Final *</Label>
+                  <Input
+                    type="date"
+                    value={bulkDeleteForm.end_date}
+                    onChange={(e) => setBulkDeleteForm({ ...bulkDeleteForm, end_date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                  <p className="text-sm text-destructive font-medium">
+                    ⚠️ Atenção: Esta ação é irreversível!
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Todas as transações no período selecionado serão permanentemente deletadas.
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setBulkDeleteDialogOpen(false);
+                      setBulkDeleteForm({ account_id: "", start_date: "", end_date: "" });
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" variant="destructive" className="flex-1" disabled={isBulkDeleting}>
+                    {isBulkDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isBulkDeleting ? "Deletando..." : "Deletar"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Deletar Todas as Transações</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    Tem certeza que deseja deletar <span className="font-semibold">TODAS</span> as transações da conta:
+                  </p>
+                  <p className="text-base font-bold text-foreground">
+                    {accountToDeleteAll?.name}
+                  </p>
+                </div>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
+                  <p className="text-sm text-destructive font-medium flex items-center gap-2">
+                    <span className="text-lg">⚠️</span>
+                    Esta ação não pode ser desfeita!
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Todas as transações desta conta serão permanentemente removidas do sistema.
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setDeleteAllDialogOpen(false);
+                      setAccountToDeleteAll(null);
+                    }}
+                    disabled={isDeletingAll}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={confirmDeleteAll}
+                    disabled={isDeletingAll}
+                  >
+                    {isDeletingAll && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isDeletingAll ? "Deletando..." : "Sim, Deletar Tudo"}
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
 

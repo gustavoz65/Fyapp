@@ -62,7 +62,7 @@ var BankMappings = map[string]CSVMapping{
 		DateColumn:        0,
 		DescriptionColumn: 1,
 		AmountColumn:      2,
-		DateFormat:        "2006-01-02",
+		DateFormat:        "02/01/2006",
 	},
 }
 
@@ -80,7 +80,7 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 	}
 
 	csvReader := csv.NewReader(reader)
-	csvReader.FieldsPerRecord = -1 // Allow variable number of fields
+	csvReader.FieldsPerRecord = -1 // Lida com linhas com número variável de colunas
 	csvReader.TrimLeadingSpace = true
 
 	var transactions []TransactionImport
@@ -92,19 +92,19 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("error reading CSV line %d: %w", lineNumber, err)
+			return nil, fmt.Errorf("erro ao ler a linha %d do CSV: %w", lineNumber, err)
 		}
 
 		lineNumber++
 
-		// Skip header row
+		// Pular linha de cabeçalho
 		if lineNumber == 1 {
 			if p.isHeaderRow(record) {
 				continue
 			}
 		}
 
-		// Skip empty rows
+		// Pular linhas vazias
 		if len(record) == 0 || (len(record) == 1 && record[0] == "") {
 			continue
 		}
@@ -112,7 +112,7 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 		transaction, err := p.parseCSVRecord(record, mapping)
 		if err != nil {
 			// Log error but continue processing
-			fmt.Printf("Warning: skipping line %d: %v\n", lineNumber, err)
+			fmt.Printf("Aviso: pulando a linha %d: %v\n", lineNumber, err)
 			continue
 		}
 
@@ -122,6 +122,7 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 	return transactions, nil
 }
 
+// isHeaderRow tenta identificar se uma linha é um cabeçalho
 func (p *TransactionParser) isHeaderRow(record []string) bool {
 	// Check if row contains common header keywords
 	headerKeywords := []string{"data", "date", "descri", "valor", "amount", "tipo", "type"}
@@ -137,50 +138,53 @@ func (p *TransactionParser) isHeaderRow(record []string) bool {
 	return false
 }
 
+// parseCSVRecord faz o parsing de uma linha do CSV usando o mapeamento fornecido e retorna um TransactionImport
 func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) (TransactionImport, error) {
 	if len(record) <= mapping.DateColumn || len(record) <= mapping.DescriptionColumn || len(record) <= mapping.AmountColumn {
-		return TransactionImport{}, fmt.Errorf("record has insufficient columns: %d", len(record))
+		return TransactionImport{}, fmt.Errorf("registro com colunas insuficientes: %d", len(record))
+	}
+
+	if mapping.TypeColumn != nil && len(record) > *mapping.TypeColumn {
+		tipoLancamento := strings.TrimSpace(record[*mapping.TypeColumn])
+		if tipoLancamento == "" {
+			return TransactionImport{}, fmt.Errorf("linha sem tipo de lançamento (saldo/subtotal)")
+		}
 	}
 
 	// Parse date
 	dateStr := strings.TrimSpace(record[mapping.DateColumn])
 	// Skip invalid dates like "00/00/0000" from Banco do Brasil
 	if dateStr == "00/00/0000" || dateStr == "" {
-		return TransactionImport{}, fmt.Errorf("invalid or empty date")
+		return TransactionImport{}, fmt.Errorf("data inválida ou vazia")
 	}
 	date, err := p.parseDate(dateStr, mapping.DateFormat)
 	if err != nil {
-		return TransactionImport{}, fmt.Errorf("invalid date '%s': %w", dateStr, err)
+		return TransactionImport{}, fmt.Errorf("data inválida '%s': %w", dateStr, err)
+	}
+
+	amountStr := strings.TrimSpace(record[mapping.AmountColumn])
+	if amountStr == "" {
+		return TransactionImport{}, fmt.Errorf("valor vazio")
+	}
+	amount, transactionType, err := p.parseAmount(amountStr)
+	if err != nil {
+		return TransactionImport{}, fmt.Errorf("valor inválido '%s': %w", amountStr, err)
 	}
 
 	// Parse description
 	description := strings.TrimSpace(record[mapping.DescriptionColumn])
+	if mapping.TypeColumn != nil && len(record) > 1 {
+		lancamento := strings.TrimSpace(record[1])
+		detalhes := strings.TrimSpace(record[mapping.DescriptionColumn])
+		if lancamento != "" && detalhes != "" {
+			description = lancamento + " - " + detalhes
+		} else if lancamento != "" {
+			description = lancamento
+		}
+	}
+
 	if description == "" {
 		description = "Transação importada"
-	}
-
-	// Parse amount
-	amountStr := strings.TrimSpace(record[mapping.AmountColumn])
-	amount, transactionType, err := p.parseAmount(amountStr)
-	if err != nil {
-		return TransactionImport{}, fmt.Errorf("invalid amount '%s': %w", amountStr, err)
-	}
-
-	// Pagamento com cartão BB é sempre despesa mesmo quando marcado como "Entrada"
-	lancamento := ""
-	if len(record) > 1 {
-		lancamento = strings.ToLower(strings.TrimSpace(record[1]))
-	}
-	if strings.Contains(lancamento, "pagamento pix cart") || strings.Contains(lancamento, "pagamento pix cartão") {
-		transactionType = "expense"
-	} else if mapping.TypeColumn != nil && len(record) > *mapping.TypeColumn {
-		typeStr := strings.TrimSpace(strings.ToLower(record[*mapping.TypeColumn]))
-		switch typeStr {
-		case "entrada", "receita", "credit":
-			transactionType = "income"
-		case "saída", "saida", "despesa", "debit":
-			transactionType = "expense"
-		}
 	}
 
 	// Generate external ID for deduplication

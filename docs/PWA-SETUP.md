@@ -1,4 +1,4 @@
-# 🚀 PWA Setup Completo - FiNext
+# 🚀 PWA Setup Completo - Fy
 
 ## ✅ O que já foi configurado
 
@@ -17,10 +17,12 @@
 Você precisa criar 2 ícones no formato PNG:
 
 ### Requisitos dos ícones:
+
 - **icon-192.png** (192x192 pixels)
 - **icon-512.png** (512x512 pixels)
 
 ### Dicas importantes:
+
 - ✅ Fundo sólido (evite transparência)
 - ✅ Design simples e legível
 - ✅ Sem texto muito pequeno
@@ -28,6 +30,7 @@ Você precisa criar 2 ícones no formato PNG:
 - ✅ Cores que combinem com a marca (atual: #0f172a)
 
 ### Onde colocar:
+
 ```
 frontend/public/
   ├── icon-192.png
@@ -35,6 +38,7 @@ frontend/public/
 ```
 
 ### Ferramentas recomendadas:
+
 1. **Canva** (fácil): https://canva.com
    - Crie design 512x512
    - Exporte PNG
@@ -78,16 +82,19 @@ Se não aparecer → não é PWA ainda (falta build ou ícones)
 ### Testar instalação:
 
 #### No computador (Chrome):
+
 1. Abra `http://localhost:3000`
 2. Procure o ícone **"Instalar"** na barra de endereço (⊕)
 3. Clique e confirme
 
 #### No Android (Chrome):
+
 1. Abra seu site (precisa estar em HTTPS ou localhost)
 2. Menu → **"Instalar aplicativo"**
 3. Confirme
 
 #### No iPhone (Safari):
+
 1. Abra seu site
 2. Toque em **"Compartilhar"**
 3. Role e toque em **"Adicionar à Tela de Início"**
@@ -136,6 +143,7 @@ Antes de testar no celular:
 ### 1. Push Notifications (futuro)
 
 Para adicionar notificações push, você pode usar:
+
 - Firebase Cloud Messaging
 - OneSignal
 - Web Push Protocol
@@ -182,23 +190,26 @@ runtimeCaching: [
       },
     },
   },
-]
+];
 ```
 
 ## 🐛 Troubleshooting
 
 ### "Não aparece opção de instalar"
+
 - Verificou se rodou `npm run build`?
 - Verificou se está em HTTPS ou localhost?
 - Verificou se os ícones existem?
 - Abriu DevTools → Application → Manifest (deve mostrar o manifest sem erros)
 
 ### "Service Worker não ativa"
+
 - Rodou build de novo?
 - Limpou cache do navegador?
 - Verificou console de erros?
 
 ### "App abre no Chrome mesmo instalado"
+
 - Isso significa que não é PWA de verdade
 - Falta algum requisito (provavelmente ícones ou build)
 - Use DevTools → Application → Manifest para ver erros
@@ -206,6 +217,7 @@ runtimeCaching: [
 ## 📞 Precisa de ajuda?
 
 Se algo não funcionar, me chame e me mostre:
+
 1. Screenshot do DevTools → Application → Manifest
 2. Screenshot do DevTools → Application → Service Workers
 3. Mensagens de erro no console

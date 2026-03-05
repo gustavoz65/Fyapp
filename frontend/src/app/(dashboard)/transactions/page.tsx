@@ -950,15 +950,16 @@ export default function TransactionsPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Desktop: tabela */}
+              <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
                     <TableHead>Descrição</TableHead>
-                    <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead className="hidden md:table-cell">Origem</TableHead>
+                    <TableHead>Origem</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead></TableHead>
@@ -980,7 +981,7 @@ export default function TransactionsPage() {
                           <span className="text-sm font-medium">{tx.description}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
+                      <TableCell>
                         <Badge variant={tx.type === "income" ? "default" : "secondary"}>
                           {getTransactionTypeLabel(tx.type)}
                         </Badge>
@@ -988,7 +989,7 @@ export default function TransactionsPage() {
                       <TableCell className="text-sm text-muted-foreground">
                         {tx.category?.name || "—"}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      <TableCell>
                         <Badge
                           variant={
                             tx.source === "manual"
@@ -1056,6 +1057,77 @@ export default function TransactionsPage() {
                 </TableBody>
               </Table>
               </div>
+
+              {/* Mobile: cards */}
+              <div className="block md:hidden space-y-2">
+                {transactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card"
+                  >
+                    <div className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-full ${tx.type === "income" ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}`}>
+                      {tx.type === "income" ? (
+                        <ArrowDownLeft className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{tx.description}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-xs text-muted-foreground">{tx.category?.name || "Sem categoria"}</span>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(tx.transaction_date)}</span>
+                        <Badge variant={tx.is_paid ? "default" : "destructive"} className="text-[10px] px-1.5 py-0 h-4">
+                          {tx.is_paid ? (tx.type === "income" ? "Recebido" : "Pago") : "Pendente"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      <span className={`text-sm font-semibold ${tx.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        {!tx.is_paid && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            disabled={markingPaidId === tx.id}
+                            onClick={() => markAsPaid(tx.id)}
+                            title="Marcar como pago"
+                          >
+                            {markingPaidId === tx.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditCategoryDialog(tx);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Editar Categoria
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-4">
                   <Button

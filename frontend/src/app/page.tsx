@@ -42,7 +42,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <span className="brand-text text-2xl text-primary">FiNext</span>
+            <span className="brand-text text-2xl text-primary">Fy</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
             <a
@@ -89,9 +89,9 @@ export default function Home() {
               Controlado
             </h1>
             <p className="text-lg md:text-xl text-foreground/70 mb-8 leading-relaxed">
-              FiNext é a plataforma de gestão financeira moderna que torna
-              simples o controle de suas transações, orçamentos e metas.
-              Segurança e simplicidade em um só lugar.
+              Fy é a plataforma de gestão financeira moderna que torna simples o
+              controle de suas transações, orçamentos e metas. Segurança e
+              simplicidade em um só lugar.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/register">
@@ -124,8 +124,8 @@ export default function Home() {
             </h2>
             <p className="text-lg text-foreground/70 mb-8 leading-relaxed">
               A maioria das pessoas luta para entender seus gastos e planejar o
-              futuro financeiro. FiNext muda isso oferecendo uma visão clara e
-              em tempo real de suas finanças, com ferramentas intuitivas que
+              futuro financeiro. Fy muda isso oferecendo uma visão clara e em
+              tempo real de suas finanças, com ferramentas intuitivas que
               qualquer um pode usar.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,7 +333,7 @@ export default function Home() {
           </h2>
           <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
             Junte-se a milhares de usuários que já estão controlando suas
-            finanças com FiNext
+            finanças com Fy
           </p>
           <Link href="/register">
             <Button
@@ -351,7 +351,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="mb-4">
-                <span className="brand-text text-xl text-primary">FiNext</span>
+                <span className="brand-text text-xl text-primary">Fy</span>
               </div>
               <p className="text-sm text-foreground/70">
                 Gestão financeira moderna e segura
@@ -428,7 +428,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-border pt-8 text-center text-sm text-foreground/70">
-            <p>&copy; 2025 FiNext. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Fy. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

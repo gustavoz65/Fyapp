@@ -79,6 +79,26 @@ func (s *UserService) Update(ctx context.Context, userID uuid.UUID, req *model.U
 	return user, nil
 }
 
+// CompleteOnboarding marks the user's onboarding as completed
+func (s *UserService) CompleteOnboarding(ctx context.Context, userID uuid.UUID) (*model.User, error) {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	user.OnboardingCompleted = true
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to complete onboarding: %w", err)
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Msg("user onboarding completed")
+
+	return user, nil
+}
+
 // Deactivate deactivates a user account
 func (s *UserService) Deactivate(ctx context.Context, userID uuid.UUID) error {
 	if err := s.userRepo.Deactivate(ctx, userID); err != nil {

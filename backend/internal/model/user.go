@@ -29,9 +29,10 @@ type User struct {
 	Role              UserRole   `json:"role" db:"role"`
 	EmailVerified     bool       `json:"email_verified" db:"email_verified"`
 	EmailVerifiedAt   *time.Time `json:"email_verified_at,omitempty" db:"email_verified_at"`
-	LastLoginAt       *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
-	IsActive          bool       `json:"is_active" db:"is_active"`
-	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
+	LastLoginAt          *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
+	IsActive             bool       `json:"is_active" db:"is_active"`
+	OnboardingCompleted  bool       `json:"onboarding_completed" db:"onboarding_completed"`
+	CreatedAt            time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
 }
 

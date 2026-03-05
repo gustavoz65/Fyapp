@@ -312,6 +312,7 @@ export default function DashboardPage() {
                 size="sm"
                 variant={period === opt.value ? "default" : "outline"}
                 onClick={() => handlePeriodChange(opt.value)}
+                className="shrink-0"
               >
                 {opt.label}
               </Button>

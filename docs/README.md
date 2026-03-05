@@ -1,6 +1,6 @@
-# 📚 finext - Documentação de Produto
+# 📚 Fy - Documentação de Produto
 
-Bem-vindo à documentação estratégica do finext! Aqui você encontra tudo sobre produto, strategy, UX, conversão e negócios.
+Bem-vindo à documentação estratégica do Fy! Aqui você encontra tudo sobre produto, strategy, UX, conversão e negócios.
 
 ---
 
@@ -11,6 +11,7 @@ Bem-vindo à documentação estratégica do finext! Aqui você encontra tudo sob
 **Estratégia completa de produto, pricing e conversão**
 
 Contém:
+
 - ✅ Estratégia de Pricing (Free, Pro, Ultra)
 - ✅ Projeções Financeiras (Mês 3, 6, 9, 12)
 - ✅ Alavancadores de Conversão (Free→Pro, Pro→Ultra)
@@ -22,6 +23,7 @@ Contém:
 - ✅ Métricas de Sucesso (KPIs)
 
 **Recomendado para:**
+
 - Entender modelo de negócio
 - Preparar pitch para investidores/parceiros
 - Planejar roadmap de produto
@@ -34,6 +36,7 @@ Contém:
 **Psicologia comportamental aplicada a design de produto**
 
 Contém:
+
 - ✅ 8 Princípios de Persuasão (Cialdini + Fogg)
 - ✅ Como empresas bilionárias fazem (Netflix, Spotify, Notion, Duolingo)
 - ✅ Behavior Model (Motivação × Ability × Trigger)
@@ -44,6 +47,7 @@ Contém:
 - ✅ Tools e Recursos
 
 **Recomendado para:**
+
 - Entender por que UX decisions funcionam
 - Otimizar conversão
 - Criar copy persuasivo
@@ -55,48 +59,51 @@ Contém:
 
 ### Pricing Atual
 
-| Plano | Mensal | Anual | Open Finance |
-|-------|--------|-------|--------------|
-| Free | R$ 0 | R$ 0 | ❌ |
-| Pro | R$ 59,99 | R$ 499,90 | ✅ |
-| Ultra | R$ 99,99 | R$ 799,90 | ✅ |
+| Plano | Mensal   | Anual     | Open Finance |
+| ----- | -------- | --------- | ------------ |
+| Free  | R$ 0     | R$ 0      | ❌           |
+| Pro   | R$ 59,99 | R$ 499,90 | ✅           |
+| Ultra | R$ 99,99 | R$ 799,90 | ✅           |
 
 ---
 
 ### Projeções (MRR)
 
-| Mês | Meta MRR | Status |
-|-----|----------|--------|
-| Mês 3 | R$ 1.500 | Beta |
-| Mês 6 | R$ 6.500 | Cobre Pluggy |
-| Mês 9 | R$ 16.600 | Crescimento |
-| Mês 12 | R$ 42.000 | Escala |
+| Mês    | Meta MRR  | Status       |
+| ------ | --------- | ------------ |
+| Mês 3  | R$ 1.500  | Beta         |
+| Mês 6  | R$ 6.500  | Cobre Pluggy |
+| Mês 9  | R$ 16.600 | Crescimento  |
+| Mês 12 | R$ 42.000 | Escala       |
 
 ---
 
 ### Conversão Esperada
 
-| Métrica | Meta | Benchmark |
-|---------|------|-----------|
-| Onboarding Completion | 80% | 40-60% |
-| Free→Paid | 20-25% | 2-5% |
-| Trial→Pro | 40-50% | 25-40% |
-| Pro→Ultra | 25-30% | 15-20% |
+| Métrica               | Meta   | Benchmark |
+| --------------------- | ------ | --------- |
+| Onboarding Completion | 80%    | 40-60%    |
+| Free→Paid             | 20-25% | 2-5%      |
+| Trial→Pro             | 40-50% | 25-40%    |
+| Pro→Ultra             | 25-30% | 15-20%    |
 
 ---
 
 ### Unit Economics
 
 **LTV (18 meses):**
+
 - Pro: R$ 1.080
 - Ultra: R$ 1.800
 
 **CAC:**
+
 - Orgânico: R$ 0-20
 - Conteúdo: R$ 30-50
 - Ads: R$ 80-120
 
 **LTV/CAC Ratio:**
+
 - Orgânico: 54x ✅
 - Ads: 10x ✅
 - Benchmark: >3x
@@ -112,6 +119,7 @@ Contém:
 **Objetivo:** Validar produto e conversão
 
 **Tarefas:**
+
 - [ ] Deploy na Railway
 - [ ] Onboarding simplificado (4 etapas)
 - [ ] Sistema de trials (7 dias grátis)
@@ -128,6 +136,7 @@ Contém:
 **Objetivo:** Validar se vale a pena Pluggy
 
 **Tarefas:**
+
 - [ ] Medir conversão real
 - [ ] Coletar feedback usuários
 - [ ] Calcular LTV real
@@ -144,6 +153,7 @@ Contém:
 **Objetivo:** Crescer para 1.000+ usuários
 
 **Tarefas:**
+
 - [ ] Implementar Open Finance (se validado)
 - [ ] Trial de 7 dias Open Finance
 - [ ] Otimizar conversão
@@ -200,6 +210,7 @@ Behavior = Motivation × Ability × Trigger
 ```
 
 **Aplicação:**
+
 - Motivação: Benefícios claros ("economize 10 min/dia")
 - Ability: Fácil de usar (1 clique, sem fricção)
 - Trigger: Momento certo (após 10 transações manuais)
@@ -213,6 +224,7 @@ Trigger → Action → Variable Reward → Investment
 ```
 
 **Aplicação:**
+
 - Trigger: "Você adicionou 10 transações manualmente"
 - Action: "Experimentar Pro 7 dias grátis"
 - Reward: "IA categorizou 47 transações para você!"
@@ -222,10 +234,12 @@ Trigger → Action → Variable Reward → Investment
 
 ### 3. Jobs to be Done
 
-**Job principal do finext:**
+**Job principal do Fy:**
+
 > "Quando eu recebo meu salário, eu quero saber se vai sobrar no final do mês, para que eu possa dormir tranquilo sem medo de passar aperto."
 
 **Jobs secundários:**
+
 - Economizar para objetivo (viagem, carro)
 - Sair das dívidas
 - Entender para onde vai o dinheiro
@@ -240,11 +254,13 @@ Trigger → Action → Variable Reward → Investment
 **Decisão:** Reduzir de 7 para 4 etapas obrigatórias
 
 **Razão:**
+
 - Menos fricção = +80% completion (vs 40% com 7 etapas)
 - Quick win mais rápido (<2 min)
 - Resto via gamificação pós-onboarding
 
 **Trade-off:**
+
 - ❌ Menos dados iniciais
 - ✅ Mais usuários completam e veem valor
 
@@ -257,11 +273,13 @@ Trigger → Action → Variable Reward → Investment
 **Decisão:** Trial de 7 dias sem pedir cartão de crédito
 
 **Razão:**
+
 - Reciprocidade (dá primeiro, pede depois)
 - Baixa fricção = +40% aceitação
 - Conversão trial→paid: 40-50% vs 25% com cartão
 
 **Trade-off:**
+
 - ❌ Risco de "trial abuse" (usuários fazem múltiplos trials)
 - ✅ Conversão muito maior compensa
 
@@ -274,11 +292,13 @@ Trigger → Action → Variable Reward → Investment
 **Decisão:** Open Finance só em trial Pro (7 dias), não no Free
 
 **Razão:**
+
 - Open Finance custa R$ 2.500/mês (Pluggy)
 - Não podemos dar de graça
 - Trial = taste do valor, converte bem
 
 **Trade-off:**
+
 - ❌ Menos pessoas experimentam Open Finance
 - ✅ Só quem tem intenção real experimenta (menos custo desperdiçado)
 
@@ -291,11 +311,13 @@ Trigger → Action → Variable Reward → Investment
 **Decisão:** Posicionar como premium (R$59,99) vs low-cost (R$19,99)
 
 **Razão:**
+
 - Premium permite margem alta (85%)
 - Valor entregue justifica (Open Finance, IA)
 - Low-cost atrai tire-kickers (não pagam anyway)
 
 **Trade-off:**
+
 - ❌ Menos volume de usuários
 - ✅ Mais receita por usuário (LTV R$1.080 vs R$340)
 
@@ -306,12 +328,14 @@ Trigger → Action → Variable Reward → Investment
 ## 🔗 Links Úteis
 
 ### Internal Docs
+
 - [Product Strategy](./PRODUCT_STRATEGY.md)
 - [UX Psychology](./UX_PSYCHOLOGY.md)
 - [Railway Deployment](../.railway/README.md)
 - [API Documentation](../backend/README.md)
 
 ### External Resources
+
 - [BJ Fogg Behavior Model](https://behaviormodel.org/)
 - [Hooked Model](https://www.nirandfar.com/hooked/)
 - [Growth Loops (Reforge)](https://www.reforge.com/growth-loops)
@@ -321,6 +345,6 @@ Trigger → Action → Variable Reward → Investment
 
 ## 📞 Contato
 
-**Product Questions:** gustavo@finext.com.br
+**Product Questions:** gustavo@Fy.com.br
 
 **Última atualização:** 2026-02-27

@@ -99,7 +99,7 @@ export default function LoginPage() {
         <div className="max-w-md space-y-8 relative z-10">
           <div className="space-y-2">
             <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              FiNext
+              Fy
             </h1>
             <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
               Financial Next Generation
@@ -131,7 +131,7 @@ export default function LoginPage() {
           </div>
           <blockquote className="border-l-4 border-primary/50 pl-6 py-4 bg-primary/5 rounded-r-lg">
             <p className="italic text-foreground/80">
-              &quot;FiNext mudou completamente minha relação com o dinheiro.
+              &quot;Fy mudou completamente minha relação com o dinheiro.
               Finalmente tenho controle real das minhas finanças.&quot;
             </p>
             <footer className="mt-3 text-sm font-semibold text-primary">

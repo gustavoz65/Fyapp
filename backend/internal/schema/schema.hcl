@@ -6,9 +6,9 @@
 schema "cashing" {
 }
 
- ====================================
+  
 // USERS TABLE
- ====================================
+  
 table "users" {
   schema = schema.cashing
   
@@ -73,6 +73,10 @@ table "users" {
     type    = bool
     default = true
   }
+  column "onboarding_completed" {
+    type    = bool
+    default = false
+  }
   column "created_at" {
     type    = datetime
     default = sql("CURRENT_TIMESTAMP")
@@ -81,11 +85,11 @@ table "users" {
     type    = datetime
     default = sql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
   }
-  
+
   primary_key {
     columns = [column.id]
   }
-  
+
   index "idx_users_email" {
     columns = [column.email]
   }
@@ -97,9 +101,9 @@ table "users" {
   }
 }
 
- ====================================
+ 
 // USER SESSIONS TABLE (for JWT refresh tokens)
- ====================================
+ 
 table "user_sessions" {
   schema = schema.cashing
 
@@ -166,9 +170,9 @@ table "user_sessions" {
   }
 }
 
- ====================================
+  
 // CATEGORIES TABLE
- ====================================
+  
 table "categories" {
   schema = schema.cashing
 
@@ -244,9 +248,9 @@ table "categories" {
   }
 }
 
- ====================================
+  
 // BANK ACCOUNTS TABLE
- ====================================
+  
 table "bank_accounts" {
   schema = schema.cashing
 
@@ -361,9 +365,9 @@ table "bank_accounts" {
   }
 }
 
- ====================================
+  
 // TRANSACTIONS TABLE
- ====================================
+  
 table "transactions" {
   schema = schema.cashing
 
@@ -522,9 +526,9 @@ table "transactions" {
   }
 }
 
- ====================================
+  
 // RECURRING TRANSACTIONS TABLE
- ====================================
+  
 table "recurring_transactions" {
   schema = schema.cashing
 
@@ -633,9 +637,9 @@ table "recurring_transactions" {
   }
 }
 
- ====================================
+  
 // BUDGETS TABLE
- ====================================
+  
 table "budgets" {
   schema = schema.cashing
 
@@ -726,9 +730,9 @@ table "budgets" {
   }
 }
 
- ====================================
+  
 // GOALS TABLE (Metas Financeiras)
- ====================================
+  
 table "goals" {
   schema = schema.cashing
 
@@ -811,9 +815,9 @@ table "goals" {
   }
 }
 
- ====================================
+  
 // GOAL CONTRIBUTIONS TABLE
- ====================================
+  
 table "goal_contributions" {
   schema = schema.cashing
 
@@ -862,9 +866,9 @@ table "goal_contributions" {
   }
 }
 
- ====================================
+  
 // TRANSFERS TABLE (for transfers between accounts)
- ====================================
+  
 table "transfers" {
   schema = schema.cashing
 
@@ -954,9 +958,9 @@ table "transfers" {
   }
 }
 
- ====================================
+  
 // INSTALLMENTS TABLE (for installment tracking)
- ====================================
+  
 table "installments" {
   schema = schema.cashing
 
@@ -1045,9 +1049,9 @@ table "installments" {
   }
 }
 
- ====================================
+  
 // NOTIFICATIONS TABLE
- ====================================
+  
 table "notifications" {
   schema = schema.cashing
 
@@ -1128,9 +1132,9 @@ table "notifications" {
   }
 }
 
- ====================================
+  
 // USER SETTINGS TABLE
- ====================================
+  
 table "user_settings" {
   schema = schema.cashing
 
@@ -1224,9 +1228,9 @@ table "user_settings" {
   }
 }
 
- ====================================
+  
 // BANK INTEGRATIONS TABLE (for Open Banking)
- ====================================
+  
 table "bank_integrations" {
   schema = schema.cashing
 
@@ -1318,9 +1322,9 @@ table "bank_integrations" {
   }
 }
 
- ====================================
+  
 // AUDIT LOG TABLE
- ====================================
+  
 table "audit_logs" {
   schema = schema.cashing
 
@@ -1390,9 +1394,9 @@ table "audit_logs" {
   }
 }
 
- ====================================
+  
 // REPORTS TABLE (for scheduled/saved reports)
- ====================================
+  
 table "reports" {
   schema = schema.cashing
 
@@ -1463,9 +1467,9 @@ table "reports" {
   }
 }
 
- ====================================
+  
 // PASSWORD RESET TOKENS TABLE
- ====================================
+  
 table "password_reset_tokens" {
   schema = schema.cashing
 
@@ -1516,9 +1520,9 @@ table "password_reset_tokens" {
   }
 }
 
- ====================================
+  
 // EMAIL VERIFICATION TOKENS TABLE
- ====================================
+  
 table "email_verification_tokens" {
   schema = schema.cashing
 
@@ -1569,9 +1573,9 @@ table "email_verification_tokens" {
   }
 }
 
- ====================================
+  
 // USER OAUTH PROVIDERS TABLE (for social login - Google)
- ====================================
+  
 table "user_oauth_providers" {
   schema = schema.cashing
 

@@ -384,7 +384,8 @@ export default function RecurringPage() {
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-0">
+          {/* Desktop: tabela */}
+          <CardContent className="p-0 hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -456,6 +457,67 @@ export default function RecurringPage() {
                 ))}
               </TableBody>
             </Table>
+          </CardContent>
+
+          {/* Mobile: cards */}
+          <CardContent className="p-3 md:hidden space-y-2">
+            {recurrings.map((rec) => (
+              <div
+                key={rec.id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background"
+              >
+                <div className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-full text-base ${rec.category?.icon ? "bg-muted" : rec.type === "income" ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}`}>
+                  {rec.category?.icon ? (
+                    <span>{rec.category.icon}</span>
+                  ) : (
+                    <CalendarClock className={`h-4 w-4 ${rec.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{rec.description}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span className="text-xs text-muted-foreground">{FREQUENCY_LABELS[rec.frequency] || rec.frequency}</span>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <span className="text-xs text-muted-foreground">Próx: {formatDate(rec.next_occurrence)}</span>
+                    <Badge variant={rec.is_active ? "default" : "secondary"} className="text-[10px] px-1.5 py-0 h-4">
+                      {rec.is_active ? "Ativa" : "Pausada"}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-1">
+                  <span className={`text-sm font-semibold ${rec.type === "income" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                    {rec.type === "income" ? "+" : "-"}{formatCurrency(rec.amount)}
+                  </span>
+                  <div className="flex items-center gap-0.5">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      disabled={togglingId === rec.id}
+                      onClick={() => handleToggle(rec.id, rec.is_active)}
+                      title={rec.is_active ? "Pausar" : "Ativar"}
+                    >
+                      {togglingId === rec.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : rec.is_active ? (
+                        <PowerOff className="w-3.5 h-3.5" />
+                      ) : (
+                        <Power className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => handleDelete(rec.id)}
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

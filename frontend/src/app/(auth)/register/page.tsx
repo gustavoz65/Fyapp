@@ -115,7 +115,7 @@ export default function RegisterPage() {
         <div className="max-w-md space-y-8 relative z-10">
           <div className="space-y-2">
             <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              FiNext
+              Fy
             </h1>
             <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
               Financial Next Generation

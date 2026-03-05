@@ -317,10 +317,10 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList>
-          <TabsTrigger value="profile">Perfil</TabsTrigger>
-          <TabsTrigger value="notifications">Notificações</TabsTrigger>
-          <TabsTrigger value="security">Segurança</TabsTrigger>
+        <TabsList className="w-full">
+          <TabsTrigger value="profile" className="flex-1">Perfil</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1">Notificações</TabsTrigger>
+          <TabsTrigger value="security" className="flex-1">Segurança</TabsTrigger>
         </TabsList>
 
         {/* ── PERFIL ── */}
@@ -485,7 +485,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Senha */}
-              <div className="flex items-center justify-between py-2 gap-3">
+              <div className="flex flex-wrap items-center justify-between py-2 gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
                     <KeyRound className="h-4 w-4 text-muted-foreground" />
@@ -628,15 +628,15 @@ export default function SettingsPage() {
               <Separator />
 
               {/* Google */}
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+              <div className="flex flex-wrap items-center justify-between py-2 gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
                     <GoogleIcon />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Google</p>
                     {googleProviderLinked ? (
-                      <p className="text-xs text-muted-foreground">{googleProviderLinked.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{googleProviderLinked.email}</p>
                     ) : (
                       <p className="text-xs text-muted-foreground">Não vinculado</p>
                     )}

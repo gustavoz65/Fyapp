@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚂 Railway Setup - Finext Beta 1"
+echo "🚂 Railway Setup - Fy Beta 1"
 echo "=================================="
 echo ""
 
@@ -28,7 +28,7 @@ railway login
 
 echo ""
 echo "🔗 Linkando ao projeto Railway..."
-echo "   (Selecione o projeto 'finext' quando solicitado)"
+echo "   (Selecione o projeto 'Fy' quando solicitado)"
 railway link
 
 echo ""

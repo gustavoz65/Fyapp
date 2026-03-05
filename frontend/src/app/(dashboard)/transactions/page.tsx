@@ -899,6 +899,56 @@ export default function TransactionsPage() {
             </DialogContent>
           </Dialog>
 
+          <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Deletar Todas as Transações</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    Tem certeza que deseja deletar <span className="font-semibold">TODAS</span> as transações da conta:
+                  </p>
+                  <p className="text-base font-bold text-foreground">
+                    {accountToDeleteAll?.name}
+                  </p>
+                </div>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
+                  <p className="text-sm text-destructive font-medium flex items-center gap-2">
+                    <span className="text-lg">⚠️</span>
+                    Esta ação não pode ser desfeita!
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Todas as transações desta conta serão permanentemente removidas do sistema.
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setDeleteAllDialogOpen(false);
+                      setAccountToDeleteAll(null);
+                    }}
+                    disabled={isDeletingAll}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={confirmDeleteAll}
+                    disabled={isDeletingAll}
+                  >
+                    {isDeletingAll && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isDeletingAll ? "Deletando..." : "Sim, Deletar Tudo"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog
             open={dialogOpen}
             onOpenChange={(open) => {

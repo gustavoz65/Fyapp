@@ -833,14 +833,14 @@ export default function TransactionsPage() {
                 <div className="space-y-2">
                   <Label>Conta (Opcional)</Label>
                   <Select
-                    value={bulkDeleteForm.account_id}
-                    onValueChange={(v) => setBulkDeleteForm({ ...bulkDeleteForm, account_id: v })}
+                    value={bulkDeleteForm.account_id || "all"}
+                    onValueChange={(v) => setBulkDeleteForm({ ...bulkDeleteForm, account_id: v === "all" ? "" : v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Todas as contas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as contas</SelectItem>
+                      <SelectItem value="all">Todas as contas</SelectItem>
                       {accounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name} {a.bank_name && `(${a.bank_name})`}

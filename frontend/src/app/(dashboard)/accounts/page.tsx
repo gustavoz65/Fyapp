@@ -27,7 +27,7 @@ const accountTypes = [
 ];
 
 const bankOptions = [
-  { value: "", label: "Nenhum", code: "" },
+  { value: "none", label: "Nenhum", code: "" },
   { value: "Nubank", label: "Nubank", code: "260" },
   { value: "Banco do Brasil", label: "Banco do Brasil", code: "001" },
   { value: "Inter", label: "Inter", code: "077" },
@@ -264,14 +264,22 @@ export default function AccountsPage() {
               <div className="space-y-2">
                 <Label>Banco</Label>
                 <Select
-                  value={form.bank_name}
+                  value={form.bank_name || "none"}
                   onValueChange={(value) => {
-                    const bank = bankOptions.find(b => b.value === value);
-                    setForm({
-                      ...form,
-                      bank_name: bank?.value || "",
-                      bank_code: bank?.code || ""
-                    });
+                    if (value === "none") {
+                      setForm({
+                        ...form,
+                        bank_name: "",
+                        bank_code: ""
+                      });
+                    } else {
+                      const bank = bankOptions.find(b => b.value === value);
+                      setForm({
+                        ...form,
+                        bank_name: bank?.value || "",
+                        bank_code: bank?.code || ""
+                      });
+                    }
                   }}
                 >
                   <SelectTrigger><SelectValue placeholder="Selecione o banco (opcional)" /></SelectTrigger>

@@ -892,9 +892,6 @@ func (s *TransactionService) BulkDeleteByDateRange(ctx context.Context, userID u
 			delta := tx.Amount
 			if tx.Type == model.TransactionTypeIncome {
 				delta = delta.Neg()
-			} else {
-				// expense reversal is positive
-				delta = delta
 			}
 			if existing, ok := accountAdjustments[tx.BankAccountID]; ok {
 				accountAdjustments[tx.BankAccountID] = existing.Add(delta)

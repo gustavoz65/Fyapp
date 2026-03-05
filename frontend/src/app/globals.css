@@ -44,75 +44,74 @@
 }
 
 :root {
-  
-  --primary: #7E8C54;
-  --primary-foreground: #F5F1E8;
-  --sidebar-primary: #7E8C54;
-  --sidebar-primary-foreground: #F5F1E8;
-  --chart-1: #A4B494;
-  --chart-2: #7E8C54;
-  --chart-3: #6B7A47;
-  --chart-4: #5A6A3D;
-  --chart-5: #495A32;
+  --primary: #7e8c54;
+  --primary-foreground: #f5f1e8;
+  --sidebar-primary: #7e8c54;
+  --sidebar-primary-foreground: #f5f1e8;
+  --chart-1: #a4b494;
+  --chart-2: #7e8c54;
+  --chart-3: #6b7a47;
+  --chart-4: #5a6a3d;
+  --chart-5: #495a32;
   --radius: 0.65rem;
-  --background: #F5F1E8;
-  --foreground: #2C2C2C;
-  --card: #FFFFFF;
-  --card-foreground: #2C2C2C;
-  --popover: #FFFFFF;
-  --popover-foreground: #2C2C2C;
-  --secondary: #E8E4D9;
-  --secondary-foreground: #2C2C2C;
-  --muted: #D4D0C5;
-  --muted-foreground: #8B8B8B;
-  --accent: #7E8C54;
-  --accent-foreground: #FFFFFF;
-  --destructive: #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border: #E8E4D9;
-  --input: #FFFFFF;
-  --ring: #7E8C54;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #2C2C2C;
-  --sidebar-accent: #7E8C54;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #E8E4D9;
-  --sidebar-ring: #7E8C54;
+  --background: #f5f1e8;
+  --foreground: #2c2c2c;
+  --card: #ffffff;
+  --card-foreground: #2c2c2c;
+  --popover: #ffffff;
+  --popover-foreground: #2c2c2c;
+  --secondary: #e8e4d9;
+  --secondary-foreground: #2c2c2c;
+  --muted: #d4d0c5;
+  --muted-foreground: #8b8b8b;
+  --accent: #7e8c54;
+  --accent-foreground: #ffffff;
+  --destructive: #e46161;
+  --destructive-foreground: #ffffff;
+  --border: #e8e4d9;
+  --input: #ffffff;
+  --ring: #7e8c54;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2c2c2c;
+  --sidebar-accent: #7e8c54;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #e8e4d9;
+  --sidebar-ring: #7e8c54;
 }
 
 .dark {
-  --background: #111a11;
-  --foreground: #d0d0d0;
-  --card: #1a2b1a;
-  --card-foreground: #d0d0d0;
-  --popover: #1a2b1a;
-  --popover-foreground: #d0d0d0;
-  --primary: #52c041;
-  --primary-foreground: #0e1a0e;
-  --secondary: #1e2f1e;
-  --secondary-foreground: #c0c8c0;
-  --muted: #223022;
-  --muted-foreground: #8fa88f;
-  --accent: #52c041;
-  --accent-foreground: #0e1a0e;
-  --destructive: #e05535;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #111111;
+  --card-foreground: #ededed;
+  --popover: #111111;
+  --popover-foreground: #ededed;
+  --primary: #8fa05c;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ededed;
+  --muted: #1a1a1a;
+  --muted-foreground: #888888;
+  --accent: #8fa05c;
+  --accent-foreground: #0a0a0a;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: #52c041;
-  --chart-1: #52c041;
-  --chart-2: #3da030;
-  --chart-3: #2d8022;
-  --chart-4: #1e5f16;
-  --chart-5: #134010;
-  --sidebar: #152015;
-  --sidebar-foreground: #d0d0d0;
-  --sidebar-primary: #52c041;
-  --sidebar-primary-foreground: #0e1a0e;
-  --sidebar-accent: #1e2f1e;
-  --sidebar-accent-foreground: #d0d0d0;
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: #8fa05c;
+  --chart-1: #8fa05c;
+  --chart-2: #7e8c54;
+  --chart-3: #6b7a47;
+  --chart-4: #5a6a3d;
+  --chart-5: #495a32;
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #8fa05c;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ededed;
   --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: #52c041;
+  --sidebar-ring: #8fa05c;
 }
 
 @layer base {
@@ -121,13 +120,18 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
     font-size: 16px;
     line-height: 1.6;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-bold text-foreground;
-    font-family: 'Playfair Display', serif;
+    font-family: "Playfair Display", serif;
     letter-spacing: -0.02em;
   }
   h1 {
@@ -147,10 +151,10 @@
   }
   p {
     @apply text-foreground/80 leading-relaxed;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
   .brand-text {
-    font-family: 'Playfair Display', serif;
+    font-family: "Playfair Display", serif;
     font-weight: 800;
     letter-spacing: -0.02em;
   }

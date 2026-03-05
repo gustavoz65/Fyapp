@@ -201,8 +201,8 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 
 	whereClause := strings.Join(conditions, " AND ")
 
-	// Count total
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM transactions t WHERE %s", whereClause)
+	// Count total (only active accounts)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM transactions t INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE WHERE %s", whereClause)
 	var total int64
 	err := r.QueryRowContext(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
@@ -218,7 +218,7 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	}
 	pagination.Validate([]string{"transaction_date", "amount", "created_at", "description"})
 
-	// Get data with LEFT JOIN to populate category
+	// Get data with LEFT JOINs to populate category and filter by active accounts
 	query := fmt.Sprintf(`
 		SELECT t.id, t.user_id, t.bank_account_id, t.category_id, t.type, t.amount,
 			t.description, t.notes, t.source, t.transaction_date, t.due_date, t.payment_date,
@@ -227,6 +227,7 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 			t.external_id, t.created_at, t.updated_at,
 			c.id, c.name, c.type, c.color, c.icon, c.is_system, c.is_active
 		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
 		LEFT JOIN categories c ON t.category_id = c.id
 		WHERE %s
 		%s
@@ -247,17 +248,18 @@ func (r *TransactionRepository) GetByFilter(ctx context.Context, filter *model.T
 	return transactions, total, nil
 }
 
-// GetByDateRange retrieves transactions within a date range
+// GetByDateRange retrieves transactions within a date range (only from active accounts)
 func (r *TransactionRepository) GetByDateRange(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]*model.Transaction, error) {
 	query := `
-		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
-			total_installments, installment_group_id, tags, attachment_url,
-			external_id, created_at, updated_at
-		FROM transactions
-		WHERE user_id = ? AND transaction_date BETWEEN ? AND ?
-		ORDER BY transaction_date DESC
+		SELECT t.id, t.user_id, t.bank_account_id, t.category_id, t.type, t.amount,
+			t.description, t.notes, t.source, t.transaction_date, t.due_date, t.payment_date,
+			t.is_paid, t.auto_pay, t.is_recurring, t.recurring_id, t.installment_number,
+			t.total_installments, t.installment_group_id, t.tags, t.attachment_url,
+			t.external_id, t.created_at, t.updated_at
+		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
+		WHERE t.user_id = ? AND t.transaction_date BETWEEN ? AND ?
+		ORDER BY t.transaction_date DESC
 	`
 
 	rows, err := r.QueryContext(ctx, query, userID.String(), startDate, endDate)
@@ -269,18 +271,19 @@ func (r *TransactionRepository) GetByDateRange(ctx context.Context, userID uuid.
 	return r.scanTransactions(rows)
 }
 
-// GetUpcomingBills retrieves unpaid transactions with due dates coming up
+// GetUpcomingBills retrieves unpaid transactions with due dates coming up (only from active accounts)
 func (r *TransactionRepository) GetUpcomingBills(ctx context.Context, userID uuid.UUID, days int) ([]*model.Transaction, error) {
 	query := `
-		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
-			total_installments, installment_group_id, tags, attachment_url,
-			external_id, created_at, updated_at
-		FROM transactions
-		WHERE user_id = ? AND is_paid = FALSE AND type = 'expense'
-			AND due_date IS NOT NULL AND due_date <= DATE_ADD(CURRENT_DATE, INTERVAL ? DAY)
-		ORDER BY due_date ASC
+		SELECT t.id, t.user_id, t.bank_account_id, t.category_id, t.type, t.amount,
+			t.description, t.notes, t.source, t.transaction_date, t.due_date, t.payment_date,
+			t.is_paid, t.auto_pay, t.is_recurring, t.recurring_id, t.installment_number,
+			t.total_installments, t.installment_group_id, t.tags, t.attachment_url,
+			t.external_id, t.created_at, t.updated_at
+		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
+		WHERE t.user_id = ? AND t.is_paid = FALSE AND t.type = 'expense'
+			AND t.due_date IS NOT NULL AND t.due_date <= DATE_ADD(CURRENT_DATE, INTERVAL ? DAY)
+		ORDER BY t.due_date ASC
 	`
 
 	rows, err := r.QueryContext(ctx, query, userID.String(), days)
@@ -292,17 +295,18 @@ func (r *TransactionRepository) GetUpcomingBills(ctx context.Context, userID uui
 	return r.scanTransactions(rows)
 }
 
-// GetRecentTransactions retrieves the most recent transactions
+// GetRecentTransactions retrieves the most recent transactions (only from active accounts)
 func (r *TransactionRepository) GetRecentTransactions(ctx context.Context, userID uuid.UUID, limit int) ([]*model.Transaction, error) {
 	query := `
-		SELECT id, user_id, bank_account_id, category_id, type, amount,
-			description, notes, source, transaction_date, due_date, payment_date,
-			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
-			total_installments, installment_group_id, tags, attachment_url,
-			external_id, created_at, updated_at
-		FROM transactions
-		WHERE user_id = ?
-		ORDER BY transaction_date DESC, created_at DESC
+		SELECT t.id, t.user_id, t.bank_account_id, t.category_id, t.type, t.amount,
+			t.description, t.notes, t.source, t.transaction_date, t.due_date, t.payment_date,
+			t.is_paid, t.auto_pay, t.is_recurring, t.recurring_id, t.installment_number,
+			t.total_installments, t.installment_group_id, t.tags, t.attachment_url,
+			t.external_id, t.created_at, t.updated_at
+		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
+		WHERE t.user_id = ?
+		ORDER BY t.transaction_date DESC, t.created_at DESC
 		LIMIT ?
 	`
 
@@ -437,6 +441,34 @@ func (r *TransactionRepository) Delete(ctx context.Context, id, userID uuid.UUID
 	return nil
 }
 
+// DeleteByDateRange deletes transactions within a date range for a user
+// Returns the number of deleted transactions
+func (r *TransactionRepository) DeleteByDateRange(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) (int64, error) {
+	query := `DELETE FROM transactions WHERE user_id = ? AND transaction_date BETWEEN ? AND ?`
+
+	result, err := r.ExecContext(ctx, query, userID.String(), startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete transactions by date range: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	return rowsAffected, nil
+}
+
+// DeleteByAccountAndDateRange deletes transactions for a specific account within a date range
+// Returns the number of deleted transactions
+func (r *TransactionRepository) DeleteByAccountAndDateRange(ctx context.Context, userID, accountID uuid.UUID, startDate, endDate time.Time) (int64, error) {
+	query := `DELETE FROM transactions WHERE user_id = ? AND bank_account_id = ? AND transaction_date BETWEEN ? AND ?`
+
+	result, err := r.ExecContext(ctx, query, userID.String(), accountID.String(), startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete transactions by account and date range: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	return rowsAffected, nil
+}
+
 // GetNetBalanceForAccount returns the net balance from all paid transactions for an account
 // net = SUM(income) - SUM(expense)
 func (r *TransactionRepository) GetNetBalanceForAccount(ctx context.Context, accountID uuid.UUID) (decimal.Decimal, error) {
@@ -456,13 +488,14 @@ func (r *TransactionRepository) GetNetBalanceForAccount(ctx context.Context, acc
 	return total, nil
 }
 
-// GetSumByType returns the sum of transactions by type for a date range
+// GetSumByType returns the sum of transactions by type for a date range (only from active accounts)
 func (r *TransactionRepository) GetSumByType(ctx context.Context, userID uuid.UUID, txType model.TransactionType, startDate, endDate time.Time) (decimal.Decimal, error) {
 	query := `
-		SELECT COALESCE(SUM(amount), 0)
-		FROM transactions
-		WHERE user_id = ? AND type = ? AND is_paid = TRUE
-			AND transaction_date BETWEEN ? AND ?
+		SELECT COALESCE(SUM(t.amount), 0)
+		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
+		WHERE t.user_id = ? AND t.type = ? AND t.is_paid = TRUE
+			AND t.transaction_date BETWEEN ? AND ?
 	`
 
 	var sum string
@@ -475,7 +508,7 @@ func (r *TransactionRepository) GetSumByType(ctx context.Context, userID uuid.UU
 	return total, nil
 }
 
-// GetSumByCategory returns the sum of transactions by category
+// GetSumByCategory returns the sum of transactions by category (only from active accounts)
 func (r *TransactionRepository) GetSumByCategory(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]model.CategoryAmount, error) {
 	query := `
 		SELECT
@@ -484,6 +517,7 @@ func (r *TransactionRepository) GetSumByCategory(ctx context.Context, userID uui
 			SUM(t.amount) as amount,
 			COUNT(*) as count
 		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
 		LEFT JOIN categories c ON t.category_id = c.id
 		WHERE t.user_id = ? AND t.type = 'expense' AND t.is_paid = TRUE
 			AND t.transaction_date BETWEEN ? AND ?

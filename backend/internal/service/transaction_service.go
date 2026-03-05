@@ -840,3 +840,98 @@ func (s *TransactionService) DeleteAllByAccount(ctx context.Context, userID, acc
 
 	return nil
 }
+
+// BulkDeleteRequest holds parameters for bulk transaction deletion
+type BulkDeleteRequest struct {
+	AccountID *uuid.UUID `json:"account_id,omitempty"`
+	StartDate time.Time  `json:"start_date"`
+	EndDate   time.Time  `json:"end_date"`
+}
+
+// BulkDeleteResult contains the result of bulk deletion
+type BulkDeleteResult struct {
+	DeletedCount int64 `json:"deleted_count"`
+}
+
+// BulkDeleteByDateRange deletes multiple transactions within a date range
+// Can optionally filter by account ID. Returns count of deleted transactions.
+func (s *TransactionService) BulkDeleteByDateRange(ctx context.Context, userID uuid.UUID, req *BulkDeleteRequest) (*BulkDeleteResult, error) {
+	// Validate date range
+	if req.EndDate.Before(req.StartDate) {
+		return nil, fmt.Errorf("data final deve ser posterior à data inicial")
+	}
+
+	// Get transactions to calculate balance adjustments
+	filter := &model.TransactionFilter{
+		UserID:    userID,
+		StartDate: &req.StartDate,
+		EndDate:   &req.EndDate,
+		Page:      1,
+		PageSize:  10000,
+	}
+
+	if req.AccountID != nil {
+		// Validate account belongs to user
+		_, err := s.accountRepo.GetByIDAndUser(ctx, *req.AccountID, userID)
+		if err != nil {
+			return nil, fmt.Errorf("conta bancária inválida: %w", err)
+		}
+		filter.AccountID = req.AccountID
+	}
+
+	// Get transactions to adjust balances
+	transactions, _, err := s.txRepo.GetByFilter(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar transações: %w", err)
+	}
+
+	// Group paid transactions by account to adjust balances
+	accountAdjustments := make(map[uuid.UUID]decimal.Decimal)
+	for _, tx := range transactions {
+		if tx.IsPaid {
+			delta := tx.Amount
+			if tx.Type == model.TransactionTypeIncome {
+				delta = delta.Neg()
+			} else {
+				// expense reversal is positive
+				delta = delta
+			}
+			if existing, ok := accountAdjustments[tx.BankAccountID]; ok {
+				accountAdjustments[tx.BankAccountID] = existing.Add(delta)
+			} else {
+				accountAdjustments[tx.BankAccountID] = delta
+			}
+		}
+	}
+
+	// Delete transactions
+	var deletedCount int64
+	if req.AccountID != nil {
+		deletedCount, err = s.txRepo.DeleteByAccountAndDateRange(ctx, userID, *req.AccountID, req.StartDate, req.EndDate)
+	} else {
+		deletedCount, err = s.txRepo.DeleteByDateRange(ctx, userID, req.StartDate, req.EndDate)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao deletar transações: %w", err)
+	}
+
+	// Adjust account balances
+	for accountID, adjustment := range accountAdjustments {
+		if err := s.accountRepo.AdjustBalance(ctx, accountID, adjustment); err != nil {
+			s.logger.Error().Err(err).
+				Str("account_id", accountID.String()).
+				Str("adjustment", adjustment.String()).
+				Msg("falha ao ajustar saldo da conta após deleção em lote")
+		}
+	}
+
+	s.logger.Info().
+		Str("user_id", userID.String()).
+		Str("start_date", req.StartDate.Format("2006-01-02")).
+		Str("end_date", req.EndDate.Format("2006-01-02")).
+		Int64("deleted", deletedCount).
+		Msg("transações deletadas em lote")
+
+	return &BulkDeleteResult{DeletedCount: deletedCount}, nil
+}

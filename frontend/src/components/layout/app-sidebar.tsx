@@ -21,7 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import {
   ArrowLeftRight,
   ChevronUp,
@@ -32,7 +32,7 @@ import {
   Repeat,
   Settings,
   Tags,
-  Target
+  Target,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -50,7 +50,7 @@ const navItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthStore();
 
   const initials = user
     ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
@@ -65,7 +65,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="px-4 py-6 flex items-center justify-center border-b border-sidebar-border/50">
-          <span className="text-2xl font-bold text-sidebar-primary">FiNext</span>
+          <span className="text-2xl font-bold text-sidebar-primary">Fy</span>
         </div>
       </SidebarHeader>
 
@@ -96,8 +96,13 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={user?.avatar_url ?? undefined} alt={initials} />
-                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    <AvatarImage
+                      src={user?.avatar_url ?? undefined}
+                      alt={initials}
+                    />
+                    <AvatarFallback className="text-xs">
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
                   <span className="truncate flex-1 text-left">
                     {user ? `${user.first_name} ${user.last_name}` : "..."}
@@ -114,8 +119,13 @@ export function AppSidebar() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar_url ?? undefined} alt={initials} />
-                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                      <AvatarImage
+                        src={user?.avatar_url ?? undefined}
+                        alt={initials}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {initials}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-medium">

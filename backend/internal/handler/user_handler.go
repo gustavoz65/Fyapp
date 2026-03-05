@@ -82,3 +82,14 @@ func (h *UserHandler) UpdateSettings(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, settings)
 }
+
+func (h *UserHandler) CompleteOnboarding(c echo.Context) error {
+	userID := middleware.GetUserID(c)
+
+	user, err := h.userService.CompleteOnboarding(c.Request().Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, user)
+}

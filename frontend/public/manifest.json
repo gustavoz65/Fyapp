@@ -1,7 +1,7 @@
 {
-  "name": "FiNext - Gestão Financeira Inteligente",
-  "short_name": "FiNext",
-  "description": "Transforme a forma como você gerencia suas finanças com FiNext",
+  "name": "Fy - Gestão Financeira Inteligente",
+  "short_name": "Fy",
+  "description": "Transforme a forma como você gerencia suas finanças com Fy",
   "start_url": "/transactions",
   "scope": "/",
   "display": "standalone",

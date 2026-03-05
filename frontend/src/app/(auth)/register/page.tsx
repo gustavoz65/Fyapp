@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { auth, googleProvider } from "@/lib/firebase";
 import { registerSchema } from "@/lib/schemas";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import { signInWithPopup } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { register, socialLogin } = useAuth();
+  const { register, socialLogin } = useAuthStore();
   const router = useRouter();
 
   function updateField(field: string, value: string) {
@@ -115,7 +115,7 @@ export default function RegisterPage() {
         <div className="max-w-md space-y-8 relative z-10">
           <div className="space-y-2">
             <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              FiNext
+              Fy
             </h1>
             <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
               Financial Next Generation

@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { ThemeProvider } from "@/providers/theme-provider";
-import { AuthProvider } from "@/providers/auth-provider";
+import { AuthInitializer } from "@/components/auth-initializer";
 import { Toaster } from "@/components/ui/sonner";
-import { Playfair_Display, Inter } from "next/font/google";
+import { ThemeProvider } from "@/providers/theme-provider";
+import type { Metadata } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
+import "./globals.css";
 const playfairDisplay = Playfair_Display({
   weight: ["400", "700", "800"],
   subsets: ["latin"],
@@ -16,8 +16,8 @@ const inter = Inter({
   display: "swap",
 });
 export const metadata: Metadata = {
-  title: "FiNext - Gestão Financeira Inteligente",
-  description: "Transforme a forma como você gerencia suas finanças com FiNext",
+  title: "Fy - Gestão Financeira Inteligente",
+  description: "Transforme a forma como você gerencia suas finanças com Fy",
   manifest: "/manifest.json",
   themeColor: "#0f172a",
   viewport: {
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "FiNext",
+    title: "Fy",
   },
 };
 export default function RootLayout({
@@ -38,13 +38,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className="light">
-      <body className={`antialiased ${playfairDisplay.variable} ${inter.variable}`}>
-        <ThemeProvider defaultTheme="light" forcedTheme="light">
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body
+        className={`antialiased ${playfairDisplay.variable} ${inter.variable}`}
+      >
+        <ThemeProvider defaultTheme="light">
+          <AuthInitializer />
+          {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import {
   ArrowRight,
   Building2,
@@ -63,7 +63,7 @@ const LEFT_PANEL_CONTENT = {
 };
 
 export default function OnboardingPage() {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuthStore();
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -87,17 +87,28 @@ export default function OnboardingPage() {
       return;
     }
     // Verifica via API se o usuário já tem contas — mais confiável que localStorage
-    api.get<{ data?: unknown[] } | unknown[]>("/accounts").then((res) => {
-      const accounts = Array.isArray(res) ? res : (res as { data?: unknown[] }).data ?? [];
-      if (accounts.length > 0) {
-        router.push("/dashboard");
-      }
-    }).catch(() => {
-      // Se falhar a verificação, deixa no onboarding
-    });
+    api
+      .get<{ data?: unknown[] } | unknown[]>("/accounts")
+      .then((res) => {
+        const accounts = Array.isArray(res)
+          ? res
+          : ((res as { data?: unknown[] }).data ?? []);
+        if (accounts.length > 0) {
+          router.push("/dashboard");
+        }
+      })
+      .catch(() => {
+        // Se falhar a verificação, deixa no onboarding
+      });
   }, [isAuthenticated, authLoading, router]);
 
-  function completeOnboarding() {
+  async function completeOnboarding() {
+    try {
+      await api.patch("/users/me/onboarding-complete");
+      await refreshUser();
+    } catch {
+      // Falha silenciosa — redireciona mesmo assim
+    }
     router.push("/dashboard");
   }
 
@@ -178,7 +189,7 @@ export default function OnboardingPage() {
         <div className="max-w-md space-y-8 relative z-10 transition-all duration-300">
           <div className="space-y-2">
             <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              FiNext
+              Fy
             </h1>
             <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
               Financial Next Generation

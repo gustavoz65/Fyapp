@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { auth, googleProvider } from "@/lib/firebase";
 import { loginSchema } from "@/lib/schemas";
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import { signInWithPopup } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, socialLogin } = useAuth();
+  const { login, socialLogin } = useAuthStore();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -26,10 +26,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Validar com Zod
       const validated = loginSchema.parse({ email, password });
-      await login(validated);
-      router.push("/dashboard");
+      const user = await login(validated);
+      router.push(user.onboarding_completed ? "/dashboard" : "/onboarding");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
@@ -44,20 +43,16 @@ export default function LoginPage() {
   async function handleGoogleLogin() {
     setIsLoading(true);
     try {
-      // 1. Fazer login com Google via Firebase
       const result = await signInWithPopup(auth, googleProvider);
-
-      // 2. Obter ID token do Firebase
       const idToken = await result.user.getIdToken();
 
-      // 3. Enviar para o backend
-      await socialLogin({
+      const user = await socialLogin({
         provider: "google",
         id_token: idToken,
         device_info: navigator.userAgent,
       });
 
-      router.push("/dashboard");
+      router.push(user.onboarding_completed ? "/dashboard" : "/onboarding");
     } catch (error) {
       console.error("Erro no login com Google:", error);
       if (error instanceof Error) {
@@ -99,7 +94,7 @@ export default function LoginPage() {
         <div className="max-w-md space-y-8 relative z-10">
           <div className="space-y-2">
             <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              FiNext
+              Fy
             </h1>
             <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
               Financial Next Generation
@@ -131,7 +126,7 @@ export default function LoginPage() {
           </div>
           <blockquote className="border-l-4 border-primary/50 pl-6 py-4 bg-primary/5 rounded-r-lg">
             <p className="italic text-foreground/80">
-              &quot;FiNext mudou completamente minha relação com o dinheiro.
+              &quot;Fy mudou completamente minha relação com o dinheiro.
               Finalmente tenho controle real das minhas finanças.&quot;
             </p>
             <footer className="mt-3 text-sm font-semibold text-primary">

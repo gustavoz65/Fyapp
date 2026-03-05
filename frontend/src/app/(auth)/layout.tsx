@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/providers/auth-provider";
+import { useAuthStore } from "@/stores/auth-store";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -9,15 +9,12 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      const onboardingCompleted = localStorage.getItem(
-        `onboarding_completed_${user.id}`,
-      );
-      router.replace(onboardingCompleted ? "/dashboard" : "/onboarding");
+      router.replace(user.onboarding_completed ? "/dashboard" : "/onboarding");
     }
   }, [isAuthenticated, isLoading, user, router]);
 

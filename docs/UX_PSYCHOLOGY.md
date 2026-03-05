@@ -12,13 +12,13 @@
 
 **Toda decisão tem motivo psicológico:**
 
-| Decisão de Design | Psicologia Aplicada | Resultado |
-|-------------------|---------------------|-----------|
-| Trial 7 dias grátis SEM pedir cartão | Reciprocidade | 40-50% conversão vs 5-10% com cartão |
-| Progress bar no onboarding | Efeito Zeigarnik | 80% completion vs 40% sem |
-| "Recomendado" na opção | Viés de autoridade | 60% escolhem opção marcada |
-| "Complete perfil 65%" | Loop de dopamina | +40% engagement |
-| "Experimente GRÁTIS" | Aversão à perda | Baixa taxa de cancelamento |
+| Decisão de Design                    | Psicologia Aplicada | Resultado                            |
+| ------------------------------------ | ------------------- | ------------------------------------ |
+| Trial 7 dias grátis SEM pedir cartão | Reciprocidade       | 40-50% conversão vs 5-10% com cartão |
+| Progress bar no onboarding           | Efeito Zeigarnik    | 80% completion vs 40% sem            |
+| "Recomendado" na opção               | Viés de autoridade  | 60% escolhem opção marcada           |
+| "Complete perfil 65%"                | Loop de dopamina    | +40% engagement                      |
+| "Experimente GRÁTIS"                 | Aversão à perda     | Baixa taxa de cancelamento           |
 
 ---
 
@@ -29,6 +29,7 @@
 **❌ Ruim:** "Assine agora por R$39,90/mês"
 
 **✅ Netflix:**
+
 ```
 1 MÊS GRÁTIS (letras garrafais)
 cancele quando quiser (letra pequena)
@@ -44,6 +45,7 @@ cancele quando quiser (letra pequena)
 **❌ Ruim:** "Aprenda inglês"
 
 **✅ Duolingo:**
+
 - Streak de 47 dias 🔥 (vai perder tudo se parar?)
 - "Você está no top 10% dos usuários!" (status social)
 - Owl triste se você não fizer a lição (culpa)
@@ -58,6 +60,7 @@ cancele quando quiser (letra pequena)
 **❌ Ruim:** "Premium por R$21,90/mês"
 
 **✅ Spotify:**
+
 - Free tier com ads (dor intencional)
 - "Remova os anúncios" (alívio da dor)
 - "Baixe suas músicas" (novo benefício)
@@ -73,6 +76,7 @@ cancele quando quiser (letra pequena)
 **❌ Ruim:** "Cadastre-se"
 
 **✅ Notion:**
+
 - Templates prontos (quick win imediato)
 - Workspace vazio já começa com exemplo (não assusta)
 - "Convide seu time" (efeito rede)
@@ -88,20 +92,24 @@ cancele quando quiser (letra pequena)
 ### 1. Reciprocidade (Robert Cialdini)
 
 **Conceito:**
+
 - Humanos sentem necessidade de retribuir favores
 - Você dá algo → pessoa sente-se em dívida
 
 **Aplicação:**
+
 - Trial grátis SEM pedir cartão
 - Free tier generoso
 - Conteúdo grátis (blog, ebooks)
 
 **Evidência:**
+
 - Dropbox: 2GB grátis → 500M usuários
 - Spotify: 3 meses grátis → 200M pagantes
-- **finext:** 7 dias grátis → esperamos 40-50% conversão
+- **Fy:** 7 dias grátis → esperamos 40-50% conversão
 
 **Como implementar:**
+
 ```typescript
 // Trial sem cartão
 const startTrial = async () => {
@@ -123,20 +131,24 @@ const startTrial = async () => {
 ### 2. Escassez e Urgência
 
 **Conceito:**
+
 - Humanos valorizam mais o que é raro/limitado
 - FOMO (Fear of Missing Out)
 
 **Aplicação:**
+
 - "Seu trial acaba em 2 dias!"
 - "Últimas 24h para manter funcionalidade"
 - "Oferta válida até amanhã"
 
 **⚠️ Cuidado:**
+
 - **Ética:** Usar escassez REAL, não fake
 - ❌ "Apenas 2 vagas!" (mentira)
 - ✅ "Trial acaba em 2 dias" (verdade)
 
 **Evidência:**
+
 - Booking.com: "2 pessoas vendo este hotel" → +33% conversão
 - Amazon: "Só restam 3 unidades" → +12% vendas
 
@@ -145,16 +157,19 @@ const startTrial = async () => {
 ### 3. Prova Social
 
 **Conceito:**
+
 - Humanos seguem comportamento de grupo
 - "Se muitos fazem, deve ser bom"
 
 **Aplicação:**
+
 - "Junte-se a 10.000+ usuários"
 - "95% economizam R$200/mês"
 - Depoimentos de clientes
 - "Top 10% dos usuários"
 
 **Exemplo visual:**
+
 ```
 ┌─────────────────────────────────────┐
 │ 👥 Junte-se a 10.243 usuários       │
@@ -165,6 +180,7 @@ const startTrial = async () => {
 ```
 
 **Evidência:**
+
 - Yelp reviews: +18% conversão vs sem reviews
 - Amazon ratings: produtos com 50+ reviews vendem 4x mais
 
@@ -173,17 +189,20 @@ const startTrial = async () => {
 ### 4. Comprometimento e Consistência
 
 **Conceito:**
+
 - Pessoa que dá passo pequeno → mais provável dar próximo
 - "Já comecei, vou terminar"
 - Sunk cost (já investi, não vou desperdiçar)
 
 **Aplicação:**
+
 - Onboarding gradual (pequenos passos)
 - "Complete perfil 65%"
 - Metas criadas pelo próprio usuário
 - Histórico de conquistas
 
 **Foot-in-the-door technique:**
+
 ```
 Passo 1: "Qual seu nome?"           ← Fácil, todo mundo faz
 Passo 2: "Qual seu email?"          ← Já começou, vai continuar
@@ -196,6 +215,7 @@ Tudo de uma vez: "Preencha 20 campos" ← Desiste
 ```
 
 **Evidência:**
+
 - LinkedIn: "Complete seu perfil" → +40% engagement
 - Duolingo: "Streak de 47 dias" → +70% retenção
 
@@ -204,10 +224,12 @@ Tudo de uma vez: "Preencha 20 campos" ← Desiste
 ### 5. Ancoragem (Pricing)
 
 **Conceito:**
+
 - Primeira informação "ancora" percepção
 - Comparações subsequentes são relativas à âncora
 
 **Aplicação no Pricing:**
+
 ```
 ❌ Ruim (sem contexto):
 Pro: R$59,99/mês
@@ -221,11 +243,13 @@ Free:  R$0/mês
 ```
 
 **Goldilocks Effect:**
+
 - Plano caro (âncora)
 - **Plano médio (60% escolhem)** ← "nem muito caro, nem muito barato"
 - Plano grátis (comparação)
 
 **Evidência:**
+
 - Apple: iPhone Pro Max R$9k faz Pro R$7k parecer "razoável"
 - SaaS: 60% escolhem plano do meio
 
@@ -234,10 +258,12 @@ Free:  R$0/mês
 ### 6. Aversão à Perda (Loss Aversion)
 
 **Conceito:**
+
 - Perder algo DOI 2x mais que ganhar
 - "Não quero perder o que já tenho"
 
 **Aplicação:**
+
 ```
 ┌─────────────────────────────────────┐
 │ 🎉 Seu trial está acabando!         │
@@ -253,10 +279,12 @@ Free:  R$0/mês
 ```
 
 **Framing negativo funciona melhor:**
+
 - ❌ "Ganhe categorização automática" (6% conversão)
 - ✅ "Não perca categorização automática" (14% conversão)
 
 **Evidência:**
+
 - Kahneman & Tversky: Perda pesa 2.25x mais que ganho equivalente
 - Experimento: "Economize R$5" (40%) vs "Não perca R$5" (70%)
 
@@ -265,10 +293,12 @@ Free:  R$0/mês
 ### 7. Efeito Zeigarnik (Tarefas Incompletas)
 
 **Conceito:**
+
 - Humanos odeiam deixar coisas incompletas
 - Tendência obsessiva de completar tarefas iniciadas
 
 **Aplicação:**
+
 ```
 ┌─────────────────────────────────────┐
 │ 👤 Gustavo                    65% ✓ │
@@ -283,11 +313,13 @@ Free:  R$0/mês
 ```
 
 **Por que funciona:**
+
 - Cérebro vê tarefa incompleta → tensão
 - Completar → dopamina liberada → alívio
 - Cria loop viciante
 
 **Evidência:**
+
 - LinkedIn: Progress bar → +20% profile completion
 - Angry Birds: "3 estrelas" → +60% re-tentativas
 
@@ -296,19 +328,25 @@ Free:  R$0/mês
 ### 8. Gamificação (Loop de Dopamina)
 
 **Conceito:**
+
 - Dopamina é liberada quando atingimos objetivo
 - Cria vício positivo (quer sentir de novo)
 - Progresso visível = motivação
 
 **Aplicação:**
+
 ```typescript
 // Sistema de badges
 const badges = [
-  { id: 'first-week', title: 'Primeira semana!', trigger: 7 },
-  { id: 'categorizer', title: '100 transações categorizadas', trigger: 100 },
-  { id: 'goal-setter', title: 'Primeira meta atingida', trigger: 'goal_completed' },
-  { id: 'streak-7', title: '7 dias consecutivos', trigger: 'streak_7' },
-  { id: 'top-10', title: 'Top 10% mais organizado', trigger: 'percentile_90' },
+  { id: "first-week", title: "Primeira semana!", trigger: 7 },
+  { id: "categorizer", title: "100 transações categorizadas", trigger: 100 },
+  {
+    id: "goal-setter",
+    title: "Primeira meta atingida",
+    trigger: "goal_completed",
+  },
+  { id: "streak-7", title: "7 dias consecutivos", trigger: "streak_7" },
+  { id: "top-10", title: "Top 10% mais organizado", trigger: "percentile_90" },
 ];
 
 // Leaderboard (cuidado: pode desmotivar quem está atrás)
@@ -320,6 +358,7 @@ const stats = {
 ```
 
 **Elementos de gamificação:**
+
 - ✅ Progress bars
 - ✅ Badges/conquistas
 - ✅ Streaks (consecutivos)
@@ -327,6 +366,7 @@ const stats = {
 - ⚠️ Leaderboards (competição pode estressar)
 
 **Evidência:**
+
 - Duolingo: Gamificação → 70% retenção D7
 - Fitbit: Steps tracking → +35% exercício
 
@@ -346,38 +386,38 @@ Para comportamento acontecer:
 = AÇÃO
 ```
 
-### Aplicação no finext
+### Aplicação no Fy
 
 #### Comportamento: Aceitar trial Open Finance
 
-| Componente | Implementação | Resultado |
-|------------|---------------|-----------|
-| **Motivation** | "Economize 10 min/dia" | ALTO (benefício claro) |
-| **Ability** | 1 clique, sem cartão | ALTO (super fácil) |
-| **Trigger** | No onboarding, opção "recomendada" | Momento certo |
-| **→ Conversão** | | **40-50%** ✅ |
+| Componente      | Implementação                      | Resultado              |
+| --------------- | ---------------------------------- | ---------------------- |
+| **Motivation**  | "Economize 10 min/dia"             | ALTO (benefício claro) |
+| **Ability**     | 1 clique, sem cartão               | ALTO (super fácil)     |
+| **Trigger**     | No onboarding, opção "recomendada" | Momento certo          |
+| **→ Conversão** |                                    | **40-50%** ✅          |
 
 ---
 
 #### Comportamento: Converter trial→Pro
 
-| Componente | Implementação | Resultado |
-|------------|---------------|-----------|
-| **Motivation** | "Vai perder 156 transações" | ALTO (aversão à perda) |
-| **Ability** | 1 clique, já tem cartão | ALTO (sem fricção) |
-| **Trigger** | Dia 7, notificação + email | Momento certo (urgência) |
-| **→ Conversão** | | **45-50%** ✅ |
+| Componente      | Implementação               | Resultado                |
+| --------------- | --------------------------- | ------------------------ |
+| **Motivation**  | "Vai perder 156 transações" | ALTO (aversão à perda)   |
+| **Ability**     | 1 clique, já tem cartão     | ALTO (sem fricção)       |
+| **Trigger**     | Dia 7, notificação + email  | Momento certo (urgência) |
+| **→ Conversão** |                             | **45-50%** ✅            |
 
 ---
 
 #### Comportamento: Completar perfil
 
-| Componente | Implementação | Resultado |
-|------------|---------------|-----------|
-| **Motivation** | "+10% = desbloqueia relatórios" | MÉDIO (benefício futuro) |
-| **Ability** | 1 campo de cada vez | ALTO (fácil) |
-| **Trigger** | Dashboard header sempre visível | Sempre presente |
-| **→ Conversão** | | **60-70%** ✅ |
+| Componente      | Implementação                   | Resultado                |
+| --------------- | ------------------------------- | ------------------------ |
+| **Motivation**  | "+10% = desbloqueia relatórios" | MÉDIO (benefício futuro) |
+| **Ability**     | 1 campo de cada vez             | ALTO (fácil)             |
+| **Trigger**     | Dashboard header sempre visível | Sempre presente          |
+| **→ Conversão** |                                 | **60-70%** ✅            |
 
 ---
 
@@ -398,6 +438,7 @@ Para comportamento acontecer:
 **Regra:** Quando motivação é baixa, ability precisa ser MUITO alta
 
 **Exemplo:**
+
 - Motivação baixa: "Adicionar endereço" (não vê benefício imediato)
 - Ability precisa ser MUITO alta: 1 campo, auto-complete, skippable
 - Se pedir 10 campos → 0% completam
@@ -411,6 +452,7 @@ Para comportamento acontecer:
 **Definição:** Truques de design que manipulam usuário contra seu interesse
 
 **Por que NÃO usar:**
+
 - ❌ Ética: não é certo
 - ❌ Long-term: destrói confiança
 - ❌ Churn: usuários cancelam logo depois
@@ -424,10 +466,12 @@ Para comportamento acontecer:
 #### 1. Roach Motel (Fácil entrar, difícil sair)
 
 **❌ Dark:**
+
 - Assinar: 1 clique
 - Cancelar: ligar, falar com atendente, esperar 30min
 
-**✅ finext:**
+**✅ Fy:**
+
 - Assinar: 1 clique
 - Cancelar: 1 clique em Settings → "Cancelar assinatura"
 
@@ -436,10 +480,12 @@ Para comportamento acontecer:
 #### 2. Hidden Costs (Custos escondidos)
 
 **❌ Dark:**
+
 - "Grátis!" (esconde que cobra depois)
 - Preço final só aparece no checkout
 
-**✅ finext:**
+**✅ Fy:**
+
 - Preço claro em todas páginas
 - Trial: "Grátis por 7 dias, depois R$59,99/mês"
 
@@ -448,17 +494,21 @@ Para comportamento acontecer:
 #### 3. Trick Questions (Perguntas confusas)
 
 **❌ Dark:**
+
 ```
 □ Não me envie promoções
 □ Não quero descontos
 ```
+
 (Dupla negativa confunde → usuário erra)
 
-**✅ finext:**
+**✅ Fy:**
+
 ```
 □ Quero receber promoções
 □ Quero receber descontos
 ```
+
 (Claro e direto)
 
 ---
@@ -466,10 +516,12 @@ Para comportamento acontecer:
 #### 4. Confirmshaming (Guilt trip)
 
 **❌ Dark:**
+
 - "Não obrigado, eu não me importo com minhas finanças" (guilt)
 - "Não quero economizar dinheiro"
 
-**✅ finext:**
+**✅ Fy:**
+
 - "Continuar Free" (neutro)
 - "Não, obrigado" (respeitoso)
 
@@ -478,10 +530,12 @@ Para comportamento acontecer:
 #### 5. Fake Urgency (Urgência falsa)
 
 **❌ Dark:**
+
 - "Apenas 2 vagas restantes!" (mentira)
 - "Oferta termina em 3h!" (reset todo dia)
 
-**✅ finext:**
+**✅ Fy:**
+
 - "Seu trial acaba em 2 dias" (verdade)
 - "Oferta válida até 31/12" (data real)
 
@@ -490,10 +544,12 @@ Para comportamento acontecer:
 #### 6. Bait and Switch (Isca e troca)
 
 **❌ Dark:**
+
 - Anunciar recurso grátis
 - No último momento: "Ah, isso é pago"
 
-**✅ finext:**
+**✅ Fy:**
+
 - Se recurso é Pro, avisar ANTES do usuário tentar usar
 - "Este recurso está disponível no plano Pro"
 
@@ -502,10 +558,12 @@ Para comportamento acontecer:
 #### 7. Forced Continuity (Continuidade forçada)
 
 **❌ Dark:**
+
 - Trial acaba → cobra cartão SEM avisar
 - Dificulta cancelamento antes do fim do trial
 
-**✅ finext:**
+**✅ Fy:**
+
 - Avisar 3 dias antes: "Trial acaba em 3 dias"
 - Email dia 7: "Trial acabou, quer continuar?"
 - Permitir cancelar DURANTE o trial
@@ -515,10 +573,12 @@ Para comportamento acontecer:
 #### 8. Sneak into Basket (Adicionar sem consentimento)
 
 **❌ Dark:**
+
 - Checkbox pré-marcado: "Adicionar seguro R$19,90"
 - Usuário não vê → paga sem querer
 
-**✅ finext:**
+**✅ Fy:**
+
 - Checkboxes sempre desmarcadas por padrão
 - Opt-in explícito
 
@@ -531,11 +591,13 @@ Para comportamento acontecer:
 #### PAS (Problem - Agitate - Solve)
 
 **Estrutura:**
+
 1. **Problem:** Identifica dor do usuário
 2. **Agitate:** Intensifica a dor
 3. **Solve:** Apresenta solução
 
 **Exemplo:**
+
 ```
 [Problem]
 Você gasta 15 minutos todo dia adicionando transações manualmente?
@@ -545,7 +607,7 @@ São 7.5 horas por mês fazendo trabalho repetitivo.
 Tempo que você poderia estar com a família ou fazendo o que gosta.
 
 [Solve]
-Com finext Pro, suas transações aparecem automaticamente.
+Com Fy Pro, suas transações aparecem automaticamente.
 Zero trabalho manual. Zero estresse.
 
 [CTA]
@@ -557,12 +619,14 @@ Experimente grátis por 7 dias →
 #### AIDA (Attention - Interest - Desire - Action)
 
 **Estrutura:**
+
 1. **Attention:** Chama atenção
 2. **Interest:** Cria interesse
 3. **Desire:** Cria desejo
 4. **Action:** CTA
 
 **Exemplo:**
+
 ```
 [Attention]
 🚨 Você está gastando R$1.200/mês em delivery
@@ -573,7 +637,7 @@ No ritmo atual, são R$14.400/ano.
 
 [Desire]
 E se você pudesse receber alertas ANTES de estourar o orçamento?
-Com finext Pro, você seria avisado: "Você vai estourar em 2 dias"
+Com Fy Pro, você seria avisado: "Você vai estourar em 2 dias"
 
 [Action]
 Ative alertas inteligentes →
@@ -584,6 +648,7 @@ Ative alertas inteligentes →
 ### Palavras que Convertem
 
 **Poderosas:**
+
 - ✅ Você (personaliza)
 - ✅ Grátis (todo mundo ama)
 - ✅ Porque (justifica)
@@ -591,6 +656,7 @@ Ative alertas inteligentes →
 - ✅ Novo (novidade)
 
 **Fracas:**
+
 - ❌ Nós/nosso (foco errado)
 - ❌ Talvez (incerteza)
 - ❌ Eventualmente (não urgente)
@@ -601,11 +667,13 @@ Ative alertas inteligentes →
 ### Benefícios vs Features
 
 **❌ Features (o que é):**
+
 - "Categorização automática com IA"
 - "Sync Open Banking"
 - "Relatórios customizáveis"
 
 **✅ Benefícios (o que ganha):**
+
 - "Economize 15 min/dia - IA categoriza para você"
 - "Suas transações aparecem sozinhas - zero digitação"
 - "Veja exatamente onde seu dinheiro vai"
@@ -619,6 +687,7 @@ Ative alertas inteligentes →
 ### O que testar
 
 **1. Headlines/CTAs:**
+
 ```
 A: "Cadastre-se"          vs  B: "Comece grátis"
 A: "Experimente agora"    vs  B: "7 dias grátis"
@@ -626,12 +695,14 @@ A: "Saiba mais"           vs  B: "Economize 10 min/dia"
 ```
 
 **2. Cores de botões:**
+
 ```
 A: Verde (seguro)         vs  B: Laranja (urgência)
 A: Azul (confiança)       vs  B: Vermelho (ação)
 ```
 
 **3. Timing de gatilhos:**
+
 ```
 A: Mostrar upgrade após 10 transações
 B: Mostrar upgrade após 7 dias
@@ -639,6 +710,7 @@ C: Mostrar upgrade após estourar meta
 ```
 
 **4. Pricing display:**
+
 ```
 A: R$59,99/mês
 B: R$1,99/dia (parece mais barato)
@@ -650,12 +722,14 @@ C: R$59,99/mês (economize R$220/ano vs mensal)
 ### Como testar
 
 **Ferramentas:**
+
 - Google Optimize (grátis)
 - Optimizely (pago, mais robusto)
 - VWO (Visual Website Optimizer)
 - Amplitude (analytics + experiments)
 
 **Processo:**
+
 1. **Hipótese:** "Botão laranja vai converter 15% a mais"
 2. **Teste:** 50% vê verde (A), 50% vê laranja (B)
 3. **Métrica:** Taxa de cliques
@@ -663,6 +737,7 @@ C: R$59,99/mês (economize R$220/ano vs mensal)
 5. **Decisão:** Implementar vencedor
 
 **Cuidado:**
+
 - ⚠️ Não testar 10 coisas ao mesmo tempo (impossível saber o que funcionou)
 - ⚠️ Esperar significância estatística (não concluir com 50 usuários)
 - ⚠️ Testar uma variável por vez (isola o efeito)
@@ -676,22 +751,26 @@ C: R$59,99/mês (economize R$220/ano vs mensal)
 Quando criar qualquer fluxo de conversão, validar:
 
 #### 1. Motivação está clara?
+
 - [ ] Benefício é óbvio em <3 segundos?
 - [ ] Benefício é específico (não genérico)?
 - [ ] Usa números concretos? ("economize 10 min", não "economize tempo")
 
 #### 2. Ability está maximizada?
+
 - [ ] Menos de 3 cliques?
 - [ ] Menos de 3 campos de formulário?
 - [ ] Tem skip/later option?
 - [ ] Funciona mobile? (60% do tráfego)
 
 #### 3. Trigger está no momento certo?
+
 - [ ] Aparece no momento de dor/necessidade?
 - [ ] Não interrompe fluxo crítico?
 - [ ] Pode ser facilmente dispensado?
 
 #### 4. Sem dark patterns?
+
 - [ ] É fácil cancelar quanto assinar?
 - [ ] Preços claros?
 - [ ] Sem confirmshaming?
@@ -746,21 +825,25 @@ Quando criar qualquer fluxo de conversão, validar:
 ### Tools e Software
 
 **Analytics:**
+
 - Amplitude (eventos, funnels, cohorts)
 - Mixpanel (similar Amplitude)
 - Google Analytics 4 (básico, grátis)
 
 **A/B Testing:**
+
 - Google Optimize (grátis)
 - Optimizely (pago)
 - VWO (Visual Website Optimizer)
 
 **Heatmaps/Session Recording:**
+
 - Hotjar (grátis até 35 sessões/dia)
 - FullStory (pago, mais robusto)
 - Microsoft Clarity (grátis, ilimitado!)
 
 **User Feedback:**
+
 - Typeform (forms bonitos)
 - SurveyMonkey (surveys)
 - UserTesting.com (testar com usuários reais)
@@ -777,15 +860,18 @@ Quando criar qualquer fluxo de conversão, validar:
 4. ✅ Converter no momento certo (quando usuário está pronto)
 
 **É win-win:**
+
 - Usuário: Resolve problema, economiza tempo/dinheiro
 - Empresa: Constrói negócio sustentável, ganha dinheiro
 
 **Seria errado se:**
+
 - ❌ Cobrasse sem entregar valor (scam)
 - ❌ Escondesse custos (dark pattern)
 - ❌ Tornasse impossível cancelar (dark UX)
 
 **Mas quando bem feito:**
+
 - ✅ Ética: entrega valor real
 - ✅ Long-term: constrói confiança
 - ✅ Crescimento: word-of-mouth positivo
@@ -800,4 +886,4 @@ Bem-vindo ao lado sombrio do product design! 🎭
 ---
 
 **Documento mantido por:** Product Team
-**Feedback:** gustavo@finext.com.br
+**Feedback:** gustavo@Fy.com.br

@@ -143,7 +143,8 @@ export default function TransactionsPage() {
       ]);
       setTransactions(txData?.data || []);
       setTotalPages(txData?.total_pages || 1);
-      setAccounts(accs || []);
+      // Filtrar apenas contas ativas 
+      setAccounts((accs || []).filter(a => a.is_active !== false));
       setCategories(cats || []);
     } catch {
       // empty
@@ -362,9 +363,21 @@ export default function TransactionsPage() {
         setImportMessage(status.message || "Processando...");
 
         if (status.status === "completed") {
-          toast.success(
-            `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
-          );
+          const imported = status.imported || 0;
+          const duplicates = status.duplicates || 0;
+
+          if (duplicates > 0 && imported === 0) {
+            toast.warning(
+              `Nenhuma transação nova importada. ${duplicates} transação(ões) já existia(m) no sistema.`,
+              { description: "Use 'Forçar reimportação' se quiser ignorar duplicatas." }
+            );
+          } else if (duplicates > 0) {
+            toast.success(
+              `Importação concluída! ${imported} nova(s), ${duplicates} duplicada(s) ignorada(s).`
+            );
+          } else {
+            toast.success(`Importação concluída! ${imported} transação(ões) importada(s).`);
+          }
           ws.close();
           setImportDialogOpen(false);
           setImportForm({
@@ -431,9 +444,21 @@ export default function TransactionsPage() {
 
         if (status.status === "completed") {
           clearInterval(interval);
-          toast.success(
-            `Importação concluída! ${status.imported || 0} novas, ${status.duplicates || 0} duplicadas.`
-          );
+          const imported = status.imported || 0;
+          const duplicates = status.duplicates || 0;
+
+          if (duplicates > 0 && imported === 0) {
+            toast.warning(
+              `Nenhuma transação nova importada. ${duplicates} transação(ões) já existia(m) no sistema.`,
+              { description: "Use 'Forçar reimportação' se quiser ignorar duplicatas." }
+            );
+          } else if (duplicates > 0) {
+            toast.success(
+              `Importação concluída! ${imported} nova(s), ${duplicates} duplicada(s) ignorada(s).`
+            );
+          } else {
+            toast.success(`Importação concluída! ${imported} transação(ões) importada(s).`);
+          }
           setImportDialogOpen(false);
           setImportForm({
             bank_account_id: "",
@@ -610,6 +635,13 @@ export default function TransactionsPage() {
                             "341": "itau",
                           };
                           detectedBankType = bankCodeMap[selectedAccount.bank_code] || "generic";
+
+                          // Aviso se não conseguiu detectar tipo específico
+                          if (detectedBankType === "generic") {
+                            console.warn(`Banco com código ${selectedAccount.bank_code} não tem formato específico mapeado. Usando CSV genérico.`);
+                          }
+                        } else if (selectedAccount) {
+                          console.info("Conta sem bank_code definido. Usando formato CSV genérico.");
                         }
 
                         setImportForm({

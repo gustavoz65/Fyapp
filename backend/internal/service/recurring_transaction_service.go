@@ -59,7 +59,7 @@ func (s *RecurringTransactionService) Create(ctx context.Context, rt *model.Recu
 		return fmt.Errorf("failed to count recurring transactions: %w", err)
 	}
 	if count >= validation.MaxRecurringTransactions {
-		return fmt.Errorf(validation.ErrMaxRecurringTransactions) //nolint:ST1005 // user-facing message
+		return fmt.Errorf(validation.ErrMaxRecurringTransactions) //nolint:staticcheck // user-facing message
 	}
 
 	_, err = s.accountRepo.GetByIDAndUser(ctx, rt.BankAccountID, rt.UserID)

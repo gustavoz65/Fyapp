@@ -35,7 +35,7 @@ func (s *BankAccountService) Create(ctx context.Context, userID uuid.UUID, req *
 		return nil, fmt.Errorf("falha ao contar contas bancárias: %w", err)
 	}
 	if count >= validation.MaxBankAccountsPerUser {
-		return nil, fmt.Errorf(validation.ErrMaxBankAccountsExceeded) //nolint:ST1005 // user-facing message
+		return nil, fmt.Errorf(validation.ErrMaxBankAccountsExceeded) //nolint:staticcheck // user-facing message
 	}
 
 	account := &model.BankAccount{

@@ -453,6 +453,88 @@ func (r *RecurringTransactionRepository) GetStats(ctx context.Context, userID uu
 	}, nil
 }
 
+// GetUpcoming retorna transações recorrentes ativas com próxima ocorrência dentro de N dias
+func (r *RecurringTransactionRepository) GetUpcoming(ctx context.Context, userID uuid.UUID, days int) ([]*model.RecurringTransaction, error) {
+	query := `
+		SELECT rt.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
+			ba.name as bank_account_name, ba.account_type as bank_account_type
+		FROM recurring_transactions rt
+		LEFT JOIN categories c ON rt.category_id = c.id
+		LEFT JOIN bank_accounts ba ON rt.bank_account_id = ba.id
+		WHERE rt.user_id = ?
+			AND rt.is_active = TRUE
+			AND rt.next_occurrence <= DATE_ADD(NOW(), INTERVAL ? DAY)
+			AND (rt.end_date IS NULL OR rt.end_date >= NOW())
+		ORDER BY rt.next_occurrence ASC
+	`
+
+	rows, err := r.QueryContext(ctx, query, userID.String(), days)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get upcoming recurring transactions: %w", err)
+	}
+	defer rows.Close()
+
+	var recurrings []*model.RecurringTransaction
+
+	for rows.Next() {
+		var rt model.RecurringTransaction
+		var categoryID, categoryName, categoryIcon, categoryColor sql.NullString
+		var dayOfMonth, dayOfWeek sql.NullInt32
+		var endDate, lastGeneratedAt sql.NullTime
+		var bankAccountName, bankAccountType sql.NullString
+
+		err := rows.Scan(
+			&rt.ID, &rt.UserID, &rt.BankAccountID, &categoryID, &rt.Type,
+			&rt.Amount, &rt.Description, &rt.Frequency, &dayOfMonth, &dayOfWeek,
+			&rt.StartDate, &endDate, &rt.NextOccurrence, &lastGeneratedAt,
+			&rt.IsActive, &rt.AutoConfirm, &rt.CreatedAt, &rt.UpdatedAt,
+			&categoryName, &categoryIcon, &categoryColor,
+			&bankAccountName, &bankAccountType,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan recurring transaction: %w", err)
+		}
+
+		if categoryID.Valid {
+			catID, _ := uuid.Parse(categoryID.String)
+			rt.CategoryID = &catID
+			if categoryName.Valid {
+				rt.Category = &model.Category{
+					ID:    catID,
+					Name:  categoryName.String,
+					Icon:  categoryIcon.String,
+					Color: categoryColor.String,
+				}
+			}
+		}
+		if dayOfMonth.Valid {
+			day := int(dayOfMonth.Int32)
+			rt.DayOfMonth = &day
+		}
+		if dayOfWeek.Valid {
+			day := int(dayOfWeek.Int32)
+			rt.DayOfWeek = &day
+		}
+		if endDate.Valid {
+			rt.EndDate = &endDate.Time
+		}
+		if lastGeneratedAt.Valid {
+			rt.LastGeneratedAt = &lastGeneratedAt.Time
+		}
+		if bankAccountName.Valid {
+			rt.BankAccount = &model.BankAccount{
+				ID:          rt.BankAccountID,
+				Name:        bankAccountName.String,
+				AccountType: model.AccountType(bankAccountType.String),
+			}
+		}
+
+		recurrings = append(recurrings, &rt)
+	}
+
+	return recurrings, rows.Err()
+}
+
 // CountActiveByUser conta o número de transações recorrentes ativas de um usuário
 func (r *RecurringTransactionRepository) CountActiveByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
 	query := `

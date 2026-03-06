@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://fyapp-production.up.railway.app";
@@ -10,7 +11,7 @@ export default function Header() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -25,57 +26,70 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E5DDD0] py-4 transition-all duration-300 ${
-        isScrolled ? "shadow-lg" : ""
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-surface/80 backdrop-blur-xl border-b border-border shadow-lg"
+          : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-8 flex justify-between items-center">
-        <a href="#" className="flex items-center gap-3 no-underline">
-          <img
-            src="/logoFy.png"
-            alt="FyApp"
-            className="h-8 w-8 object-contain"
-          />
-          <span className="text-2xl font-bold text-[#7E8C54]">FyApp</span>
-        </a>
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="flex justify-between items-center py-4">
+          {/* Logo */}
+          <a href="#" className="flex items-center gap-3 group no-underline">
+            <div className="relative">
+              <img
+                src="/logoFy.png"
+                alt="FyApp"
+                className="h-9 w-9 object-contain transition-transform duration-300 group-hover:scale-110"
+              />
+              <div className="absolute -inset-1 bg-accent/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            <span className="text-2xl font-display font-bold text-primary">
+              Fy<span className="text-accent">App</span>
+            </span>
+          </a>
 
-        <nav className="hidden md:flex gap-12 items-center">
-          <button
-            onClick={() => scrollToSection("features")}
-            className="text-[#2C2C2C] text-sm font-medium transition-all duration-300 relative group cursor-pointer"
-          >
-            Recursos
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#7E8C54] group-hover:w-full transition-all duration-300" />
-          </button>
-          <button
-            onClick={() => scrollToSection("how")}
-            className="text-[#2C2C2C] text-sm font-medium transition-all duration-300 relative group cursor-pointer"
-          >
-            Como Funciona
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#7E8C54] group-hover:w-full transition-all duration-300" />
-          </button>
-          <button
-            onClick={() => scrollToSection("security")}
-            className="text-[#2C2C2C] text-sm font-medium transition-all duration-300 relative group cursor-pointer"
-          >
-            Segurança
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#7E8C54] group-hover:w-full transition-all duration-300" />
-          </button>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1">
+            <button
+              onClick={() => scrollToSection("features")}
+              className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-background-alt transition-all duration-200 cursor-pointer"
+            >
+              Recursos
+            </button>
+            <button
+              onClick={() => scrollToSection("how")}
+              className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-background-alt transition-all duration-200 cursor-pointer"
+            >
+              Como Funciona
+            </button>
+            <button
+              onClick={() => scrollToSection("security")}
+              className="px-4 py-2 text-sm font-medium text-text-secondary hover:text-primary rounded-lg hover:bg-background-alt transition-all duration-200 cursor-pointer"
+            >
+              Segurança
+            </button>
+
+            <div className="ml-4 h-6 w-px bg-border" />
+
+            <a
+              href={`${APP_URL}/login`}
+              className="ml-4 group inline-flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-lg text-sm font-semibold shadow-md shadow-accent/20 transition-all duration-300 hover:bg-accent-dark hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent/30"
+            >
+              <Sparkles className="w-4 h-4 transition-transform group-hover:rotate-12" />
+              Começar Grátis
+            </a>
+          </nav>
+
+          {/* Mobile CTA */}
           <a
             href={`${APP_URL}/login`}
-            className="bg-[#7E8C54] text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 border-2 border-[#7E8C54] hover:bg-transparent hover:text-[#7E8C54] hover:-translate-y-1 hover:shadow-lg"
+            className="md:hidden inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-semibold shadow-md shadow-accent/20"
           >
-            Começar Grátis
+            <Sparkles className="w-4 h-4" />
+            Entrar
           </a>
-        </nav>
-
-        {/* Mobile CTA */}
-        <a
-          href={`${APP_URL}/login`}
-          className="md:hidden bg-[#7E8C54] text-white px-4 py-2 rounded-lg text-sm font-semibold"
-        >
-          Entrar
-        </a>
+        </div>
       </div>
     </header>
   );

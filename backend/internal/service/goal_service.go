@@ -11,6 +11,7 @@ import (
 
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/validation"
 )
 
 type GoalService struct {
@@ -38,8 +39,8 @@ func (s *GoalService) Create(ctx context.Context, userID uuid.UUID, req *model.C
 	if err != nil {
 		return nil, fmt.Errorf("failed to count goals: %w", err)
 	}
-	if count >= 15 { // MaxActiveGoals
-		return nil, fmt.Errorf("você atingiu o limite de 15 metas ativas")
+	if count >= validation.MaxActiveGoals {
+		return nil, fmt.Errorf(validation.ErrMaxActiveGoalsExceeded)
 	}
 
 	goal := &model.Goal{

@@ -282,7 +282,9 @@ func (r *TransactionRepository) GetUpcomingBills(ctx context.Context, userID uui
 		FROM transactions t
 		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
 		WHERE t.user_id = ? AND t.is_paid = FALSE AND t.type = 'expense'
-			AND t.due_date IS NOT NULL AND t.due_date <= DATE_ADD(CURRENT_DATE, INTERVAL ? DAY)
+			AND t.due_date IS NOT NULL
+			AND t.due_date >= CURRENT_DATE
+			AND t.due_date <= DATE_ADD(CURRENT_DATE, INTERVAL ? DAY)
 		ORDER BY t.due_date ASC
 	`
 
@@ -329,6 +331,7 @@ func (r *TransactionRepository) GetRecentByPeriod(ctx context.Context, userID uu
 			t.external_id, t.created_at, t.updated_at,
 			c.id, c.name, c.type, c.color, c.icon, c.is_system, c.is_active
 		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
 		LEFT JOIN categories c ON t.category_id = c.id
 		WHERE t.user_id = ? AND t.transaction_date BETWEEN ? AND ?
 		ORDER BY t.transaction_date DESC, t.created_at DESC
@@ -441,32 +444,21 @@ func (r *TransactionRepository) Delete(ctx context.Context, id, userID uuid.UUID
 	return nil
 }
 
-// DeleteByDateRange deletes transactions within a date range for a user
-// Returns the number of deleted transactions
-func (r *TransactionRepository) DeleteByDateRange(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) (int64, error) {
-	query := `DELETE FROM transactions WHERE user_id = ? AND transaction_date BETWEEN ? AND ?`
+// DeleteTx deleta uma transação dentro de uma transação de banco de dados existente
+func (r *TransactionRepository) DeleteTx(ctx context.Context, dbTx *sql.Tx, id, userID uuid.UUID) error {
+	query := `DELETE FROM transactions WHERE id = ? AND user_id = ?`
 
-	result, err := r.ExecContext(ctx, query, userID.String(), startDate, endDate)
+	result, err := dbTx.ExecContext(ctx, query, id.String(), userID.String())
 	if err != nil {
-		return 0, fmt.Errorf("failed to delete transactions by date range: %w", err)
+		return fmt.Errorf("failed to delete transaction in tx: %w", err)
 	}
 
 	rowsAffected, _ := result.RowsAffected()
-	return rowsAffected, nil
-}
-
-// DeleteByAccountAndDateRange deletes transactions for a specific account within a date range
-// Returns the number of deleted transactions
-func (r *TransactionRepository) DeleteByAccountAndDateRange(ctx context.Context, userID, accountID uuid.UUID, startDate, endDate time.Time) (int64, error) {
-	query := `DELETE FROM transactions WHERE user_id = ? AND bank_account_id = ? AND transaction_date BETWEEN ? AND ?`
-
-	result, err := r.ExecContext(ctx, query, userID.String(), accountID.String(), startDate, endDate)
-	if err != nil {
-		return 0, fmt.Errorf("failed to delete transactions by account and date range: %w", err)
+	if rowsAffected == 0 {
+		return ErrTransactionNotFound
 	}
 
-	rowsAffected, _ := result.RowsAffected()
-	return rowsAffected, nil
+	return nil
 }
 
 // GetNetBalanceForAccount returns the net balance from all paid transactions for an account
@@ -493,7 +485,7 @@ func (r *TransactionRepository) GetSumByType(ctx context.Context, userID uuid.UU
 	query := `
 		SELECT COALESCE(SUM(t.amount), 0)
 		FROM transactions t
-		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE AND ba.include_in_total = TRUE
 		WHERE t.user_id = ? AND t.type = ? AND t.is_paid = TRUE
 			AND t.transaction_date BETWEEN ? AND ?
 	`
@@ -566,6 +558,48 @@ func (r *TransactionRepository) GetSumByCategory(ctx context.Context, userID uui
 
 // Helper functions
 
+// populateTxFields assigns nullable/converted fields onto tx after a successful Scan call.
+func populateTxFields(
+	tx *model.Transaction,
+	amount string,
+	categoryID, recurringID, installmentGroupID, notes, attachmentURL, externalID sql.NullString,
+	dueDate, paymentDate sql.NullTime,
+	installmentNumber, totalInstallments sql.NullInt32,
+	tags []byte,
+) {
+	tx.Amount, _ = decimal.NewFromString(amount)
+
+	if categoryID.Valid {
+		id, _ := uuid.Parse(categoryID.String)
+		tx.CategoryID = &id
+	}
+	if recurringID.Valid {
+		id, _ := uuid.Parse(recurringID.String)
+		tx.RecurringID = &id
+	}
+	if installmentGroupID.Valid {
+		id, _ := uuid.Parse(installmentGroupID.String)
+		tx.InstallmentGroupID = &id
+	}
+
+	tx.Notes = StringPtr(notes)
+	tx.AttachmentURL = StringPtr(attachmentURL)
+	tx.ExternalID = StringPtr(externalID)
+	tx.InstallmentNumber = IntPtr(installmentNumber)
+	tx.TotalInstallments = IntPtr(totalInstallments)
+
+	if dueDate.Valid {
+		tx.DueDate = &dueDate.Time
+	}
+	if paymentDate.Valid {
+		tx.PaymentDate = &paymentDate.Time
+	}
+
+	if len(tags) > 0 {
+		_ = json.Unmarshal(tags, &tx.Tags)
+	}
+}
+
 func (r *TransactionRepository) scanTransaction(row *sql.Row) (*model.Transaction, error) {
 	tx := &model.Transaction{}
 	var categoryID, recurringID, installmentGroupID, notes, attachmentURL, externalID sql.NullString
@@ -608,38 +642,7 @@ func (r *TransactionRepository) scanTransaction(row *sql.Row) (*model.Transactio
 		return nil, fmt.Errorf("failed to scan transaction: %w", err)
 	}
 
-	tx.Amount, _ = decimal.NewFromString(amount)
-
-	if categoryID.Valid {
-		id, _ := uuid.Parse(categoryID.String)
-		tx.CategoryID = &id
-	}
-	if recurringID.Valid {
-		id, _ := uuid.Parse(recurringID.String)
-		tx.RecurringID = &id
-	}
-	if installmentGroupID.Valid {
-		id, _ := uuid.Parse(installmentGroupID.String)
-		tx.InstallmentGroupID = &id
-	}
-
-	tx.Notes = StringPtr(notes)
-	tx.AttachmentURL = StringPtr(attachmentURL)
-	tx.ExternalID = StringPtr(externalID)
-	tx.InstallmentNumber = IntPtr(installmentNumber)
-	tx.TotalInstallments = IntPtr(totalInstallments)
-
-	if dueDate.Valid {
-		tx.DueDate = &dueDate.Time
-	}
-	if paymentDate.Valid {
-		tx.PaymentDate = &paymentDate.Time
-	}
-
-	if len(tags) > 0 {
-		_ = json.Unmarshal(tags, &tx.Tags)
-	}
-
+	populateTxFields(tx, amount, categoryID, recurringID, installmentGroupID, notes, attachmentURL, externalID, dueDate, paymentDate, installmentNumber, totalInstallments, tags)
 	return tx, nil
 }
 
@@ -685,38 +688,7 @@ func (r *TransactionRepository) scanTransactions(rows *sql.Rows) ([]*model.Trans
 			return nil, fmt.Errorf("failed to scan transaction: %w", err)
 		}
 
-		tx.Amount, _ = decimal.NewFromString(amount)
-
-		if categoryID.Valid {
-			id, _ := uuid.Parse(categoryID.String)
-			tx.CategoryID = &id
-		}
-		if recurringID.Valid {
-			id, _ := uuid.Parse(recurringID.String)
-			tx.RecurringID = &id
-		}
-		if installmentGroupID.Valid {
-			id, _ := uuid.Parse(installmentGroupID.String)
-			tx.InstallmentGroupID = &id
-		}
-
-		tx.Notes = StringPtr(notes)
-		tx.AttachmentURL = StringPtr(attachmentURL)
-		tx.ExternalID = StringPtr(externalID)
-		tx.InstallmentNumber = IntPtr(installmentNumber)
-		tx.TotalInstallments = IntPtr(totalInstallments)
-
-		if dueDate.Valid {
-			tx.DueDate = &dueDate.Time
-		}
-		if paymentDate.Valid {
-			tx.PaymentDate = &paymentDate.Time
-		}
-
-		if len(tags) > 0 {
-			_ = json.Unmarshal(tags, &tx.Tags)
-		}
-
+		populateTxFields(tx, amount, categoryID, recurringID, installmentGroupID, notes, attachmentURL, externalID, dueDate, paymentDate, installmentNumber, totalInstallments, tags)
 		transactions = append(transactions, tx)
 	}
 
@@ -782,37 +754,7 @@ func (r *TransactionRepository) scanTransactionsWithCategory(rows *sql.Rows) ([]
 			return nil, fmt.Errorf("failed to scan transaction: %w", err)
 		}
 
-		tx.Amount, _ = decimal.NewFromString(amount)
-
-		if categoryID.Valid {
-			id, _ := uuid.Parse(categoryID.String)
-			tx.CategoryID = &id
-		}
-		if recurringID.Valid {
-			id, _ := uuid.Parse(recurringID.String)
-			tx.RecurringID = &id
-		}
-		if installmentGroupID.Valid {
-			id, _ := uuid.Parse(installmentGroupID.String)
-			tx.InstallmentGroupID = &id
-		}
-
-		tx.Notes = StringPtr(notes)
-		tx.AttachmentURL = StringPtr(attachmentURL)
-		tx.ExternalID = StringPtr(externalID)
-		tx.InstallmentNumber = IntPtr(installmentNumber)
-		tx.TotalInstallments = IntPtr(totalInstallments)
-
-		if dueDate.Valid {
-			tx.DueDate = &dueDate.Time
-		}
-		if paymentDate.Valid {
-			tx.PaymentDate = &paymentDate.Time
-		}
-
-		if len(tags) > 0 {
-			_ = json.Unmarshal(tags, &tx.Tags)
-		}
+		populateTxFields(tx, amount, categoryID, recurringID, installmentGroupID, notes, attachmentURL, externalID, dueDate, paymentDate, installmentNumber, totalInstallments, tags)
 
 		// Populate Category if JOIN returned data
 		if catID.Valid && catName.Valid {
@@ -878,6 +820,234 @@ func (r *TransactionRepository) CountTransactionsByUserToday(ctx context.Context
 	}
 
 	return count, nil
+}
+
+// MonthlyRawData contém dados brutos de receita/despesa agregados por mês vindo do banco
+type MonthlyRawData struct {
+	Year    int
+	Month   int
+	Income  decimal.Decimal
+	Expense decimal.Decimal
+}
+
+// GetMonthlyBreakdown retorna receitas e despesas agrupadas por mês em um intervalo de datas.
+// Retorna apenas meses com transações; o chamador deve preencher meses vazios se necessário.
+func (r *TransactionRepository) GetMonthlyBreakdown(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]MonthlyRawData, error) {
+	query := `
+		SELECT
+			YEAR(t.transaction_date) AS year,
+			MONTH(t.transaction_date) AS month,
+			COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END), 0) AS income,
+			COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) AS expense
+		FROM transactions t
+		INNER JOIN bank_accounts ba ON t.bank_account_id = ba.id AND ba.is_active = TRUE AND ba.include_in_total = TRUE
+		WHERE t.user_id = ? AND t.is_paid = TRUE
+			AND t.transaction_date BETWEEN ? AND ?
+		GROUP BY YEAR(t.transaction_date), MONTH(t.transaction_date)
+		ORDER BY year ASC, month ASC
+	`
+
+	rows, err := r.QueryContext(ctx, query, userID.String(), startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get monthly breakdown: %w", err)
+	}
+	defer rows.Close()
+
+	var results []MonthlyRawData
+	for rows.Next() {
+		var d MonthlyRawData
+		var incomeStr, expenseStr string
+		if err := rows.Scan(&d.Year, &d.Month, &incomeStr, &expenseStr); err != nil {
+			return nil, fmt.Errorf("failed to scan monthly breakdown: %w", err)
+		}
+		d.Income, _ = decimal.NewFromString(incomeStr)
+		d.Expense, _ = decimal.NewFromString(expenseStr)
+		results = append(results, d)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating monthly breakdown: %w", err)
+	}
+
+	return results, nil
+}
+
+// CreateTx cria uma transação dentro de uma transação de banco de dados existente
+func (r *TransactionRepository) CreateTx(ctx context.Context, dbTx *sql.Tx, tx *model.Transaction) error {
+	tx.ID = uuid.New()
+	tx.CreatedAt = time.Now()
+	tx.UpdatedAt = time.Now()
+
+	query := `
+		INSERT INTO transactions (
+			id, user_id, bank_account_id, category_id, type, amount,
+			description, notes, source, transaction_date, due_date, payment_date,
+			is_paid, auto_pay, is_recurring, recurring_id, installment_number,
+			total_installments, installment_group_id, tags, attachment_url,
+			external_id, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	var categoryID sql.NullString
+	if tx.CategoryID != nil {
+		categoryID = sql.NullString{String: tx.CategoryID.String(), Valid: true}
+	}
+
+	var recurringID, installmentGroupID sql.NullString
+	if tx.RecurringID != nil {
+		recurringID = sql.NullString{String: tx.RecurringID.String(), Valid: true}
+	}
+	if tx.InstallmentGroupID != nil {
+		installmentGroupID = sql.NullString{String: tx.InstallmentGroupID.String(), Valid: true}
+	}
+
+	var dueDate, paymentDate sql.NullTime
+	if tx.DueDate != nil {
+		dueDate = sql.NullTime{Time: *tx.DueDate, Valid: true}
+	}
+	if tx.PaymentDate != nil {
+		paymentDate = sql.NullTime{Time: *tx.PaymentDate, Valid: true}
+	}
+
+	var tagsJSON []byte
+	if len(tx.Tags) > 0 {
+		tagsJSON, _ = json.Marshal(tx.Tags)
+	}
+
+	_, err := dbTx.ExecContext(ctx, query,
+		tx.ID.String(),
+		tx.UserID.String(),
+		tx.BankAccountID.String(),
+		categoryID,
+		tx.Type,
+		tx.Amount.String(),
+		tx.Description,
+		NullString(tx.Notes),
+		tx.Source,
+		tx.TransactionDate,
+		dueDate,
+		paymentDate,
+		tx.IsPaid,
+		tx.AutoPay,
+		tx.IsRecurring,
+		recurringID,
+		NullInt32(tx.InstallmentNumber),
+		NullInt32(tx.TotalInstallments),
+		installmentGroupID,
+		tagsJSON,
+		NullString(tx.AttachmentURL),
+		NullString(tx.ExternalID),
+		tx.CreatedAt,
+		tx.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create transaction in tx: %w", err)
+	}
+
+	return nil
+}
+
+// GetPaidBalanceDeltaByAccountTx calcula o delta de saldo necessário para reverter todas as
+// transações pagas de uma conta, dentro de uma transação de banco de dados existente.
+// O valor retornado, quando aplicado ao saldo da conta, desfaz o impacto de todas as transações pagas.
+func (r *TransactionRepository) GetPaidBalanceDeltaByAccountTx(ctx context.Context, dbTx *sql.Tx, accountID, userID uuid.UUID) (decimal.Decimal, error) {
+	query := `
+		SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN -amount ELSE amount END), 0)
+		FROM transactions
+		WHERE bank_account_id = ? AND user_id = ? AND is_paid = TRUE
+	`
+
+	var deltaStr string
+	if err := dbTx.QueryRowContext(ctx, query, accountID.String(), userID.String()).Scan(&deltaStr); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get paid balance delta: %w", err)
+	}
+
+	delta, _ := decimal.NewFromString(deltaStr)
+	return delta, nil
+}
+
+// DeleteAllByAccountTx deleta todas as transações de uma conta dentro de uma transação de banco de dados existente
+func (r *TransactionRepository) DeleteAllByAccountTx(ctx context.Context, dbTx *sql.Tx, accountID, userID uuid.UUID) (int64, error) {
+	query := `DELETE FROM transactions WHERE bank_account_id = ? AND user_id = ?`
+
+	result, err := dbTx.ExecContext(ctx, query, accountID.String(), userID.String())
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete all transactions for account: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	return rowsAffected, nil
+}
+
+// GetPaidBalanceDeltasByDateRangeTx retorna o delta de saldo por conta para reverter transações pagas
+// de source='manual' em um intervalo de datas, dentro de uma transação de banco de dados existente.
+func (r *TransactionRepository) GetPaidBalanceDeltasByDateRangeTx(ctx context.Context, dbTx *sql.Tx, userID uuid.UUID, startDate, endDate time.Time, accountID *uuid.UUID) (map[uuid.UUID]decimal.Decimal, error) {
+	query := `
+		SELECT bank_account_id,
+			COALESCE(SUM(CASE WHEN type = 'income' THEN -amount ELSE amount END), 0) AS delta
+		FROM transactions
+		WHERE user_id = ? AND is_paid = TRUE AND source = 'manual'
+			AND transaction_date BETWEEN ? AND ?
+	`
+	args := []interface{}{userID.String(), startDate, endDate}
+
+	if accountID != nil {
+		query += ` AND bank_account_id = ?`
+		args = append(args, accountID.String())
+	}
+
+	query += ` GROUP BY bank_account_id`
+
+	rows, err := dbTx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get paid balance deltas: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[uuid.UUID]decimal.Decimal)
+	for rows.Next() {
+		var accountIDStr, deltaStr string
+		if err := rows.Scan(&accountIDStr, &deltaStr); err != nil {
+			return nil, fmt.Errorf("failed to scan balance delta: %w", err)
+		}
+		accID, _ := uuid.Parse(accountIDStr)
+		delta, _ := decimal.NewFromString(deltaStr)
+		result[accID] = delta
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating balance deltas: %w", err)
+	}
+
+	return result, nil
+}
+
+// DeleteByDateRangeTx deleta transações de source='manual' em um intervalo de datas dentro de uma tx.
+// Apenas transações manuais são removidas para manter consistência com a regra CanBeDeleted().
+func (r *TransactionRepository) DeleteByDateRangeTx(ctx context.Context, dbTx *sql.Tx, userID uuid.UUID, startDate, endDate time.Time) (int64, error) {
+	query := `DELETE FROM transactions WHERE user_id = ? AND source = 'manual' AND transaction_date BETWEEN ? AND ?`
+
+	result, err := dbTx.ExecContext(ctx, query, userID.String(), startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete transactions by date range in tx: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	return rowsAffected, nil
+}
+
+// DeleteByAccountAndDateRangeTx deleta transações de source='manual' de uma conta em um intervalo de datas dentro de uma tx.
+// Apenas transações manuais são removidas para manter consistência com a regra CanBeDeleted().
+func (r *TransactionRepository) DeleteByAccountAndDateRangeTx(ctx context.Context, dbTx *sql.Tx, userID, accountID uuid.UUID, startDate, endDate time.Time) (int64, error) {
+	query := `DELETE FROM transactions WHERE user_id = ? AND bank_account_id = ? AND source = 'manual' AND transaction_date BETWEEN ? AND ?`
+
+	result, err := dbTx.ExecContext(ctx, query, userID.String(), accountID.String(), startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete transactions by account and date range in tx: %w", err)
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	return rowsAffected, nil
 }
 
 // GetExistingExternalIDs returns a map of existing external IDs for the user

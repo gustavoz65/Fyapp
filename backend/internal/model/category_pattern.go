@@ -7,14 +7,15 @@ import (
 )
 
 type CategoryPattern struct {
-	ID         uuid.UUID `json:"id" db:"id"`
-	UserID     uuid.UUID `json:"user_id" db:"user_id"`
-	Keyword    string    `json:"keyword" db:"keyword"`
-	CategoryID uuid.UUID `json:"category_id" db:"category_id"`
-	Confidence int       `json:"confidence" db:"confidence"`
-	Source     string    `json:"source" db:"source"`
-	CreatedAt  time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
+	ID                uuid.UUID  `json:"id" db:"id"`
+	UserID            uuid.UUID  `json:"user_id" db:"user_id"`
+	Keyword           string     `json:"keyword" db:"keyword"`
+	CategoryID        uuid.UUID  `json:"category_id" db:"category_id"`
+	Confidence        int        `json:"confidence" db:"confidence"`
+	Source            string     `json:"source" db:"source"`
+	LastDecrementedAt *time.Time `json:"last_decremented_at,omitempty" db:"last_decremented_at"`
+	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
 
 	Category *Category `json:"category,omitempty" db:"-"`
 }

@@ -192,3 +192,25 @@ func (r *CategoryPatternRepository) scanPatternsWithCategory(rows *sql.Rows) ([]
 
 	return patterns, nil
 }
+
+// DecrementConfidence decrementa a confianca de um padrao (max 1x por dia)
+func (r *CategoryPatternRepository) DecrementConfidence(ctx context.Context, userID uuid.UUID, keyword string, categoryID uuid.UUID) error {
+	query := `
+		UPDATE category_patterns
+		SET confidence = GREATEST(confidence - 1, 0),
+			last_decremented_at = ?,
+			updated_at = ?
+		WHERE user_id = ?
+		  AND keyword = ?
+		  AND category_id = ?
+		  AND (last_decremented_at IS NULL OR DATE(last_decremented_at) < CURDATE())
+	`
+
+	now := time.Now()
+	_, err := r.ExecContext(ctx, query, now, now, userID.String(), keyword, categoryID.String())
+	if err != nil {
+		return fmt.Errorf("failed to decrement confidence: %w", err)
+	}
+
+	return nil
+}

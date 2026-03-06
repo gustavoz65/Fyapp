@@ -40,7 +40,7 @@ func (s *GoalService) Create(ctx context.Context, userID uuid.UUID, req *model.C
 		return nil, fmt.Errorf("failed to count goals: %w", err)
 	}
 	if count >= validation.MaxActiveGoals {
-		return nil, fmt.Errorf(validation.ErrMaxActiveGoalsExceeded)
+		return nil, fmt.Errorf(validation.ErrMaxActiveGoalsExceeded) //nolint:ST1005 // user-facing message
 	}
 
 	goal := &model.Goal{

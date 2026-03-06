@@ -40,7 +40,7 @@ func (s *BudgetService) Create(ctx context.Context, userID uuid.UUID, req *model
 		return nil, fmt.Errorf("failed to count budgets: %w", err)
 	}
 	if count >= validation.MaxActiveBudgets {
-		return nil, fmt.Errorf(validation.ErrMaxActiveBudgetsExceeded)
+		return nil, fmt.Errorf(validation.ErrMaxActiveBudgetsExceeded) //nolint:ST1005 // user-facing message
 	}
 
 	budget := &model.Budget{

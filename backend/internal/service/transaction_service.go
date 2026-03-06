@@ -61,7 +61,7 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 		return nil, fmt.Errorf("failed to count transactions: %w", err)
 	}
 	if count >= validation.MaxTransactionsPerDay {
-		return nil, fmt.Errorf(validation.ErrMaxTransactionsPerDay)
+		return nil, fmt.Errorf(validation.ErrMaxTransactionsPerDay) //nolint:ST1005 // user-facing message
 	}
 
 	// Validate account belongs to user

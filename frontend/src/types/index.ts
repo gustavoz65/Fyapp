@@ -321,6 +321,73 @@ export interface IncomeVsExpenseReport {
 }
 
 
+// Financial Health
+
+
+export interface FinancialHealthSnapshot {
+  id: string;
+  user_id: string;
+  period: string;
+  score: string;
+  score_percentage: string;
+  economy_rate: string;
+  budget_compliance: string;
+  goals_progress: string;
+  spending_reduction: string;
+  consistency: string;
+  breakdown_json?: string;
+  created_at: string;
+}
+
+export interface HealthScoreBreakdown {
+  income: string;
+  expense: string;
+  balance: string;
+  economy_percentage: number;
+  budgets: BudgetHealthDetail[];
+  goals: GoalHealthDetail[];
+  top_categories: CategorySpendingDetail[];
+  consistency_details: ConsistencyDetail;
+}
+
+export interface BudgetHealthDetail {
+  id: string;
+  name: string;
+  limit: string;
+  spent: string;
+  usage: number;
+  score: number;
+}
+
+export interface GoalHealthDetail {
+  id: string;
+  name: string;
+  target_amount: string;
+  current_amount: string;
+  progress: number;
+  score: number;
+}
+
+export interface CategorySpendingDetail {
+  category_id: string;
+  category_name: string;
+  current_amount: string;
+  previous_amount: string;
+  change_percentage: number;
+  score: number;
+}
+
+export interface ConsistencyDetail {
+  negative_months_count: number;
+  active_debts_count: number;
+  score: number;
+}
+
+export interface HistoricalScoresResponse {
+  snapshots: FinancialHealthSnapshot[];
+}
+
+
 // Auth
 
 

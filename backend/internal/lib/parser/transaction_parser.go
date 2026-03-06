@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,8 +19,8 @@ type TransactionImport struct {
 	Date        time.Time
 	Description string
 	Amount      decimal.Decimal
-	Type        string // "income" or "expense"
-	ExternalID  string // Hash for deduplication
+	Type        string
+	ExternalID  string
 	RawData     map[string]string
 }
 
@@ -27,11 +28,10 @@ type CSVMapping struct {
 	DateColumn        int
 	DescriptionColumn int
 	AmountColumn      int
-	TypeColumn        *int // Optional, will infer from amount if not present
+	TypeColumn        *int
 	DateFormat        string
 }
 
-// BankMappings contains default CSV column mappings for common Brazilian banks
 var BankMappings = map[string]CSVMapping{
 	"nubank": {
 		DateColumn:        0,
@@ -53,9 +53,9 @@ var BankMappings = map[string]CSVMapping{
 	},
 	"bb": {
 		DateColumn:        0,
-		DescriptionColumn: 2,            // Detalhes column
-		AmountColumn:      4,            // Valor column
-		TypeColumn:        &[]int{5}[0], // Tipo Lançamento (Entrada/Saída)
+		DescriptionColumn: 2,
+		AmountColumn:      4,
+		TypeColumn:        &[]int{5}[0],
 		DateFormat:        "02/01/2006",
 	},
 	"generic": {
@@ -72,7 +72,6 @@ func NewTransactionParser() *TransactionParser {
 	return &TransactionParser{}
 }
 
-// ParseCSV parses CSV file and returns transactions
 func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]TransactionImport, error) {
 	mapping, ok := BankMappings[strings.ToLower(bankType)]
 	if !ok {
@@ -80,10 +79,11 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 	}
 
 	csvReader := csv.NewReader(reader)
-	csvReader.FieldsPerRecord = -1 // Lida com linhas com número variável de colunas
+	csvReader.FieldsPerRecord = -1
 	csvReader.TrimLeadingSpace = true
 
 	var transactions []TransactionImport
+	seenTransactions := make(map[string]bool)
 	lineNumber := 0
 
 	for {
@@ -97,34 +97,32 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 
 		lineNumber++
 
-		// Pular linha de cabeçalho
 		if lineNumber == 1 {
 			if p.isHeaderRow(record) {
 				continue
 			}
 		}
 
-		// Pular linhas vazias
 		if len(record) == 0 || (len(record) == 1 && record[0] == "") {
 			continue
 		}
 
-		transaction, err := p.parseCSVRecord(record, mapping)
+		transaction, err := p.parseCSVRecord(record, mapping, bankType)
 		if err != nil {
-			// Log error but continue processing
 			fmt.Printf("Aviso: pulando a linha %d: %v\n", lineNumber, err)
 			continue
 		}
 
-		transactions = append(transactions, transaction)
+		if !seenTransactions[transaction.ExternalID] {
+			transactions = append(transactions, transaction)
+			seenTransactions[transaction.ExternalID] = true
+		}
 	}
 
 	return transactions, nil
 }
 
-// isHeaderRow tenta identificar se uma linha é um cabeçalho
 func (p *TransactionParser) isHeaderRow(record []string) bool {
-	// Check if row contains common header keywords
 	headerKeywords := []string{"data", "date", "descri", "valor", "amount", "tipo", "type"}
 
 	for _, field := range record {
@@ -138,8 +136,7 @@ func (p *TransactionParser) isHeaderRow(record []string) bool {
 	return false
 }
 
-// parseCSVRecord faz o parsing de uma linha do CSV usando o mapeamento fornecido e retorna um TransactionImport
-func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) (TransactionImport, error) {
+func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping, bankType string) (TransactionImport, error) {
 	if len(record) <= mapping.DateColumn || len(record) <= mapping.DescriptionColumn || len(record) <= mapping.AmountColumn {
 		return TransactionImport{}, fmt.Errorf("registro com colunas insuficientes: %d", len(record))
 	}
@@ -151,13 +148,12 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 		}
 	}
 
-	// Parse date
 	dateStr := strings.TrimSpace(record[mapping.DateColumn])
-	// Skip invalid dates like "00/00/0000" from Banco do Brasil
 	if dateStr == "00/00/0000" || dateStr == "" {
 		return TransactionImport{}, fmt.Errorf("data inválida ou vazia")
 	}
-	date, err := p.parseDate(dateStr, mapping.DateFormat)
+
+	baseDate, err := p.parseDate(dateStr, mapping.DateFormat)
 	if err != nil {
 		return TransactionImport{}, fmt.Errorf("data inválida '%s': %w", dateStr, err)
 	}
@@ -171,10 +167,10 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 		return TransactionImport{}, fmt.Errorf("valor inválido '%s': %w", amountStr, err)
 	}
 
-	// Parse description
 	description := strings.TrimSpace(record[mapping.DescriptionColumn])
+	lancamento := ""
 	if mapping.TypeColumn != nil && len(record) > 1 {
-		lancamento := strings.TrimSpace(record[1])
+		lancamento = strings.TrimSpace(record[1])
 		detalhes := strings.TrimSpace(record[mapping.DescriptionColumn])
 		if lancamento != "" && detalhes != "" {
 			description = lancamento + " - " + detalhes
@@ -187,17 +183,27 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 		description = "Transação importada"
 	}
 
-	// Generate external ID for deduplication
-	externalID := p.generateExternalID(date, description, amount.Abs())
+	finalDate := baseDate
+	if strings.ToLower(bankType) == "bb" {
+		if extractedDate, ok := p.extractDateFromBBDescription(record[mapping.DescriptionColumn], baseDate.Year()); ok {
+			finalDate = extractedDate
+		}
 
-	// Store raw data
+		if strings.Contains(strings.ToLower(lancamento), "pagamento pix cart") &&
+		   strings.Contains(strings.ToLower(lancamento), "cr") {
+			transactionType = "expense"
+		}
+	}
+
+	externalID := p.generateExternalID(finalDate, description, amount.Abs())
+
 	rawData := make(map[string]string)
 	for i, value := range record {
 		rawData[fmt.Sprintf("col_%d", i)] = value
 	}
 
 	return TransactionImport{
-		Date:        date,
+		Date:        finalDate,
 		Description: description,
 		Amount:      amount,
 		Type:        transactionType,
@@ -206,8 +212,29 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping) 
 	}, nil
 }
 
+func (p *TransactionParser) extractDateFromBBDescription(description string, baseYear int) (time.Time, bool) {
+	re := regexp.MustCompile(`(\d{2}/\d{2})\s+(\d{2}:\d{2})`)
+	matches := re.FindStringSubmatch(description)
+
+	if len(matches) >= 2 {
+		dateTimeStr := fmt.Sprintf("%s/%d %s", matches[1], baseYear, matches[2])
+
+		formats := []string{
+			"02/01/2006 15:04",
+			"01/02/2006 15:04",
+		}
+
+		for _, format := range formats {
+			if t, err := time.Parse(format, dateTimeStr); err == nil {
+				return t, true
+			}
+		}
+	}
+
+	return time.Time{}, false
+}
+
 func (p *TransactionParser) parseDate(dateStr, format string) (time.Time, error) {
-	// Try common formats if the specified one fails
 	formats := []string{
 		format,
 		"2006-01-02",
@@ -228,13 +255,11 @@ func (p *TransactionParser) parseDate(dateStr, format string) (time.Time, error)
 }
 
 func (p *TransactionParser) parseAmount(amountStr string) (decimal.Decimal, string, error) {
-	// Clean amount string
 	cleaned := strings.TrimSpace(amountStr)
 	cleaned = strings.ReplaceAll(cleaned, "R$", "")
 	cleaned = strings.ReplaceAll(cleaned, "$", "")
 	cleaned = strings.ReplaceAll(cleaned, " ", "")
 
-	// Determine if it's negative (expense) or positive (income)
 	isNegative := false
 	if strings.HasPrefix(cleaned, "-") || strings.HasPrefix(cleaned, "(") {
 		isNegative = true
@@ -242,39 +267,30 @@ func (p *TransactionParser) parseAmount(amountStr string) (decimal.Decimal, stri
 		cleaned = strings.Trim(cleaned, "()")
 	}
 
-	// Handle Brazilian format (1.234,56) vs US format (1,234.56)
 	dotCount := strings.Count(cleaned, ".")
 	commaCount := strings.Count(cleaned, ",")
 
 	if commaCount > 0 && dotCount > 0 {
-		// Has both - determine which is decimal separator
 		lastDot := strings.LastIndex(cleaned, ".")
 		lastComma := strings.LastIndex(cleaned, ",")
 
 		if lastComma > lastDot {
-			// Brazilian format: 1.234,56
 			cleaned = strings.ReplaceAll(cleaned, ".", "")
 			cleaned = strings.ReplaceAll(cleaned, ",", ".")
 		} else {
-			// US format: 1,234.56
 			cleaned = strings.ReplaceAll(cleaned, ",", "")
 		}
 	} else if commaCount > 0 {
-		// Only commas - check if it's decimal or thousands
 		parts := strings.Split(cleaned, ",")
 		if len(parts) == 2 && len(parts[1]) == 2 {
-			// Likely decimal: 1234,56
 			cleaned = strings.ReplaceAll(cleaned, ",", ".")
 		} else {
-			// Likely thousands: 1,234
 			cleaned = strings.ReplaceAll(cleaned, ",", "")
 		}
 	}
 
-	// Parse to decimal
 	amount, err := decimal.NewFromString(cleaned)
 	if err != nil {
-		// Try as float
 		floatVal, err := strconv.ParseFloat(cleaned, 64)
 		if err != nil {
 			return decimal.Zero, "", fmt.Errorf("invalid amount: %s", amountStr)
@@ -282,10 +298,8 @@ func (p *TransactionParser) parseAmount(amountStr string) (decimal.Decimal, stri
 		amount = decimal.NewFromFloat(floatVal)
 	}
 
-	// Make amount positive (we determine type separately)
 	amount = amount.Abs()
 
-	// Determine transaction type
 	transactionType := "income"
 	if isNegative {
 		transactionType = "expense"
@@ -295,9 +309,8 @@ func (p *TransactionParser) parseAmount(amountStr string) (decimal.Decimal, stri
 }
 
 func (p *TransactionParser) generateExternalID(date time.Time, description string, amount decimal.Decimal) string {
-	// Create hash from date + description + amount for deduplication
 	data := fmt.Sprintf("%s|%s|%s",
-		date.Format("2006-01-02"),
+		date.Format("2006-01-02 15:04"),
 		strings.ToLower(strings.TrimSpace(description)),
 		amount.String(),
 	)
@@ -306,7 +319,6 @@ func (p *TransactionParser) generateExternalID(date time.Time, description strin
 	return hex.EncodeToString(hash[:])
 }
 
-// ValidateImport checks for duplicates and returns stats
 func (p *TransactionParser) ValidateImport(transactions []TransactionImport, userID uuid.UUID, existingExternalIDs map[string]bool) (new, duplicate int) {
 	for _, tx := range transactions {
 		if existingExternalIDs[tx.ExternalID] {

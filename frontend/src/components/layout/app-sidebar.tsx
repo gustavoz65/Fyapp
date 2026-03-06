@@ -22,9 +22,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/stores/auth-store";
-import { useHealthModal } from "@/contexts/health-modal-context";
 import {
-  Activity,
   ArrowLeftRight,
   ChevronUp,
   Landmark,
@@ -41,7 +39,6 @@ import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Saúde Financeira", href: "#health", icon: Activity },
   { title: "Contas", href: "/accounts", icon: Landmark },
   { title: "Transações", href: "/transactions", icon: ArrowLeftRight },
   { title: "Recorrentes", href: "/recurring", icon: Repeat },
@@ -54,7 +51,6 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { openModal } = useHealthModal();
 
   const initials = user
     ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
@@ -64,13 +60,6 @@ export function AppSidebar() {
     await logout();
     router.push("/login");
   }
-
-  const handleNavClick = (href: string, e: React.MouseEvent) => {
-    if (href === "#health") {
-      e.preventDefault();
-      openModal();
-    }
-  };
 
   return (
     <Sidebar>
@@ -88,7 +77,7 @@ export function AppSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton asChild isActive={pathname === item.href}>
-                    <Link href={item.href} onClick={(e) => handleNavClick(item.href, e)}>
+                    <Link href={item.href}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>

@@ -10,6 +10,7 @@ import (
 
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/validation"
 )
 
 type BankAccountService struct {
@@ -33,8 +34,8 @@ func (s *BankAccountService) Create(ctx context.Context, userID uuid.UUID, req *
 	if err != nil {
 		return nil, fmt.Errorf("falha ao contar contas bancárias: %w", err)
 	}
-	if count >= 20 { // MaxBankAccountsPerUser
-		return nil, fmt.Errorf("você atingiu o limite máximo de 20 contas bancárias")
+	if count >= validation.MaxBankAccountsPerUser {
+		return nil, fmt.Errorf(validation.ErrMaxBankAccountsExceeded) //nolint:staticcheck // user-facing message
 	}
 
 	account := &model.BankAccount{

@@ -190,55 +190,69 @@ func (s *DashboardService) GetCashFlowReport(ctx context.Context, userID uuid.UU
 	return report, nil
 }
 
-// GetIncomeVsExpenseReport generates an income vs expense comparison report
+// GetIncomeVsExpenseReport generates an income vs expense comparison report.
+// Usa uma única query GROUP BY para substituir o loop anterior de N*2 queries.
 func (s *DashboardService) GetIncomeVsExpenseReport(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) (*model.IncomeVsExpenseReport, error) {
 	report := &model.IncomeVsExpenseReport{
 		StartDate: startDate,
 		EndDate:   endDate,
 	}
 
-	// Get totals
-	totalIncome, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, startDate, endDate)
-	totalExpense, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, startDate, endDate)
-
-	report.TotalIncome = totalIncome
-	report.TotalExpense = totalExpense
-	report.NetIncome = totalIncome.Sub(totalExpense)
-
-	// Calculate savings rate
-	if !totalIncome.IsZero() {
-		report.SavingsRate = report.NetIncome.Div(totalIncome).Mul(decimal.NewFromInt(100))
+	rawData, err := s.transactionRepo.GetMonthlyBreakdown(ctx, userID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get monthly breakdown: %w", err)
 	}
 
-	// Generate monthly breakdown
-	current := startDate
-	for current.Before(endDate) || current.Equal(endDate) {
-		monthStart := time.Date(current.Year(), current.Month(), 1, 0, 0, 0, 0, time.Local)
-		monthEnd := monthStart.AddDate(0, 1, -1)
+	// Indexa por (ano, mês) para lookup O(1)
+	type monthKey = [2]int
+	byMonth := make(map[monthKey]repository.MonthlyRawData, len(rawData))
+	for _, d := range rawData {
+		byMonth[monthKey{d.Year, d.Month}] = d
+	}
 
-		if monthEnd.After(endDate) {
-			monthEnd = endDate
-		}
+	// Percorre todos os meses do intervalo, preenchendo zeros onde não há transações
+	current := time.Date(startDate.Year(), startDate.Month(), 1, 0, 0, 0, 0, time.Local)
+	endMonth := time.Date(endDate.Year(), endDate.Month(), 1, 0, 0, 0, 0, time.Local)
 
-		monthIncome, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, monthStart, monthEnd)
-		monthExpense, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, monthStart, monthEnd)
-		netIncome := monthIncome.Sub(monthExpense)
+	for !current.After(endMonth) {
+		d := byMonth[monthKey{current.Year(), int(current.Month())}]
+		netIncome := d.Income.Sub(d.Expense)
 
 		var savingsRate decimal.Decimal
-		if !monthIncome.IsZero() {
-			savingsRate = netIncome.Div(monthIncome).Mul(decimal.NewFromInt(100))
+		if !d.Income.IsZero() {
+			savingsRate = netIncome.Div(d.Income).Mul(decimal.NewFromInt(100))
 		}
 
 		report.MonthlyData = append(report.MonthlyData, model.MonthlyIncomeExpense{
 			Month:       current.Format("January"),
 			Year:        current.Year(),
-			Income:      monthIncome,
-			Expense:     monthExpense,
+			Income:      d.Income,
+			Expense:     d.Expense,
 			NetIncome:   netIncome,
 			SavingsRate: savingsRate,
 		})
 
+		report.TotalIncome = report.TotalIncome.Add(d.Income)
+		report.TotalExpense = report.TotalExpense.Add(d.Expense)
+
 		current = current.AddDate(0, 1, 0)
+	}
+
+	report.NetIncome = report.TotalIncome.Sub(report.TotalExpense)
+	if !report.TotalIncome.IsZero() {
+		report.SavingsRate = report.NetIncome.Div(report.TotalIncome).Mul(decimal.NewFromInt(100))
+	}
+
+	// Calculate IncomeGrowth and ExpenseGrowth comparing first and last months
+	if len(report.MonthlyData) >= 2 {
+		first := report.MonthlyData[0]
+		last := report.MonthlyData[len(report.MonthlyData)-1]
+		if !first.Income.IsZero() {
+			report.IncomeGrowth = last.Income.Sub(first.Income).Div(first.Income).Mul(decimal.NewFromInt(100))
+		}
+		if !first.Expense.IsZero() {
+			report.ExpenseGrowth = last.Expense.Sub(first.Expense).Div(first.Expense).Mul(decimal.NewFromInt(100))
+		}
 	}
 
 	return report, nil
@@ -253,30 +267,40 @@ func (s *DashboardService) GetAccountBalances(ctx context.Context, userID uuid.U
 	return accounts, nil
 }
 
-// GetMonthlyComparison returns a comparison of the current month with previous months
+// GetMonthlyComparison returns a comparison of the current month with previous months.
+// Usa uma única query GROUP BY para substituir o loop anterior de N*2 queries.
 func (s *DashboardService) GetMonthlyComparison(ctx context.Context, userID uuid.UUID, months int) ([]model.MonthlyIncomeExpense, error) {
-	var results []model.MonthlyIncomeExpense
-
 	now := time.Now()
+	startDate := time.Date(now.AddDate(0, -(months-1), 0).Year(), now.AddDate(0, -(months-1), 0).Month(), 1, 0, 0, 0, 0, time.Local)
+	endDate := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.Local)
+
+	rawData, err := s.transactionRepo.GetMonthlyBreakdown(ctx, userID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get monthly breakdown: %w", err)
+	}
+
+	type monthKey = [2]int
+	byMonth := make(map[monthKey]repository.MonthlyRawData, len(rawData))
+	for _, d := range rawData {
+		byMonth[monthKey{d.Year, d.Month}] = d
+	}
+
+	results := make([]model.MonthlyIncomeExpense, 0, months)
 	for i := months - 1; i >= 0; i-- {
 		monthDate := now.AddDate(0, -i, 0)
-		startDate := time.Date(monthDate.Year(), monthDate.Month(), 1, 0, 0, 0, 0, time.Local)
-		endDate := startDate.AddDate(0, 1, -1)
-
-		income, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeIncome, startDate, endDate)
-		expense, _ := s.transactionRepo.GetSumByType(ctx, userID, model.TransactionTypeExpense, startDate, endDate)
-		netIncome := income.Sub(expense)
+		d := byMonth[monthKey{monthDate.Year(), int(monthDate.Month())}]
+		netIncome := d.Income.Sub(d.Expense)
 
 		var savingsRate decimal.Decimal
-		if !income.IsZero() {
-			savingsRate = netIncome.Div(income).Mul(decimal.NewFromInt(100))
+		if !d.Income.IsZero() {
+			savingsRate = netIncome.Div(d.Income).Mul(decimal.NewFromInt(100))
 		}
 
 		results = append(results, model.MonthlyIncomeExpense{
-			Month:       startDate.Format("January"),
-			Year:        startDate.Year(),
-			Income:      income,
-			Expense:     expense,
+			Month:       monthDate.Format("January"),
+			Year:        monthDate.Year(),
+			Income:      d.Income,
+			Expense:     d.Expense,
 			NetIncome:   netIncome,
 			SavingsRate: savingsRate,
 		})

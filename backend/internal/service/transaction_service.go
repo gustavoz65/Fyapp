@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/gustavoz65/Fyapp/internal/lib/parser"
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/validation"
 )
 
 type TransactionService struct {
@@ -58,8 +60,8 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 	if err != nil {
 		return nil, fmt.Errorf("failed to count transactions: %w", err)
 	}
-	if count >= 100 { // MaxTransactionsPerDay
-		return nil, fmt.Errorf("você atingiu o limite de 100 transações por dia")
+	if count >= validation.MaxTransactionsPerDay {
+		return nil, fmt.Errorf(validation.ErrMaxTransactionsPerDay) //nolint:staticcheck // user-facing message
 	}
 
 	// Validate account belongs to user
@@ -130,7 +132,7 @@ func (s *TransactionService) Create(ctx context.Context, userID uuid.UUID, req *
 	return tx, nil
 }
 
-// createInstallments creates multiple transactions for installment payments
+// createInstallments creates multiple transactions for installment payments within a single DB transaction
 func (s *TransactionService) createInstallments(ctx context.Context, userID uuid.UUID, baseTx *model.Transaction, totalInstallments int) (*model.Transaction, error) {
 	groupID := uuid.New()
 	installmentAmount := baseTx.Amount.Div(decimal.NewFromInt(int64(totalInstallments)))
@@ -138,48 +140,55 @@ func (s *TransactionService) createInstallments(ctx context.Context, userID uuid
 	var firstTx *model.Transaction
 	currentDate := baseTx.TransactionDate
 
-	for i := 1; i <= totalInstallments; i++ {
-		installmentNum := i
-		tx := &model.Transaction{
-			UserID:             userID,
-			BankAccountID:      baseTx.BankAccountID,
-			CategoryID:         baseTx.CategoryID,
-			Type:               baseTx.Type,
-			Amount:             installmentAmount,
-			Description:        fmt.Sprintf("%s (%d/%d)", baseTx.Description, i, totalInstallments),
-			Source:             model.TransactionSourceManual,
-			TransactionDate:    currentDate,
-			IsPaid:             i == 1 && baseTx.IsPaid,
-			InstallmentNumber:  &installmentNum,
-			TotalInstallments:  &totalInstallments,
-			InstallmentGroupID: &groupID,
-			Tags:               baseTx.Tags,
-		}
-
-		if baseTx.DueDate != nil {
-			dueDate := baseTx.DueDate.AddDate(0, i-1, 0)
-			tx.DueDate = &dueDate
-		}
-
-		if err := s.txRepo.Create(ctx, tx); err != nil {
-			return nil, fmt.Errorf("failed to create installment %d: %w", i, err)
-		}
-
-		if i == 1 {
-			firstTx = tx
-
-			// Update balance for first installment if paid
-			if tx.IsPaid {
-				delta := tx.Amount
-				if tx.Type == model.TransactionTypeExpense {
-					delta = delta.Neg()
-				}
-				_ = s.accountRepo.AdjustBalance(ctx, baseTx.BankAccountID, delta)
+	err := s.txRepo.WithTx(ctx, func(dbTx *sql.Tx) error {
+		for i := 1; i <= totalInstallments; i++ {
+			installmentNum := i
+			tx := &model.Transaction{
+				UserID:             userID,
+				BankAccountID:      baseTx.BankAccountID,
+				CategoryID:         baseTx.CategoryID,
+				Type:               baseTx.Type,
+				Amount:             installmentAmount,
+				Description:        fmt.Sprintf("%s (%d/%d)", baseTx.Description, i, totalInstallments),
+				Source:             model.TransactionSourceManual,
+				TransactionDate:    currentDate,
+				IsPaid:             i == 1 && baseTx.IsPaid,
+				InstallmentNumber:  &installmentNum,
+				TotalInstallments:  &totalInstallments,
+				InstallmentGroupID: &groupID,
+				Tags:               baseTx.Tags,
 			}
-		}
 
-		// Move to next month
-		currentDate = currentDate.AddDate(0, 1, 0)
+			if baseTx.DueDate != nil {
+				dueDate := baseTx.DueDate.AddDate(0, i-1, 0)
+				tx.DueDate = &dueDate
+			}
+
+			if err := s.txRepo.CreateTx(ctx, dbTx, tx); err != nil {
+				return fmt.Errorf("failed to create installment %d: %w", i, err)
+			}
+
+			if i == 1 {
+				firstTx = tx
+
+				if tx.IsPaid {
+					delta := tx.Amount
+					if tx.Type == model.TransactionTypeExpense {
+						delta = delta.Neg()
+					}
+					if err := s.accountRepo.AdjustBalanceTx(ctx, dbTx, baseTx.BankAccountID, delta); err != nil {
+						return fmt.Errorf("failed to adjust balance for first installment: %w", err)
+					}
+				}
+			}
+
+			currentDate = currentDate.AddDate(0, 1, 0)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	s.logger.Info().
@@ -393,22 +402,30 @@ func (s *TransactionService) Delete(ctx context.Context, userID, txID uuid.UUID)
 		return err
 	}
 
-	// Validate if transaction can be deleted
 	if !tx.CanBeDeleted() {
 		return fmt.Errorf("cannot delete transaction from source: %s (only manual transactions can be deleted)", tx.Source)
 	}
 
-	if err := s.txRepo.Delete(ctx, txID, userID); err != nil {
-		return fmt.Errorf("failed to delete transaction: %w", err)
-	}
-
-	// Reverse balance impact if it was paid
-	if tx.IsPaid {
-		delta := tx.Amount
-		if tx.Type == model.TransactionTypeIncome {
-			delta = delta.Neg()
+	// DELETE + ajuste de saldo são atômicos: se o ajuste falhar, o DELETE é revertido
+	err = s.txRepo.WithTx(ctx, func(dbTx *sql.Tx) error {
+		if err := s.txRepo.DeleteTx(ctx, dbTx, txID, userID); err != nil {
+			return fmt.Errorf("failed to delete transaction: %w", err)
 		}
-		_ = s.accountRepo.AdjustBalance(ctx, tx.BankAccountID, delta)
+
+		if tx.IsPaid {
+			delta := tx.Amount
+			if tx.Type == model.TransactionTypeIncome {
+				delta = delta.Neg()
+			}
+			if err := s.accountRepo.AdjustBalanceTx(ctx, dbTx, tx.BankAccountID, delta); err != nil {
+				return fmt.Errorf("failed to adjust balance: %w", err)
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	s.logger.Info().
@@ -514,139 +531,9 @@ type ImportResult struct {
 	Transactions  []*model.Transaction `json:"transactions"`
 }
 
-// ImportTransactions imports transactions from CSV file
-func (s *TransactionService) ImportTransactions(
-	ctx context.Context,
-	userID uuid.UUID,
-	bankAccountID uuid.UUID,
-	reader io.Reader,
-	bankType string,
-) (*ImportResult, error) {
-	// Validate account belongs to user
-	account, err := s.accountRepo.GetByIDAndUser(ctx, bankAccountID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid bank account: %w", err)
-	}
-
-	// Parse CSV file
-	txParser := parser.NewTransactionParser()
-	importedTxs, err := txParser.ParseCSV(reader, bankType)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse CSV: %w", err)
-	}
-
-	if len(importedTxs) == 0 {
-		return &ImportResult{
-			TotalImported: 0,
-			Duplicates:    0,
-			Errors:        []string{"No transactions found in file"},
-			Transactions:  []*model.Transaction{},
-		}, nil
-	}
-
-	// Get existing external IDs for deduplication
-	externalIDs := make([]string, len(importedTxs))
-	for i, tx := range importedTxs {
-		externalIDs[i] = tx.ExternalID
-	}
-
-	existingIDs, err := s.txRepo.GetExistingExternalIDs(ctx, userID, externalIDs)
-	if err != nil {
-		s.logger.Warn().Err(err).Msg("failed to check for duplicates, proceeding without deduplication")
-		existingIDs = make(map[string]bool)
-	}
-
-	// Process transactions
-	result := &ImportResult{
-		Transactions: make([]*model.Transaction, 0),
-		Errors:       make([]string, 0),
-	}
-
-	for _, importedTx := range importedTxs {
-		// Check for duplicates
-		if existingIDs[importedTx.ExternalID] {
-			result.Duplicates++
-			s.logger.Debug().
-				Str("external_id", importedTx.ExternalID).
-				Str("description", importedTx.Description).
-				Msg("skipping duplicate transaction")
-			continue
-		}
-
-		// Convert TransactionImport to Transaction
-		tx := &model.Transaction{
-			UserID:          userID,
-			BankAccountID:   bankAccountID,
-			Type:            model.TransactionType(importedTx.Type),
-			Amount:          importedTx.Amount,
-			Description:     importedTx.Description,
-			Source:          model.TransactionSourceBankSync,
-			TransactionDate: importedTx.Date,
-			IsPaid:          true, // Imported transactions are already executed
-			ExternalID:      &importedTx.ExternalID,
-		}
-
-		// Set payment date same as transaction date for imported
-		tx.PaymentDate = &importedTx.Date
-
-		// Auto-categorize if available
-		if s.categorizationSvc != nil {
-			suggestion, err := s.categorizationSvc.SuggestCategory(ctx, userID, tx.Description)
-			if err == nil && len(suggestion.Suggestions) > 0 {
-				bestSuggestion := suggestion.Suggestions[0]
-				if bestSuggestion.Confidence >= 1 { // Only use if confidence is at least 1
-					tx.CategoryID = &bestSuggestion.CategoryID
-					s.logger.Debug().
-						Str("description", tx.Description).
-						Str("category", bestSuggestion.CategoryName).
-						Int("confidence", bestSuggestion.Confidence).
-						Msg("auto-categorized imported transaction")
-				}
-			}
-		}
-
-		// Create transaction
-		if err := s.txRepo.Create(ctx, tx); err != nil {
-			errMsg := fmt.Sprintf("Failed to import transaction '%s': %v", tx.Description, err)
-			result.Errors = append(result.Errors, errMsg)
-			s.logger.Error().Err(err).
-				Str("description", tx.Description).
-				Msg("failed to create imported transaction")
-			continue
-		}
-
-		// Update account balance (since imported transactions are already paid)
-		delta := tx.Amount
-		if tx.Type == model.TransactionTypeExpense {
-			delta = delta.Neg()
-		}
-		if err := s.accountRepo.AdjustBalance(ctx, account.ID, delta); err != nil {
-			s.logger.Error().Err(err).
-				Str("transaction_id", tx.ID.String()).
-				Msg("failed to update account balance for imported transaction")
-		}
-
-		result.TotalImported++
-		result.Transactions = append(result.Transactions, tx)
-
-		// Learn categorization pattern if categorized
-		if tx.CategoryID != nil && s.categorizationSvc != nil {
-			s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, "bank_sync")
-		}
-	}
-
-	s.logger.Info().
-		Str("user_id", userID.String()).
-		Str("bank_account_id", bankAccountID.String()).
-		Int("total_imported", result.TotalImported).
-		Int("duplicates", result.Duplicates).
-		Int("errors", len(result.Errors)).
-		Msg("completed transaction import")
-
-	return result, nil
-}
-
-// ImportTransactionsWithProgress imports transactions with progress callback
+// ImportTransactionsWithProgress imports transactions with progress callback.
+// Todo o processo de criação e ajuste de saldo é atômico: ou todas as transações
+// são importadas com sucesso, ou nenhuma é persistida (rollback automático).
 func (s *TransactionService) ImportTransactionsWithProgress(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -656,13 +543,11 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 	forceReimport bool,
 	progressCallback func(current, total int),
 ) (*ImportResult, error) {
-	// Validate account belongs to user
 	account, err := s.accountRepo.GetByIDAndUser(ctx, bankAccountID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid bank account: %w", err)
 	}
 
-	// Parse CSV file
 	txParser := parser.NewTransactionParser()
 	importedTxs, err := txParser.ParseCSV(reader, bankType)
 	if err != nil {
@@ -681,14 +566,12 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 	total := len(importedTxs)
 	progressCallback(0, total)
 
-	// Get existing external IDs for deduplication (pula se forceReimport)
 	existingIDs := make(map[string]bool)
 	if !forceReimport {
 		externalIDs := make([]string, len(importedTxs))
 		for i, tx := range importedTxs {
 			externalIDs[i] = tx.ExternalID
 		}
-
 		foundIDs, err := s.txRepo.GetExistingExternalIDs(ctx, userID, externalIDs)
 		if err != nil {
 			s.logger.Warn().Err(err).Msg("failed to check for duplicates, proceeding without deduplication")
@@ -697,82 +580,75 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 		}
 	}
 
-	// Process transactions
 	result := &ImportResult{
 		Transactions: make([]*model.Transaction, 0),
 		Errors:       make([]string, 0),
 	}
 
-	for idx, importedTx := range importedTxs {
-		// Update progress
-		progressCallback(idx+1, total)
+	// Toda a inserção e ajuste de saldo ocorre dentro de uma única transação de banco de dados.
+	// Se qualquer operação falhar, tudo é revertido automaticamente.
+	importErr := s.txRepo.WithTx(ctx, func(dbTx *sql.Tx) error {
+		for idx, importedTx := range importedTxs {
+			progressCallback(idx+1, total)
 
-		// Check for duplicates (sempre false se forceReimport=true)
-		if !forceReimport && existingIDs[importedTx.ExternalID] {
-			result.Duplicates++
-			s.logger.Debug().
-				Str("external_id", importedTx.ExternalID).
-				Str("description", importedTx.Description).
-				Msg("skipping duplicate transaction")
-			continue
-		}
+			if !forceReimport && existingIDs[importedTx.ExternalID] {
+				result.Duplicates++
+				s.logger.Debug().
+					Str("external_id", importedTx.ExternalID).
+					Str("description", importedTx.Description).
+					Msg("skipping duplicate transaction")
+				continue
+			}
 
-		// Convert TransactionImport to Transaction
-		tx := &model.Transaction{
-			UserID:          userID,
-			BankAccountID:   bankAccountID,
-			Type:            model.TransactionType(importedTx.Type),
-			Amount:          importedTx.Amount,
-			Description:     importedTx.Description,
-			Source:          model.TransactionSourceBankSync,
-			TransactionDate: importedTx.Date,
-			IsPaid:          true,
-			ExternalID:      &importedTx.ExternalID,
-		}
+			tx := &model.Transaction{
+				UserID:          userID,
+				BankAccountID:   bankAccountID,
+				Type:            model.TransactionType(importedTx.Type),
+				Amount:          importedTx.Amount,
+				Description:     importedTx.Description,
+				Source:          model.TransactionSourceBankSync,
+				TransactionDate: importedTx.Date,
+				IsPaid:          true,
+				ExternalID:      &importedTx.ExternalID,
+			}
+			tx.PaymentDate = &importedTx.Date
 
-		tx.PaymentDate = &importedTx.Date
-
-		// Auto-categorize if available
-		if s.categorizationSvc != nil {
-			suggestion, err := s.categorizationSvc.SuggestCategory(ctx, userID, tx.Description)
-			if err == nil && len(suggestion.Suggestions) > 0 {
-				bestSuggestion := suggestion.Suggestions[0]
-				if bestSuggestion.Confidence >= 1 {
-					tx.CategoryID = &bestSuggestion.CategoryID
+			// Auto-categorize (operação de leitura, segura dentro da tx)
+			if s.categorizationSvc != nil {
+				suggestion, err := s.categorizationSvc.SuggestCategory(ctx, userID, tx.Description)
+				if err == nil && len(suggestion.Suggestions) > 0 && suggestion.Suggestions[0].Confidence >= 1 {
+					tx.CategoryID = &suggestion.Suggestions[0].CategoryID
 					s.logger.Debug().
 						Str("description", tx.Description).
-						Str("category", bestSuggestion.CategoryName).
-						Int("confidence", bestSuggestion.Confidence).
+						Str("category", suggestion.Suggestions[0].CategoryName).
 						Msg("auto-categorized imported transaction")
 				}
 			}
-		}
 
-		// Create transaction
-		if err := s.txRepo.Create(ctx, tx); err != nil {
-			errMsg := fmt.Sprintf("Failed to import transaction '%s': %v", tx.Description, err)
-			result.Errors = append(result.Errors, errMsg)
-			s.logger.Error().Err(err).
-				Str("description", tx.Description).
-				Msg("failed to create imported transaction")
-			continue
-		}
+			if err := s.txRepo.CreateTx(ctx, dbTx, tx); err != nil {
+				return fmt.Errorf("failed to import transaction '%s': %w", tx.Description, err)
+			}
 
-		// Update account balance
-		delta := tx.Amount
-		if tx.Type == model.TransactionTypeExpense {
-			delta = delta.Neg()
-		}
-		if err := s.accountRepo.AdjustBalance(ctx, account.ID, delta); err != nil {
-			s.logger.Error().Err(err).
-				Str("transaction_id", tx.ID.String()).
-				Msg("failed to update account balance for imported transaction")
-		}
+			delta := tx.Amount
+			if tx.Type == model.TransactionTypeExpense {
+				delta = delta.Neg()
+			}
+			if err := s.accountRepo.AdjustBalanceTx(ctx, dbTx, account.ID, delta); err != nil {
+				return fmt.Errorf("failed to adjust balance for transaction '%s': %w", tx.Description, err)
+			}
 
-		result.TotalImported++
-		result.Transactions = append(result.Transactions, tx)
+			result.TotalImported++
+			result.Transactions = append(result.Transactions, tx)
+		}
+		return nil
+	})
 
-		// Learn categorization pattern if categorized
+	if importErr != nil {
+		return nil, fmt.Errorf("import failed and was rolled back: %w", importErr)
+	}
+
+	// Aprende padrões de categorização após o commit (best-effort)
+	for _, tx := range result.Transactions {
 		if tx.CategoryID != nil && s.categorizationSvc != nil {
 			s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, "bank_sync")
 		}
@@ -785,60 +661,46 @@ func (s *TransactionService) ImportTransactionsWithProgress(
 		Str("bank_account_id", bankAccountID.String()).
 		Int("total_imported", result.TotalImported).
 		Int("duplicates", result.Duplicates).
-		Int("errors", len(result.Errors)).
 		Msg("completed transaction import with progress")
 
 	return result, nil
 }
 
-// DeleteAllByAccount deleta todas as transações de uma conta bancária
+// DeleteAllByAccount deleta todas as transações de uma conta bancária.
+// Operação atômica: calcula o ajuste de saldo e deleta tudo em uma única transação de banco de dados.
 func (s *TransactionService) DeleteAllByAccount(ctx context.Context, userID, accountID uuid.UUID) error {
-	// Validar que a conta pertence ao usuário
-	account, err := s.accountRepo.GetByIDAndUser(ctx, accountID, userID)
-	if err != nil {
+	if _, err := s.accountRepo.GetByIDAndUser(ctx, accountID, userID); err != nil {
 		return fmt.Errorf("conta bancária inválida: %w", err)
 	}
 
-	// Buscar todas as transações da conta
-	filter := &model.TransactionFilter{
-		UserID:    userID,
-		AccountID: &accountID,
-		Page:      1,
-		PageSize:  10000, // Limite alto para pegar todas
-	}
+	return s.txRepo.WithTx(ctx, func(dbTx *sql.Tx) error {
+		// 1. Calcula o delta para reverter o impacto de todas as transações pagas
+		delta, err := s.txRepo.GetPaidBalanceDeltaByAccountTx(ctx, dbTx, accountID, userID)
+		if err != nil {
+			return fmt.Errorf("falha ao calcular ajuste de saldo: %w", err)
+		}
 
-	transactions, _, err := s.txRepo.GetByFilter(ctx, filter)
-	if err != nil {
-		return fmt.Errorf("falha ao buscar transações: %w", err)
-	}
+		// 2. Deleta todas as transações da conta em uma única query
+		deleted, err := s.txRepo.DeleteAllByAccountTx(ctx, dbTx, accountID, userID)
+		if err != nil {
+			return fmt.Errorf("falha ao deletar transações: %w", err)
+		}
 
-	// Deletar cada transação e ajustar saldo
-	for _, tx := range transactions {
-		// Reverter impacto no saldo se estava paga
-		if tx.IsPaid {
-			delta := tx.Amount
-			if tx.Type == model.TransactionTypeIncome {
-				delta = delta.Neg()
-			}
-			if err := s.accountRepo.AdjustBalance(ctx, account.ID, delta); err != nil {
-				s.logger.Error().Err(err).Msg("falha ao ajustar saldo ao deletar transação")
+		// 3. Ajusta o saldo da conta para reverter o impacto das transações deletadas
+		if !delta.IsZero() {
+			if err := s.accountRepo.AdjustBalanceTx(ctx, dbTx, accountID, delta); err != nil {
+				return fmt.Errorf("falha ao ajustar saldo: %w", err)
 			}
 		}
 
-		// Deletar transação
-		if err := s.txRepo.Delete(ctx, tx.ID, userID); err != nil {
-			s.logger.Error().Err(err).Str("tx_id", tx.ID.String()).Msg("falha ao deletar transação")
-			continue
-		}
-	}
+		s.logger.Info().
+			Str("user_id", userID.String()).
+			Str("account_id", accountID.String()).
+			Int64("deleted", deleted).
+			Msg("deletadas todas as transações da conta")
 
-	s.logger.Info().
-		Str("user_id", userID.String()).
-		Str("account_id", accountID.String()).
-		Int("deleted", len(transactions)).
-		Msg("deletadas todas as transações da conta")
-
-	return nil
+		return nil
+	})
 }
 
 // BulkDeleteRequest holds parameters for bulk transaction deletion
@@ -853,82 +715,60 @@ type BulkDeleteResult struct {
 	DeletedCount int64 `json:"deleted_count"`
 }
 
-// BulkDeleteByDateRange deletes multiple transactions within a date range
-// Can optionally filter by account ID. Returns count of deleted transactions.
+// BulkDeleteByDateRange deletes multiple transactions within a date range.
+// Operação atômica: calcula ajustes de saldo por conta e deleta tudo em uma única transação de banco de dados.
 func (s *TransactionService) BulkDeleteByDateRange(ctx context.Context, userID uuid.UUID, req *BulkDeleteRequest) (*BulkDeleteResult, error) {
-	// Validate date range
 	if req.EndDate.Before(req.StartDate) {
 		return nil, fmt.Errorf("data final deve ser posterior à data inicial")
 	}
 
-	// Get transactions to calculate balance adjustments
-	filter := &model.TransactionFilter{
-		UserID:    userID,
-		StartDate: &req.StartDate,
-		EndDate:   &req.EndDate,
-		Page:      1,
-		PageSize:  10000,
-	}
-
 	if req.AccountID != nil {
-		// Validate account belongs to user
-		_, err := s.accountRepo.GetByIDAndUser(ctx, *req.AccountID, userID)
-		if err != nil {
+		if _, err := s.accountRepo.GetByIDAndUser(ctx, *req.AccountID, userID); err != nil {
 			return nil, fmt.Errorf("conta bancária inválida: %w", err)
 		}
-		filter.AccountID = req.AccountID
 	}
 
-	// Get transactions to adjust balances
-	transactions, _, err := s.txRepo.GetByFilter(ctx, filter)
-	if err != nil {
-		return nil, fmt.Errorf("falha ao buscar transações: %w", err)
-	}
+	var result BulkDeleteResult
 
-	// Group paid transactions by account to adjust balances
-	accountAdjustments := make(map[uuid.UUID]decimal.Decimal)
-	for _, tx := range transactions {
-		if tx.IsPaid {
-			delta := tx.Amount
-			if tx.Type == model.TransactionTypeIncome {
-				delta = delta.Neg()
-			}
-			if existing, ok := accountAdjustments[tx.BankAccountID]; ok {
-				accountAdjustments[tx.BankAccountID] = existing.Add(delta)
-			} else {
-				accountAdjustments[tx.BankAccountID] = delta
+	err := s.txRepo.WithTx(ctx, func(dbTx *sql.Tx) error {
+		// 1. Calcula o delta por conta para reverter o impacto das transações pagas
+		deltas, err := s.txRepo.GetPaidBalanceDeltasByDateRangeTx(ctx, dbTx, userID, req.StartDate, req.EndDate, req.AccountID)
+		if err != nil {
+			return fmt.Errorf("falha ao calcular ajustes de saldo: %w", err)
+		}
+
+		// 2. Deleta as transações em uma única query
+		var deleted int64
+		if req.AccountID != nil {
+			deleted, err = s.txRepo.DeleteByAccountAndDateRangeTx(ctx, dbTx, userID, *req.AccountID, req.StartDate, req.EndDate)
+		} else {
+			deleted, err = s.txRepo.DeleteByDateRangeTx(ctx, dbTx, userID, req.StartDate, req.EndDate)
+		}
+		if err != nil {
+			return fmt.Errorf("falha ao deletar transações: %w", err)
+		}
+		result.DeletedCount = deleted
+
+		// 3. Ajusta o saldo de cada conta afetada
+		for accountID, delta := range deltas {
+			if err := s.accountRepo.AdjustBalanceTx(ctx, dbTx, accountID, delta); err != nil {
+				return fmt.Errorf("falha ao ajustar saldo da conta %s: %w", accountID, err)
 			}
 		}
-	}
 
-	// Delete transactions
-	var deletedCount int64
-	if req.AccountID != nil {
-		deletedCount, err = s.txRepo.DeleteByAccountAndDateRange(ctx, userID, *req.AccountID, req.StartDate, req.EndDate)
-	} else {
-		deletedCount, err = s.txRepo.DeleteByDateRange(ctx, userID, req.StartDate, req.EndDate)
-	}
+		s.logger.Info().
+			Str("user_id", userID.String()).
+			Str("start_date", req.StartDate.Format("2006-01-02")).
+			Str("end_date", req.EndDate.Format("2006-01-02")).
+			Int64("deleted", deleted).
+			Msg("transações deletadas em lote")
+
+		return nil
+	})
 
 	if err != nil {
-		return nil, fmt.Errorf("falha ao deletar transações: %w", err)
+		return nil, err
 	}
 
-	// Adjust account balances
-	for accountID, adjustment := range accountAdjustments {
-		if err := s.accountRepo.AdjustBalance(ctx, accountID, adjustment); err != nil {
-			s.logger.Error().Err(err).
-				Str("account_id", accountID.String()).
-				Str("adjustment", adjustment.String()).
-				Msg("falha ao ajustar saldo da conta após deleção em lote")
-		}
-	}
-
-	s.logger.Info().
-		Str("user_id", userID.String()).
-		Str("start_date", req.StartDate.Format("2006-01-02")).
-		Str("end_date", req.EndDate.Format("2006-01-02")).
-		Int64("deleted", deletedCount).
-		Msg("transações deletadas em lote")
-
-	return &BulkDeleteResult{DeletedCount: deletedCount}, nil
+	return &result, nil
 }

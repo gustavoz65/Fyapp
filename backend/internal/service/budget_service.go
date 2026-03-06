@@ -11,6 +11,7 @@ import (
 
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/validation"
 )
 
 type BudgetService struct {
@@ -38,8 +39,8 @@ func (s *BudgetService) Create(ctx context.Context, userID uuid.UUID, req *model
 	if err != nil {
 		return nil, fmt.Errorf("failed to count budgets: %w", err)
 	}
-	if count >= 20 { // MaxActiveBudgets
-		return nil, fmt.Errorf("você atingiu o limite de 20 orçamentos ativos")
+	if count >= validation.MaxActiveBudgets {
+		return nil, fmt.Errorf(validation.ErrMaxActiveBudgetsExceeded) //nolint:staticcheck // user-facing message
 	}
 
 	budget := &model.Budget{

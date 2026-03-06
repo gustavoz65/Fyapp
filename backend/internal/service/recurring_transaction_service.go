@@ -12,6 +12,7 @@ import (
 
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
+	"github.com/gustavoz65/Fyapp/internal/validation"
 )
 
 type RecurringTransactionService struct {
@@ -57,8 +58,8 @@ func (s *RecurringTransactionService) Create(ctx context.Context, rt *model.Recu
 	if err != nil {
 		return fmt.Errorf("failed to count recurring transactions: %w", err)
 	}
-	if count >= 50 { // MaxRecurringTransactions
-		return fmt.Errorf("você atingiu o limite de 50 transações recorrentes ativas")
+	if count >= validation.MaxRecurringTransactions {
+		return fmt.Errorf(validation.ErrMaxRecurringTransactions) //nolint:staticcheck // user-facing message
 	}
 
 	_, err = s.accountRepo.GetByIDAndUser(ctx, rt.BankAccountID, rt.UserID)
@@ -190,19 +191,5 @@ func (s *RecurringTransactionService) GetStats(ctx context.Context, userID uuid.
 }
 
 func (s *RecurringTransactionService) GetUpcoming(ctx context.Context, userID uuid.UUID, days int) ([]*model.RecurringTransaction, error) {
-	all, err := s.repo.GetAll(ctx, userID, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	cutoff := time.Now().AddDate(0, 0, days)
-	var upcoming []*model.RecurringTransaction
-
-	for _, rt := range all {
-		if rt.IsActive && rt.NextOccurrence.Before(cutoff) {
-			upcoming = append(upcoming, rt)
-		}
-	}
-
-	return upcoming, nil
+	return s.repo.GetUpcoming(ctx, userID, days)
 }

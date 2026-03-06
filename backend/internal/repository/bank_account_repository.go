@@ -235,6 +235,18 @@ func (r *BankAccountRepository) AdjustBalance(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
+// AdjustBalanceTx ajusta o saldo atual dentro de uma transação de banco de dados existente
+func (r *BankAccountRepository) AdjustBalanceTx(ctx context.Context, dbTx *sql.Tx, id uuid.UUID, delta decimal.Decimal) error {
+	query := `UPDATE bank_accounts SET current_balance = current_balance + ?, updated_at = ? WHERE id = ?`
+
+	_, err := dbTx.ExecContext(ctx, query, delta.String(), time.Now(), id.String())
+	if err != nil {
+		return fmt.Errorf("failed to adjust balance in tx: %w", err)
+	}
+
+	return nil
+}
+
 // Delete desativa (soft delete) uma conta bancária
 func (r *BankAccountRepository) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	query := `

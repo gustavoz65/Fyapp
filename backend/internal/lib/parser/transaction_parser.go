@@ -190,7 +190,7 @@ func (p *TransactionParser) parseCSVRecord(record []string, mapping CSVMapping, 
 		}
 
 		if strings.Contains(strings.ToLower(lancamento), "pagamento pix cart") &&
-		   strings.Contains(strings.ToLower(lancamento), "cr") {
+			strings.Contains(strings.ToLower(lancamento), "cr") {
 			transactionType = "expense"
 		}
 	}

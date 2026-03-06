@@ -96,6 +96,52 @@ func (r *CategoryRepository) GetByIDAndUser(ctx context.Context, id, userID uuid
 	return r.scanCategory(r.QueryRowContext(ctx, query, id.String(), userID.String()))
 }
 
+// GetByNameAndType busca categoria por nome e tipo (system ou user)
+func (r *CategoryRepository) GetByNameAndType(ctx context.Context, userID uuid.UUID, name string, catType model.CategoryType) (*model.Category, error) {
+	query := `
+		SELECT id, user_id, name, description, type, color, icon, is_system, is_active, created_at, updated_at
+		FROM categories
+		WHERE name = ?
+		  AND type = ?
+		  AND is_active = TRUE
+		  AND (user_id = ? OR is_system = TRUE)
+		ORDER BY is_system DESC, created_at ASC
+		LIMIT 1
+	`
+
+	var cat model.Category
+	var userIDStr, description sql.NullString
+
+	err := r.QueryRowContext(ctx, query, name, catType, userID.String()).Scan(
+		&cat.ID,
+		&userIDStr,
+		&cat.Name,
+		&description,
+		&cat.Type,
+		&cat.Color,
+		&cat.Icon,
+		&cat.IsSystem,
+		&cat.IsActive,
+		&cat.CreatedAt,
+		&cat.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrCategoryNotFound
+		}
+		return nil, fmt.Errorf("failed to get category by name: %w", err)
+	}
+
+	if userIDStr.Valid {
+		id, _ := uuid.Parse(userIDStr.String)
+		cat.UserID = &id
+	}
+	cat.Description = StringPtr(description)
+
+	return &cat, nil
+}
+
 // GetAllForUser retrieves all categories for a user (including system categories)
 func (r *CategoryRepository) GetAllForUser(ctx context.Context, userID uuid.UUID) ([]*model.Category, error) {
 	query := `

@@ -50,7 +50,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// Services
 	authService := service.NewAuthService(userRepo, providerRepo, srv.FirebaseClient, cfg, logger)
 	userService := service.NewUserService(userRepo, logger)
-	categorizationService := service.NewCategorizationService(categoryPatternRepo, logger)
+	categorizationService := service.NewCategorizationService(categoryPatternRepo, categoryRepo, logger)
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
 	accountService := service.NewBankAccountService(accountRepo, transactionRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)

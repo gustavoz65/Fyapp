@@ -46,6 +46,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	notificationRepo := repository.NewNotificationRepository(db, logger)
 	auditLogRepo := repository.NewAuditLogRepository(db, logger)
 	recurringRepo := repository.NewRecurringTransactionRepository(db, logger)
+	healthRepo := repository.NewFinancialHealthRepository(db, logger)
 
 	// Services
 	authService := service.NewAuthService(userRepo, providerRepo, srv.FirebaseClient, cfg, logger)
@@ -59,6 +60,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goalService := service.NewGoalService(goalRepo, notificationService, logger)
 	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
 	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
+	healthService := service.NewFinancialHealthService(transactionRepo, budgetRepo, goalRepo, accountRepo, healthRepo, srv.Redis, logger)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
@@ -71,6 +73,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 	recurringHandler := handler.NewRecurringTransactionHandler(recurringService)
+	financialHealthHandler := handler.NewFinancialHealthHandler(healthService)
 	wsHandler := handler.NewWebSocketHandler(srv.Job, logger)
 
 	// Health check (verificação de saúde)
@@ -198,6 +201,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	notifications.PATCH("/:id/read", notificationHandler.MarkAsRead, mutationRL)
 	notifications.PATCH("/read-all", notificationHandler.MarkAllAsRead, mutationRL)
 	notifications.DELETE("/:id", notificationHandler.Delete, mutationRL)
+
+	health := api.Group("/health", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
+	health.GET("/score", financialHealthHandler.GetCurrentScore, readRL)
+	health.GET("/history", financialHealthHandler.GetHistoricalScores, readRL)
 
 	srv.Job.SetRecurringService(recurringService)
 	srv.Job.SetTransactionService(transactionService)

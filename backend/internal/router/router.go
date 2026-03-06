@@ -63,7 +63,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
-	transactionHandler := handler.NewTransactionHandler(transactionService, accountService, srv.Job)
+	transactionHandler := handler.NewTransactionHandler(transactionService, accountService, categorizationService, srv.Job)
 	accountHandler := handler.NewBankAccountHandler(accountService)
 	categoryHandler := handler.NewCategoryHandler(categoryService, categorizationService)
 	budgetHandler := handler.NewBudgetHandler(budgetService)
@@ -149,6 +149,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.POST("", transactionHandler.Create, mutationRL)
 	transactions.POST("/import", transactionHandler.Import, mutationRL, uploadRL)
 	transactions.GET("/import/:job_id", transactionHandler.GetImportStatus, readRL)
+	transactions.POST("/suggest-category", transactionHandler.SuggestCategory, readRL)
 	transactions.PUT("/:id", transactionHandler.Update, mutationRL)
 	transactions.DELETE("/:id", transactionHandler.Delete, mutationRL)
 	transactions.DELETE("/account/:account_id", transactionHandler.DeleteAllByAccount, mutationRL)

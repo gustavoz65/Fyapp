@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, Activity } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "./theme-toggle";
+import { useHealthModal } from "@/contexts/health-modal-context";
 import { api } from "@/lib/api";
 
 export function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
+  const { openModal } = useHealthModal();
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -49,6 +51,15 @@ export function Header() {
       <SidebarTrigger />
       <Separator orientation="vertical" className="h-6" />
       <div className="flex-1" />
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={openModal}
+        className="gap-2"
+      >
+        <Activity className="h-4 w-4" />
+        <span className="hidden sm:inline">Habilidades</span>
+      </Button>
       <ThemeToggle />
       <Button variant="ghost" size="icon" asChild className="relative">
         <Link href="/notifications">

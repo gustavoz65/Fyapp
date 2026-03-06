@@ -1,0 +1,56 @@
+{
+  "expense_patterns": [
+    {
+      "keywords": ["uber", "99", "cabify", "99pop"],
+      "category": "Transporte",
+      "confidence": 5
+    },
+    {
+      "keywords": ["netflix", "spotify", "amazon prime", "disney", "hbo", "paramount"],
+      "category": "Streaming & Assinaturas",
+      "confidence": 5
+    },
+    {
+      "keywords": ["ifood", "rappi", "uber eats", "zé delivery"],
+      "category": "Alimentação",
+      "confidence": 5
+    },
+    {
+      "keywords": ["nubank", "inter cartao", "pagamento cartao"],
+      "category": "Pagamento Cartão",
+      "confidence": 4
+    },
+    {
+      "keywords": ["farmacia", "drogaria", "droga raia", "pague menos"],
+      "category": "Saúde",
+      "confidence": 4
+    },
+    {
+      "keywords": ["posto", "gasolina", "shell", "ipiranga"],
+      "category": "Combustível",
+      "confidence": 4
+    }
+  ],
+  "regex_patterns": [
+    {
+      "pattern": "(?i)pix\\s+(enviado|recebido)",
+      "category": "Transferência PIX",
+      "type": "auto"
+    },
+    {
+      "pattern": "(?i)ted\\s+",
+      "category": "Transferência TED",
+      "type": "auto"
+    },
+    {
+      "pattern": "(?i)boleto",
+      "category": "Pagamento Boleto",
+      "type": "auto"
+    },
+    {
+      "pattern": "(?i)transferencia\\s+recebida",
+      "category": "Transferência Recebida",
+      "type": "auto"
+    }
+  ]
+}

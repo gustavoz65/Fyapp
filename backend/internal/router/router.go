@@ -46,11 +46,12 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	notificationRepo := repository.NewNotificationRepository(db, logger)
 	auditLogRepo := repository.NewAuditLogRepository(db, logger)
 	recurringRepo := repository.NewRecurringTransactionRepository(db, logger)
+	healthRepo := repository.NewFinancialHealthRepository(db, logger)
 
 	// Services
 	authService := service.NewAuthService(userRepo, providerRepo, srv.FirebaseClient, cfg, logger)
 	userService := service.NewUserService(userRepo, logger)
-	categorizationService := service.NewCategorizationService(categoryPatternRepo, logger)
+	categorizationService := service.NewCategorizationService(categoryPatternRepo, categoryRepo, logger)
 	transactionService := service.NewTransactionService(transactionRepo, accountRepo, budgetRepo, userRepo, categorizationService, logger)
 	accountService := service.NewBankAccountService(accountRepo, transactionRepo, logger)
 	categoryService := service.NewCategoryService(categoryRepo, logger)
@@ -59,11 +60,12 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	goalService := service.NewGoalService(goalRepo, notificationService, logger)
 	dashboardService := service.NewDashboardService(accountRepo, transactionRepo, budgetRepo, goalRepo, logger)
 	recurringService := service.NewRecurringTransactionService(recurringRepo, transactionRepo, accountRepo, logger)
+	healthService := service.NewFinancialHealthService(transactionRepo, budgetRepo, goalRepo, accountRepo, healthRepo, srv.Redis, logger)
 
 	// Handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
-	transactionHandler := handler.NewTransactionHandler(transactionService, accountService, srv.Job)
+	transactionHandler := handler.NewTransactionHandler(transactionService, accountService, categorizationService, srv.Job)
 	accountHandler := handler.NewBankAccountHandler(accountService)
 	categoryHandler := handler.NewCategoryHandler(categoryService, categorizationService)
 	budgetHandler := handler.NewBudgetHandler(budgetService)
@@ -71,6 +73,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 	recurringHandler := handler.NewRecurringTransactionHandler(recurringService)
+	financialHealthHandler := handler.NewFinancialHealthHandler(healthService)
 	wsHandler := handler.NewWebSocketHandler(srv.Job, logger)
 
 	// Health check (verificação de saúde)
@@ -149,6 +152,7 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	transactions.POST("", transactionHandler.Create, mutationRL)
 	transactions.POST("/import", transactionHandler.Import, mutationRL, uploadRL)
 	transactions.GET("/import/:job_id", transactionHandler.GetImportStatus, readRL)
+	transactions.POST("/suggest-category", transactionHandler.SuggestCategory, readRL)
 	transactions.PUT("/:id", transactionHandler.Update, mutationRL)
 	transactions.DELETE("/:id", transactionHandler.Delete, mutationRL)
 	transactions.DELETE("/account/:account_id", transactionHandler.DeleteAllByAccount, mutationRL)
@@ -197,6 +201,10 @@ func New(cfg *config.Config, db *database.Database, logger *zerolog.Logger, srv 
 	notifications.PATCH("/:id/read", notificationHandler.MarkAsRead, mutationRL)
 	notifications.PATCH("/read-all", notificationHandler.MarkAllAsRead, mutationRL)
 	notifications.DELETE("/:id", notificationHandler.Delete, mutationRL)
+
+	health := api.Group("/health", authMiddleware, auditMiddleware.Handler(), csrfMiddleware)
+	health.GET("/score", financialHealthHandler.GetCurrentScore, readRL)
+	health.GET("/history", financialHealthHandler.GetHistoricalScores, readRL)
 
 	srv.Job.SetRecurringService(recurringService)
 	srv.Job.SetTransactionService(transactionService)

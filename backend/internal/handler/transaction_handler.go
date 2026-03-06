@@ -22,16 +22,18 @@ import (
 )
 
 type TransactionHandler struct {
-	transactionService *service.TransactionService
-	accountService     *service.BankAccountService
-	jobService         *job.JobService
+	transactionService    *service.TransactionService
+	accountService        *service.BankAccountService
+	categorizationService *service.CategorizationService
+	jobService            *job.JobService
 }
 
-func NewTransactionHandler(transactionService *service.TransactionService, accountService *service.BankAccountService, jobService *job.JobService) *TransactionHandler {
+func NewTransactionHandler(transactionService *service.TransactionService, accountService *service.BankAccountService, categorizationService *service.CategorizationService, jobService *job.JobService) *TransactionHandler {
 	return &TransactionHandler{
-		transactionService: transactionService,
-		accountService:     accountService,
-		jobService:         jobService,
+		transactionService:    transactionService,
+		accountService:        accountService,
+		categorizationService: categorizationService,
+		jobService:            jobService,
 	}
 }
 
@@ -504,4 +506,28 @@ func (h *TransactionHandler) extractInitialBalance(csvData, bankType string) (st
 	}
 
 	return "0", fmt.Errorf("saldo anterior not found in CSV")
+}
+
+// SuggestCategory sugere categorias baseado na descricao
+func (h *TransactionHandler) SuggestCategory(c echo.Context) error {
+	var req struct {
+		Description string `json:"description" validate:"required,min=3"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return errs.NewBadRequestError("Invalid request body", false, nil, nil, nil)
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	userID := middleware.GetUserID(c)
+
+	suggestions, err := h.categorizationService.SuggestCategory(c.Request().Context(), userID, req.Description)
+	if err != nil {
+		return errs.NewInternalServerError()
+	}
+
+	return c.JSON(http.StatusOK, suggestions)
 }

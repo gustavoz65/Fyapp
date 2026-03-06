@@ -5,6 +5,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
+import { HealthWidget } from "@/components/financial-health";
+import { HealthModalProvider } from "@/contexts/health-modal-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -39,12 +41,15 @@ export default function DashboardLayout({
   if (!isAuthenticated) return null;
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <Header />
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <HealthModalProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <Header />
+          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+          <HealthWidget />
+        </SidebarInset>
+      </SidebarProvider>
+    </HealthModalProvider>
   );
 }

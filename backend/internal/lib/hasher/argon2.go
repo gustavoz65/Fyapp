@@ -47,6 +47,10 @@ func VerifyArgon2(password, encodedHash string) bool {
 		return false
 	}
 
+	if parts[2] != fmt.Sprintf("v=%d", argon2.Version) {
+		return false
+	}
+
 	var memory, iterations uint32
 	var threads uint8
 	_, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &iterations, &threads)

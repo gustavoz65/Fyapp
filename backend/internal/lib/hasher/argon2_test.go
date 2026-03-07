@@ -18,22 +18,34 @@ func TestHashArgon2_Prefix(t *testing.T) {
 }
 
 func TestHashArgon2_Unique(t *testing.T) {
-	hash1, _ := hasher.HashArgon2("mypassword")
-	hash2, _ := hasher.HashArgon2("mypassword")
+	hash1, err := hasher.HashArgon2("mypassword")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	hash2, err := hasher.HashArgon2("mypassword")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if hash1 == hash2 {
 		t.Error("two hashes of the same password should be different (different salts)")
 	}
 }
 
 func TestVerifyArgon2_Correct(t *testing.T) {
-	hash, _ := hasher.HashArgon2("mypassword")
+	hash, err := hasher.HashArgon2("mypassword")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if !hasher.VerifyArgon2("mypassword", hash) {
 		t.Error("expected correct password to verify successfully")
 	}
 }
 
 func TestVerifyArgon2_Wrong(t *testing.T) {
-	hash, _ := hasher.HashArgon2("mypassword")
+	hash, err := hasher.HashArgon2("mypassword")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if hasher.VerifyArgon2("wrongpassword", hash) {
 		t.Error("expected wrong password to fail verification")
 	}

@@ -281,6 +281,7 @@ func (s *TransactionService) Update(ctx context.Context, userID, txID uuid.UUID,
 	oldAmount := tx.Amount
 	oldIsPaid := tx.IsPaid
 	oldType := tx.Type
+	oldCategoryID := tx.CategoryID
 
 	// Apply updates
 	if req.CategoryID != nil {
@@ -313,8 +314,16 @@ func (s *TransactionService) Update(ctx context.Context, userID, txID uuid.UUID,
 	}
 
 	// Aprende padrao de categorizacao quando usuario altera/define a categoria
-	if req.CategoryID != nil && tx.CategoryID != nil && s.categorizationSvc != nil {
+	if req.CategoryID != nil && s.categorizationSvc != nil {
+		// Sempre aprende a nova categoria
 		s.categorizationSvc.LearnFromTransaction(ctx, userID, tx.Description, *tx.CategoryID, string(tx.Source))
+
+		// Se havia uma categoria antiga diferente, aprende a correcao
+		if oldCategoryID != nil && *oldCategoryID != *req.CategoryID {
+			if err := s.categorizationSvc.LearnFromCorrection(ctx, userID, tx.Description, *oldCategoryID, *req.CategoryID); err != nil {
+				s.logger.Warn().Err(err).Msg("failed to learn from category correction")
+			}
+		}
 	}
 
 	// Handle balance adjustments

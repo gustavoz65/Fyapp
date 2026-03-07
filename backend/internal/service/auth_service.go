@@ -169,8 +169,20 @@ func (s *AuthService) Login(ctx context.Context, req *model.LoginRequest, ipAddr
 		return nil, ErrUserNotActive
 	}
 
-	if valid, _ := s.checkPassword(req.Password, user.PasswordHash); !valid {
+	valid, needsMigration := s.checkPassword(req.Password, user.PasswordHash)
+	if !valid {
 		return nil, ErrInvalidCredentials
+	}
+
+	// Migração silenciosa bcrypt → argon2id
+	if needsMigration {
+		if newHash, hashErr := s.hashPassword(req.Password); hashErr == nil {
+			if updateErr := s.userRepo.UpdatePassword(ctx, user.ID, newHash); updateErr != nil {
+				s.logger.Warn().Err(updateErr).Str("user_id", user.ID.String()).Msg("failed to migrate password to argon2id")
+			} else {
+				s.logger.Info().Str("user_id", user.ID.String()).Msg("password migrated from bcrypt to argon2id")
+			}
+		}
 	}
 
 	// Update last login

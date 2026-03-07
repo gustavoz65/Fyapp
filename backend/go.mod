@@ -1,6 +1,8 @@
 module github.com/gustavoz65/Fyapp
 
-go 1.25.7
+go 1.26.1
+
+toolchain go1.26.1
 
 require (
 	firebase.google.com/go/v4 v4.19.0

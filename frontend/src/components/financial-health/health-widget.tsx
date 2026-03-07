@@ -11,11 +11,7 @@ export function HealthWidget() {
   const { openModal } = useHealthModal();
   const { currentScore, isLoading } = useFinancialHealth();
 
-  if (isLoading || !currentScore) {
-    return null;
-  }
-
-  const scorePercentage = parseFloat(currentScore.score_percentage);
+  const scorePercentage = currentScore ? parseFloat(currentScore.score_percentage) : 0;
 
   // Determine color based on score
   const getScoreColor = (score: number) => {
@@ -24,58 +20,53 @@ export function HealthWidget() {
     return "text-green-600 dark:text-green-500";
   };
 
-  const getProgressBgColor = (score: number) => {
-    if (score < 40) return "bg-red-600 dark:bg-red-500";
-    if (score < 70) return "bg-yellow-600 dark:bg-yellow-500";
-    return "bg-green-600 dark:bg-green-500";
-  };
-
   const scoreColor = getScoreColor(scorePercentage);
-  const progressBgColor = getProgressBgColor(scorePercentage);
 
   return (
     <>
-      <button
-        onClick={openModal}
-        className="fixed bottom-6 right-6 z-40 group hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full"
-        aria-label="Visualizar saúde financeira"
-      >
-        <div className="relative w-[70px] h-[70px] flex items-center justify-center bg-background rounded-full border shadow-lg group-hover:shadow-xl transition-shadow">
-          {/* Circular Progress using Radix UI */}
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="6"
-              className="text-muted"
-              opacity="0.2"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="45"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="6"
-              strokeDasharray={`${2 * Math.PI * 45}`}
-              strokeDashoffset={`${2 * Math.PI * 45 * (1 - scorePercentage / 100)}`}
-              strokeLinecap="round"
-              className={cn("transition-all duration-500", scoreColor)}
-            />
-          </svg>
+      {!isLoading && currentScore && (
+        <button
+          onClick={openModal}
+          className="fixed bottom-6 right-6 z-40 group hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full"
+          aria-label="Visualizar saúde financeira"
+        >
+          <div className="relative w-[70px] h-[70px] flex items-center justify-center bg-background rounded-full border shadow-lg group-hover:shadow-xl transition-shadow">
+            {/* Circular Progress using Radix UI */}
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="6"
+                className="text-muted"
+                opacity="0.2"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="6"
+                strokeDasharray={`${2 * Math.PI * 45}`}
+                strokeDashoffset={`${2 * Math.PI * 45 * (1 - scorePercentage / 100)}`}
+                strokeLinecap="round"
+                className={cn("transition-all duration-500", scoreColor)}
+              />
+            </svg>
 
-          {/* Center content */}
-          <div className="relative flex flex-col items-center justify-center">
-            <Activity className={cn("h-5 w-5 mb-0.5", scoreColor)} />
-            <span className={cn("text-sm font-bold tabular-nums", scoreColor)}>
-              {Math.round(scorePercentage)}%
-            </span>
+            {/* Center content */}
+            <div className="relative flex flex-col items-center justify-center">
+              <Activity className={cn("h-5 w-5 mb-0.5", scoreColor)} />
+              <span className={cn("text-sm font-bold tabular-nums", scoreColor)}>
+                {Math.round(scorePercentage)}%
+              </span>
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      )}
 
       <HealthModal currentScore={currentScore} />
     </>

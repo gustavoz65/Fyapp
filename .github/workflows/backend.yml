@@ -61,7 +61,6 @@ jobs:
           version: latest
           working-directory: backend
           args: --timeout=3m
-          install-mode: goinstall
 
   build:
     name: Build

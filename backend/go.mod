@@ -2,8 +2,6 @@ module github.com/gustavoz65/Fyapp
 
 go 1.26.1
 
-toolchain go1.26.1
-
 require (
 	firebase.google.com/go/v4 v4.19.0
 	github.com/go-playground/validator/v10 v10.30.1

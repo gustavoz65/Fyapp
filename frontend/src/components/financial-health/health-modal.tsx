@@ -56,11 +56,7 @@ export function HealthModal({ currentScore }: HealthModalProps) {
     }
   }, [isOpen, fetchHistory]);
 
-  if (!currentScore) {
-    return null;
-  }
-
-  const scorePercentage = parseFloat(currentScore.score_percentage);
+  const scorePercentage = currentScore ? parseFloat(currentScore.score_percentage) : 0;
 
   const getScoreColor = (score: number) => {
     if (score < 40) return "text-red-600 dark:text-red-500";
@@ -83,7 +79,7 @@ export function HealthModal({ currentScore }: HealthModalProps) {
     } else if (score >= 40) {
       insights.push("Sua saúde financeira está razoável, mas há espaço para melhorias.");
 
-      if (breakdown) {
+      if (breakdown && currentScore) {
         const economyRate = parseFloat(currentScore.economy_rate);
         const budgetCompliance = parseFloat(currentScore.budget_compliance);
 
@@ -103,208 +99,212 @@ export function HealthModal({ currentScore }: HealthModalProps) {
     return insights;
   };
 
-  const components = [
-    {
-      name: "Taxa de Economia",
-      score: parseFloat(currentScore.economy_rate),
-      weight: 25,
-      icon: TrendingUp,
-      description: "Capacidade de poupar mensalmente",
-    },
-    {
-      name: "Cumprimento de Orçamento",
-      score: parseFloat(currentScore.budget_compliance),
-      weight: 25,
-      icon: PiggyBank,
-      description: "Aderência aos orçamentos definidos",
-    },
-    {
-      name: "Progresso de Metas",
-      score: parseFloat(currentScore.goals_progress),
-      weight: 20,
-      icon: Target,
-      description: "Avanço em direção às suas metas",
-    },
-    {
-      name: "Redução de Gastos",
-      score: parseFloat(currentScore.spending_reduction),
-      weight: 15,
-      icon: TrendingDown,
-      description: "Controle e redução de despesas",
-    },
-    {
-      name: "Consistência",
-      score: parseFloat(currentScore.consistency),
-      weight: 15,
-      icon: Repeat,
-      description: "Estabilidade financeira ao longo do tempo",
-    },
-  ];
+  const components = currentScore
+    ? [
+        {
+          name: "Taxa de Economia",
+          score: parseFloat(currentScore.economy_rate),
+          weight: 25,
+          icon: TrendingUp,
+          description: "Capacidade de poupar mensalmente",
+        },
+        {
+          name: "Cumprimento de Orçamento",
+          score: parseFloat(currentScore.budget_compliance),
+          weight: 25,
+          icon: PiggyBank,
+          description: "Aderência aos orçamentos definidos",
+        },
+        {
+          name: "Progresso de Metas",
+          score: parseFloat(currentScore.goals_progress),
+          weight: 20,
+          icon: Target,
+          description: "Avanço em direção às suas metas",
+        },
+        {
+          name: "Redução de Gastos",
+          score: parseFloat(currentScore.spending_reduction),
+          weight: 15,
+          icon: TrendingDown,
+          description: "Controle e redução de despesas",
+        },
+        {
+          name: "Consistência",
+          score: parseFloat(currentScore.consistency),
+          weight: 15,
+          icon: Repeat,
+          description: "Estabilidade financeira ao longo do tempo",
+        },
+      ]
+    : [];
 
   const insights = getInsights(scorePercentage, breakdown || undefined);
 
   return (
     <Dialog open={isOpen} onOpenChange={closeModal}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Saúde Financeira
-          </DialogTitle>
-          <DialogDescription>
-            Acompanhe sua saúde financeira e receba insights personalizados
-          </DialogDescription>
-        </DialogHeader>
+      {currentScore && (
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Saúde Financeira
+            </DialogTitle>
+            <DialogDescription>
+              Acompanhe sua saúde financeira e receba insights personalizados
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Current Score Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Score Atual</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className={cn("text-5xl font-bold tabular-nums", getScoreColor(scorePercentage))}>
-                    {Math.round(scorePercentage)}%
+          <div className="space-y-6">
+            {/* Current Score Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Score Atual</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className={cn("text-5xl font-bold tabular-nums", getScoreColor(scorePercentage))}>
+                      {Math.round(scorePercentage)}%
+                    </div>
+                    <p className="text-muted-foreground mt-2">
+                      {getScoreStatus(scorePercentage)}
+                    </p>
                   </div>
-                  <p className="text-muted-foreground mt-2">
-                    {getScoreStatus(scorePercentage)}
-                  </p>
+                  <div className="relative w-32 h-32">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="54"
+                        className="stroke-muted fill-none"
+                        strokeWidth="8"
+                      />
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="54"
+                        className={cn("fill-none transition-all", getScoreColor(scorePercentage).replace("text-", "stroke-"))}
+                        strokeWidth="8"
+                        strokeDasharray={2 * Math.PI * 54}
+                        strokeDashoffset={2 * Math.PI * 54 * (1 - scorePercentage / 100)}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
                 </div>
-                <div className="relative w-32 h-32">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="54"
-                      className="stroke-muted fill-none"
-                      strokeWidth="8"
-                    />
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="54"
-                      className={cn("fill-none transition-all", getScoreColor(scorePercentage).replace("text-", "stroke-"))}
-                      strokeWidth="8"
-                      strokeDasharray={2 * Math.PI * 54}
-                      strokeDashoffset={2 * Math.PI * 54 * (1 - scorePercentage / 100)}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Score Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Componentes do Score</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {components.map((component) => {
-                  const componentPercentage = (component.score / 5) * 100;
-                  return (
-                    <div key={component.name} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <component.icon className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">{component.name}</p>
-                            <p className="text-xs text-muted-foreground">{component.description}</p>
+            {/* Score Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Componentes do Score</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {components.map((component) => {
+                    const componentPercentage = (component.score / 5) * 100;
+                    return (
+                      <div key={component.name} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <component.icon className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">{component.name}</p>
+                              <p className="text-xs text-muted-foreground">{component.description}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold">
+                              {component.score.toFixed(1)}/5.0
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Peso: {component.weight}%
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold">
-                            {component.score.toFixed(1)}/5.0
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Peso: {component.weight}%
-                          </p>
-                        </div>
+                        <Progress value={componentPercentage} className="h-2" />
                       </div>
-                      <Progress value={componentPercentage} className="h-2" />
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Historical Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução (Últimos 6 Meses)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingHistory ? (
-                <Skeleton className="h-[300px] w-full" />
-              ) : chartData.length > 0 ? (
-                <ChartContainer
-                  config={{
-                    score: {
-                      label: "Score",
-                      color: "hsl(var(--primary))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis
-                        dataKey="month"
-                        className="text-xs"
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        className="text-xs"
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line
-                        type="monotone"
-                        dataKey="score"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(var(--primary))", r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  <p>Dados históricos não disponíveis</p>
+                    );
+                  })}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Insights */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Insights e Recomendações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {insights.map((insight, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-primary mt-1">•</span>
-                    <span className="text-sm">{insight}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </DialogContent>
+            {/* Historical Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Evolução (Últimos 6 Meses)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoadingHistory ? (
+                  <Skeleton className="h-[300px] w-full" />
+                ) : chartData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      score: {
+                        label: "Score",
+                        color: "hsl(var(--primary))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis
+                          dataKey="month"
+                          className="text-xs"
+                          tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        />
+                        <YAxis
+                          domain={[0, 100]}
+                          className="text-xs"
+                          tick={{ fill: "hsl(var(--muted-foreground))" }}
+                        />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line
+                          type="monotone"
+                          dataKey="score"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={{ fill: "hsl(var(--primary))", r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                    <p>Dados históricos não disponíveis</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Insights */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Insights e Recomendações
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {insights.map((insight, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span className="text-sm">{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }

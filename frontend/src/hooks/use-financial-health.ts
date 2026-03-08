@@ -6,8 +6,12 @@ import { api } from "@/lib/api";
 import type { FinancialHealthSnapshot, HistoricalScoresResponse } from "@/types";
 
 export function useFinancialHealth() {
+  const fetcher = useCallback(() => {
+    return api.get<FinancialHealthSnapshot>("/health/score");
+  }, []);
+
   const { data: currentScore, error, isLoading, execute } = useApi<FinancialHealthSnapshot>(
-    () => api.get<FinancialHealthSnapshot>("/health/score"),
+    fetcher,
     { immediate: true }
   );
 

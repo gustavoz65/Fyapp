@@ -19,6 +19,7 @@ import (
 
 	"github.com/gustavoz65/Fyapp/internal/config"
 	"github.com/gustavoz65/Fyapp/internal/lib/firebase"
+	"github.com/gustavoz65/Fyapp/internal/lib/hasher"
 	"github.com/gustavoz65/Fyapp/internal/model"
 	"github.com/gustavoz65/Fyapp/internal/repository"
 )
@@ -168,8 +169,20 @@ func (s *AuthService) Login(ctx context.Context, req *model.LoginRequest, ipAddr
 		return nil, ErrUserNotActive
 	}
 
-	if !s.checkPassword(req.Password, user.PasswordHash) {
+	valid, needsMigration := s.checkPassword(req.Password, user.PasswordHash)
+	if !valid {
 		return nil, ErrInvalidCredentials
+	}
+
+	// Migração silenciosa bcrypt → argon2id
+	if needsMigration {
+		if newHash, hashErr := s.hashPassword(req.Password); hashErr != nil {
+			s.logger.Warn().Err(hashErr).Str("user_id", user.ID.String()).Msg("failed to generate argon2id hash during migration")
+		} else if updateErr := s.userRepo.UpdatePassword(ctx, user.ID, newHash); updateErr != nil {
+			s.logger.Warn().Err(updateErr).Str("user_id", user.ID.String()).Msg("failed to migrate password to argon2id")
+		} else {
+			s.logger.Info().Str("user_id", user.ID.String()).Msg("password migrated from bcrypt to argon2id")
+		}
 	}
 
 	// Update last login
@@ -321,7 +334,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	if !s.checkPassword(req.CurrentPassword, user.PasswordHash) {
+	if valid, _ := s.checkPassword(req.CurrentPassword, user.PasswordHash); !valid {
 		return ErrPasswordMismatch
 	}
 
@@ -371,16 +384,21 @@ func (s *AuthService) ValidateAccessToken(tokenString string) (*JWTClaims, error
 // Helper methods
 
 func (s *AuthService) hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(bytes), nil
+	return hasher.HashArgon2(password)
 }
 
-func (s *AuthService) checkPassword(password, hash string) bool {
+// checkPassword verifica a senha e indica se precisa migrar de bcrypt para argon2id.
+// needsMigration é true somente quando o hash era bcrypt e a senha está correta.
+func (s *AuthService) checkPassword(password, hash string) (valid bool, needsMigration bool) {
+	if hasher.IsArgon2Hash(hash) {
+		return hasher.VerifyArgon2(password, hash), false
+	}
+	// Hash legado bcrypt
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+	if err != nil {
+		return false, false
+	}
+	return true, true
 }
 
 func (s *AuthService) generateAccessToken(user *model.User) (string, int64, error) {

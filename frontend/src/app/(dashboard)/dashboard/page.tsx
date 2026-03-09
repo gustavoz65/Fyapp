@@ -401,12 +401,12 @@ export default function DashboardPage() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#00A859" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#00A859" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -430,7 +430,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="income"
-                stroke="#16a34a"
+                stroke="#00A859"
                 fillOpacity={1}
                 fill="url(#colorIncome)"
                 strokeWidth={2}
@@ -439,7 +439,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="expense"
-                stroke="#ef4444"
+                stroke="#EF4444"
                 fillOpacity={1}
                 fill="url(#colorExpense)"
                 strokeWidth={2}

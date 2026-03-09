@@ -64,8 +64,8 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="px-4 py-6 flex items-center justify-center border-b border-sidebar-border/50">
-          <span className="text-2xl font-bold text-sidebar-primary">Fy</span>
+        <div className="px-4 py-6 flex items-center justify-center border-b border-sidebar-border">
+          <span className="text-3xl font-extrabold text-primary">Fy</span>
         </div>
       </SidebarHeader>
 

@@ -297,7 +297,7 @@ export default function DashboardPage() {
       {/* Header + seletor de período */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Visão geral das suas finanças
           </p>

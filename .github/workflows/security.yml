@@ -29,7 +29,7 @@ jobs:
   #     matrix:
   #       language: [go, javascript-typescript]
   #   steps:
-  #     - uses: actions/checkout@v6
+  #     - uses: actions/checkout@v4
   #
   #     - name: Initialize CodeQL
   #       uses: github/codeql-action/init@v3
@@ -67,7 +67,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - uses: aquasecurity/trivy-action@master
         continue-on-error: true
@@ -86,7 +86,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - uses: aquasecurity/trivy-action@master
         continue-on-error: true
@@ -106,7 +106,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Build image
         continue-on-error: true
@@ -130,7 +130,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Build image
         continue-on-error: true

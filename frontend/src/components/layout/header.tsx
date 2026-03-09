@@ -58,7 +58,7 @@ export function Header() {
         className="gap-2"
       >
         <Activity className="h-4 w-4" />
-        <span className="hidden sm:inline">Habilidades</span>
+        <span className="hidden sm:inline">Saúde Financeira</span>
       </Button>
       <ThemeToggle />
       <Button variant="ghost" size="icon" asChild className="relative">

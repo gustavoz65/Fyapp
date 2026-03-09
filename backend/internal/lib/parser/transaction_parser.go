@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gustavoz65/Fyapp/internal/lib/encoding"
 	"github.com/shopspring/decimal"
 )
 
@@ -78,7 +79,13 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 		mapping = BankMappings["generic"]
 	}
 
-	csvReader := csv.NewReader(reader)
+	// NEW: Detect and convert encoding to UTF-8
+	convertedReader, err := encoding.DetectAndConvert(reader)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao detectar encoding: %w", err)
+	}
+
+	csvReader := csv.NewReader(convertedReader)
 	csvReader.FieldsPerRecord = -1
 	csvReader.TrimLeadingSpace = true
 

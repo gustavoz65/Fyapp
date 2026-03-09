@@ -97,13 +97,25 @@ func (p *TransactionParser) ParseCSV(reader io.Reader, bankType string) ([]Trans
 
 		lineNumber++
 
+		// Skip header row
 		if lineNumber == 1 {
 			if p.isHeaderRow(record) {
 				continue
 			}
 		}
 
+		// Skip empty lines
 		if len(record) == 0 || (len(record) == 1 && record[0] == "") {
+			continue
+		}
+
+		// NEW: Skip control lines
+		if p.isControlLine(record, bankType) {
+			continue
+		}
+
+		// NEW: Skip BB duplicate payments
+		if strings.ToLower(bankType) == "bb" && p.isBBDuplicatePayment(record) {
 			continue
 		}
 
@@ -133,6 +145,57 @@ func (p *TransactionParser) isHeaderRow(record []string) bool {
 			}
 		}
 	}
+	return false
+}
+
+// isControlLine checks if a CSV record is a control/summary line (not a transaction)
+func (p *TransactionParser) isControlLine(record []string, bankType string) bool {
+	if len(record) < 2 {
+		return false
+	}
+
+	description := strings.ToLower(strings.TrimSpace(record[1]))
+
+	// Check for common control line keywords
+	controlKeywords := []string{
+		"saldo anterior",
+		"saldo do dia",
+		"s a l d o",
+		"saldo devedor",
+		"total",
+	}
+
+	for _, keyword := range controlKeywords {
+		if strings.Contains(description, keyword) {
+			return true
+		}
+	}
+
+	// BB specific: check if "Tipo Lançamento" column (index 5) is empty
+	if strings.ToLower(bankType) == "bb" {
+		if len(record) > 5 && strings.TrimSpace(record[5]) == "" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isBBDuplicatePayment checks if record is a BB "Pagamento Pix Cartão Crédito" duplicate
+func (p *TransactionParser) isBBDuplicatePayment(record []string) bool {
+	if len(record) < 2 {
+		return false
+	}
+
+	lancamento := strings.ToLower(strings.TrimSpace(record[1]))
+
+	// These are accounting entries, not real transactions
+	// The actual debit appears separately as "Pix - Enviado"
+	if strings.Contains(lancamento, "pagamento pix cart") &&
+		strings.Contains(lancamento, "cr") {
+		return true
+	}
+
 	return false
 }
 

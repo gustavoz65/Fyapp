@@ -1,34 +1,189 @@
 {
   "expense_patterns": [
     {
-      "keywords": ["uber", "99", "cabify", "99pop"],
-      "category": "Transporte",
-      "confidence": 5
-    },
-    {
-      "keywords": ["netflix", "spotify", "amazon prime", "disney", "hbo", "paramount"],
-      "category": "Streaming & Assinaturas",
-      "confidence": 5
-    },
-    {
-      "keywords": ["ifood", "rappi", "uber eats", "zé delivery"],
+      "keywords": [
+        "ifood", "rappi", "uber eats", "zé delivery", "ze delivery",
+        "restaurante", "lanchonete", "padaria", "bar", "pizzaria",
+        "mercado", "supermercado", "superm", "mercadinho", "minimercado",
+        "açougue", "acougue", "feira", "hortifruti", "quitanda",
+        "mcdonald", "mcdonalds", "burguer", "burger", "subway",
+        "starbucks", "cafe", "coffee", "confeitaria", "doceria",
+        "churrascaria", "rodizio", "pao de acucar", "carrefour",
+        "extra", "walmart", "big", "atacadao", "assai", "makro",
+        "sams club", "costco", "dia", "natural da terra",
+        "zona sul", "mundial", "prezunic", "guanabara"
+      ],
       "category": "Alimentação",
       "confidence": 5
     },
     {
-      "keywords": ["nubank", "inter cartao", "pagamento cartao"],
+      "keywords": [
+        "uber", "99", "99pop", "cabify", "taxi", "mototaxi",
+        "onibus", "metro", "trem", "bilhete unico", "vale transporte",
+        "combustivel", "gasolina", "alcool", "etanol", "diesel",
+        "posto", "shell", "ipiranga", "petrobras", "ale", "texaco",
+        "estacionamento", "parquimetro", "valet", "pedágio", "pedagio"
+      ],
+      "category": "Transporte",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "netflix", "spotify", "amazon prime", "prime video", "disney",
+        "disney+", "hbo", "hbo max", "paramount", "paramount+",
+        "apple tv", "youtube premium", "youtube music", "deezer",
+        "globoplay", "telecine", "crunchyroll", "twitch",
+        "steam", "xbox", "playstation", "nintendo", "epic games"
+      ],
+      "category": "Streaming & Assinaturas",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "farmacia", "drogaria", "droga raia", "drogasil", "pague menos",
+        "ultrafarma", "sao paulo", "panvel", "drogao", "popular",
+        "medico", "consulta", "clinica", "hospital", "laboratorio",
+        "exame", "dentista", "odonto", "psicologo", "psiquiatra",
+        "fisioterapeuta", "terapia", "convenio", "plano de saude",
+        "unimed", "sulamerica", "bradesco saude", "amil", "notredame",
+        "remedio", "medicamento", "vacina", "cirurgia"
+      ],
+      "category": "Saúde",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "curso", "faculdade", "universidade", "escola", "colegio",
+        "mensalidade", "matricula", "livro", "livraria", "saraiva",
+        "cultura", "apostila", "material escolar", "papelaria",
+        "udemy", "coursera", "alura", "rocketseat", "dio", "pluralsight",
+        "enem", "vestibular", "pos graduacao", "mba", "formação", "formacao"
+      ],
+      "category": "Educação",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "cinema", "ingresso", "cinemark", "uci", "kinoplex",
+        "teatro", "show", "concerto", "festival", "evento",
+        "parque", "diversao", "diversão", "boliche", "bares",
+        "balada", "nightclub", "pub", "choperia", "chopperia",
+        "viagem", "hotel", "pousada", "hostel", "airbnb", "booking",
+        "passagem", "aviao", "avião", "latam", "gol", "azul",
+        "academia", "crossfit", "box", "pilates", "yoga",
+        "natacao", "natação", "esporte", "quadra"
+      ],
+      "category": "Lazer",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "roupa", "vestuario", "vestuário", "camiseta", "calca", "calça",
+        "renner", "c&a", "cea", "riachuelo", "marisa", "pernambucanas",
+        "zara", "hering", "nike", "adidas", "puma", "fila",
+        "tenis", "tênis", "sapato", "calcado", "calçado", "sandalia",
+        "chinelo", "bota", "acessorio", "acessório", "bolsa", "mochila"
+      ],
+      "category": "Vestuário",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "aluguel", "condominio", "condomínio", "iptu", "taxa condominio",
+        "luz", "energia", "celpe", "cemig", "copel", "light", "enel",
+        "agua", "água", "saneamento", "sabesp", "cedae", "caesb",
+        "gas", "gás", "ultragaz", "liquigas", "supergaz", "nacional gas",
+        "internet", "vivo", "claro", "tim", "oi", "net", "sky",
+        "telefone", "celular", "conta", "fatura", "boleto condominio"
+      ],
+      "category": "Moradia",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "celular", "smartphone", "iphone", "samsung", "motorola", "xiaomi",
+        "notebook", "computador", "pc", "mac", "macbook", "dell",
+        "positivo", "acer", "lenovo", "asus", "hp",
+        "eletronico", "eletrônico", "magazine luiza", "magalu",
+        "casas bahia", "ponto frio", "fast shop", "kabum",
+        "mercado livre", "americanas", "submarino", "shopee", "aliexpress",
+        "impressora", "mouse", "teclado", "monitor", "fone"
+      ],
+      "category": "Tecnologia",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "salao", "salão", "cabeleireiro", "barbeiro", "barbearia",
+        "manicure", "pedicure", "unha", "estetica", "estética",
+        "spa", "massagem", "depilacao", "depilação", "design sobrancelha",
+        "maquiagem", "make", "perfume", "perfumaria", "boticario",
+        "o boticario", "natura", "avon", "quem disse berenice", "sephora"
+      ],
+      "category": "Beleza",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "pet", "petshop", "veterinario", "veterinário", "vet",
+        "racao", "ração", "cachorro", "gato", "animal",
+        "vacina pet", "banho tosa", "petz", "cobasi", "petlove"
+      ],
+      "category": "Pet",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "nubank", "inter cartao", "pagamento cartao", "fatura cartao",
+        "cartao credito", "cartão crédito", "anuidade", "juros cartao"
+      ],
       "category": "Pagamento Cartão",
       "confidence": 4
+    }
+  ],
+  "income_patterns": [
+    {
+      "keywords": [
+        "salario", "salário", "sal liquido", "sal liq", "pagamento salario",
+        "proventos", "vencimento", "remuneracao", "remuneração",
+        "folha pagamento", "holerite", "contracheque"
+      ],
+      "category": "Salário",
+      "confidence": 5
     },
     {
-      "keywords": ["farmacia", "drogaria", "droga raia", "pague menos"],
-      "category": "Saúde",
+      "keywords": [
+        "freelance", "freela", "bico", "servico prestado", "serviço prestado",
+        "trabalho autonomo", "trabalho autônomo", "consultoria",
+        "honorarios", "honorários", "pagamento servico", "pagamento serviço"
+      ],
+      "category": "Freelance",
+      "confidence": 5
+    },
+    {
+      "keywords": [
+        "venda", "vendeu", "mercado pago", "picpay", "paypal",
+        "recebimento venda", "pagamento recebido", "cliente pagou"
+      ],
+      "category": "Venda",
       "confidence": 4
     },
     {
-      "keywords": ["posto", "gasolina", "shell", "ipiranga"],
-      "category": "Combustível",
+      "keywords": [
+        "rendimento", "dividendo", "dividendos", "juros", "aplicacao",
+        "aplicação", "resgate", "investimento", "cdb", "lci", "lca",
+        "tesouro", "fundo", "acoes", "ações", "bolsa", "corretora"
+      ],
+      "category": "Investimento",
       "confidence": 4
+    },
+    {
+      "keywords": [
+        "presente", "doacao", "doação", "gift", "presente recebido",
+        "devolucao", "devolução", "reembolso", "estorno", "cashback"
+      ],
+      "category": "Outros Ganhos",
+      "confidence": 3
     }
   ],
   "regex_patterns": [

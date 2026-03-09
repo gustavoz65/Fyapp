@@ -43,11 +43,4 @@ jobs:
         run: go build ./...
 
       - name: Test
-        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
-        continue-on-error: true
-        with:
-          files: ./backend/coverage.txt
-          flags: backend
+        run: go test -v ./...

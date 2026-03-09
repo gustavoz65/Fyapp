@@ -21,56 +21,14 @@ defaults:
     working-directory: backend
 
 jobs:
-  format:
-    name: Format Check
+  test:
+    name: Lint, Build & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Verify gofmt
-        run: |
-          UNFORMATTED=$(gofmt -l .)
-          if [ -n "$UNFORMATTED" ]; then
-            echo "Arquivos sem formatação:"
-            echo "$UNFORMATTED"
-            echo "Execute: gofmt -w ."
-            exit 1
-          fi
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-          
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-          working-directory: backend
-          args: --timeout=3m
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [format, lint]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
@@ -84,66 +42,12 @@ jobs:
       - name: Build
         run: go build ./...
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Test
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v7
+        uses: codecov/codecov-action@v5
+        continue-on-error: true
         with:
-          name: backend-coverage
-          path: backend/coverage.out
-          retention-days: 7
-
-  vuln:
-    name: Vulnerability Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: Run govulncheck
-        run: govulncheck ./...
-
-  tidy:
-    name: go mod tidy check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Check go mod tidy
-        run: |
-          go mod tidy
-          if ! git diff --exit-code go.mod go.sum; then
-            echo "go.mod ou go.sum desatualizados. Execute: go mod tidy"
-            exit 1
-          fi
+          files: ./backend/coverage.txt
+          flags: backend

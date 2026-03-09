@@ -27,10 +27,17 @@ type RegexPattern struct {
 	Type     string `json:"type"`
 }
 
+type ExclusionPattern struct {
+	Keywords          []string `json:"keywords"`
+	ExcludeCategories []string `json:"exclude_categories"`
+	Reason            string   `json:"reason"`
+}
+
 type Rules struct {
-	ExpensePatterns []ExpensePattern `json:"expense_patterns"`
-	IncomePatterns  []IncomePattern  `json:"income_patterns"`
-	RegexPatterns   []RegexPattern   `json:"regex_patterns"`
+	ExpensePatterns   []ExpensePattern   `json:"expense_patterns"`
+	IncomePatterns    []IncomePattern    `json:"income_patterns"`
+	RegexPatterns     []RegexPattern     `json:"regex_patterns"`
+	ExclusionPatterns []ExclusionPattern `json:"exclusion_patterns"`
 }
 
 var cachedRules *Rules

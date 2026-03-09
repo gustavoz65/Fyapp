@@ -207,5 +207,22 @@
       "category": "Transferência Recebida",
       "type": "auto"
     }
+  ],
+  "exclusion_patterns": [
+    {
+      "keywords": ["mercado pago", "mercadopago", "pagamento mercado pago"],
+      "exclude_categories": ["alimentação", "supermercado"],
+      "reason": "payment_platform"
+    },
+    {
+      "keywords": ["pagseguro", "pag seguro"],
+      "exclude_categories": ["alimentação", "supermercado"],
+      "reason": "payment_platform"
+    },
+    {
+      "keywords": ["picpay"],
+      "exclude_categories": ["alimentação", "supermercado"],
+      "reason": "payment_platform"
+    }
   ]
 }

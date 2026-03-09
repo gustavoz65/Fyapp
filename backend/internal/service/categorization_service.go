@@ -116,6 +116,32 @@ func (s *CategorizationService) LearnFromCorrection(
 	return nil
 }
 
+// shouldExcludeCategory checks if a description matches exclusion patterns for a category
+func (s *CategorizationService) shouldExcludeCategory(description, categoryName string) bool {
+	if s.rules == nil {
+		return false
+	}
+
+	descLower := strings.ToLower(description)
+	categoryLower := strings.ToLower(categoryName)
+
+	for _, pattern := range s.rules.ExclusionPatterns {
+		// Check if any keyword matches
+		for _, keyword := range pattern.Keywords {
+			if strings.Contains(descLower, strings.ToLower(keyword)) {
+				// Check if this category should be excluded
+				for _, excludeCat := range pattern.ExcludeCategories {
+					if strings.ToLower(excludeCat) == categoryLower {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 // SuggestCategory sugere categorias baseado na descricao da transacao.
 // Usa sistema de votacao: cada keyword contribui com seus padroes,
 // e a categoria com mais votos ponderados pela confianca vence.
@@ -147,6 +173,11 @@ func (s *CategorizationService) SuggestCategory(ctx context.Context, userID uuid
 		for _, expPattern := range s.rules.ExpensePatterns {
 			for _, keyword := range expPattern.Keywords {
 				if strings.Contains(descNormalized, keyword) {
+					// Check exclusion rules
+					if s.shouldExcludeCategory(description, expPattern.Category) {
+						continue // Skip this category
+					}
+
 					category, err := s.categoryRepo.GetByNameAndType(ctx, userID, expPattern.Category, model.CategoryTypeExpense)
 					if err == nil && category != nil {
 						return &model.SuggestCategoryResponse{
@@ -166,6 +197,11 @@ func (s *CategorizationService) SuggestCategory(ctx context.Context, userID uuid
 		for _, incPattern := range s.rules.IncomePatterns {
 			for _, keyword := range incPattern.Keywords {
 				if strings.Contains(descNormalized, keyword) {
+					// Check exclusion rules
+					if s.shouldExcludeCategory(description, incPattern.Category) {
+						continue // Skip this category
+					}
+
 					category, err := s.categoryRepo.GetByNameAndType(ctx, userID, incPattern.Category, model.CategoryTypeIncome)
 					if err == nil && category != nil {
 						return &model.SuggestCategoryResponse{

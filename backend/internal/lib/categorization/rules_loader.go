@@ -15,6 +15,12 @@ type ExpensePattern struct {
 	Confidence int      `json:"confidence"`
 }
 
+type IncomePattern struct {
+	Keywords   []string `json:"keywords"`
+	Category   string   `json:"category"`
+	Confidence int      `json:"confidence"`
+}
+
 type RegexPattern struct {
 	Pattern  string `json:"pattern"`
 	Category string `json:"category"`
@@ -23,6 +29,7 @@ type RegexPattern struct {
 
 type Rules struct {
 	ExpensePatterns []ExpensePattern `json:"expense_patterns"`
+	IncomePatterns  []IncomePattern  `json:"income_patterns"`
 	RegexPatterns   []RegexPattern   `json:"regex_patterns"`
 }
 

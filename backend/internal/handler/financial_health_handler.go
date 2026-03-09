@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/gustavoz65/Fyapp/internal/middleware"
+	"github.com/gustavoz65/Fyapp/internal/repository"
 	"github.com/gustavoz65/Fyapp/internal/service"
 )
 
@@ -23,10 +25,21 @@ func NewFinancialHealthHandler(healthService *service.FinancialHealthService) *F
 // GetCurrentScore retorna o score do mês atual
 func (h *FinancialHealthHandler) GetCurrentScore(c echo.Context) error {
 	userID := middleware.GetUserID(c)
+	ctx := c.Request().Context()
+	now := time.Now()
 
-	snapshot, err := h.healthService.GetSnapshot(c.Request().Context(), userID, time.Now())
+	// Tenta buscar snapshot existente
+	snapshot, err := h.healthService.GetSnapshot(ctx, userID, now)
 	if err != nil {
-		return err
+		// Se não encontrou, calcula um novo
+		if errors.Is(err, repository.ErrSnapshotNotFound) {
+			snapshot, err = h.healthService.CalculateScore(ctx, userID, now)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 
 	return c.JSON(http.StatusOK, snapshot)

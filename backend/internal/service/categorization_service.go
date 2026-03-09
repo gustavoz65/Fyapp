@@ -143,6 +143,7 @@ func (s *CategorizationService) SuggestCategory(ctx context.Context, userID uuid
 
 	// 2. Try keyword rules (high priority)
 	if s.rules != nil {
+		// Try expense patterns
 		for _, expPattern := range s.rules.ExpensePatterns {
 			for _, keyword := range expPattern.Keywords {
 				if strings.Contains(descNormalized, keyword) {
@@ -153,6 +154,25 @@ func (s *CategorizationService) SuggestCategory(ctx context.Context, userID uuid
 								CategoryID:   category.ID,
 								CategoryName: category.Name,
 								Confidence:   expPattern.Confidence * 20, // scale to 0-100
+								MatchCount:   1,
+							}},
+						}, nil
+					}
+				}
+			}
+		}
+
+		// Try income patterns
+		for _, incPattern := range s.rules.IncomePatterns {
+			for _, keyword := range incPattern.Keywords {
+				if strings.Contains(descNormalized, keyword) {
+					category, err := s.categoryRepo.GetByNameAndType(ctx, userID, incPattern.Category, model.CategoryTypeIncome)
+					if err == nil && category != nil {
+						return &model.SuggestCategoryResponse{
+							Suggestions: []model.CategorySuggestion{{
+								CategoryID:   category.ID,
+								CategoryName: category.Name,
+								Confidence:   incPattern.Confidence * 20, // scale to 0-100
 								MatchCount:   1,
 							}},
 						}, nil

@@ -34,3 +34,21 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Design System
+
+### Colors
+- **Primary:** Sicredi Green (#00A859)
+- **Background:** White (#FFFFFF)
+- **Surface:** Light Gray (#F8FAFB)
+- **Text:** Dark Blue-Gray (#0F172A)
+
+### Typography
+- **Font:** Inter (all weights 400-800)
+- **Headings:** Extrabold (800)
+- **Body:** Regular (400)
+
+### Components
+Built with shadcn/ui + Tailwind CSS v4
+
+See `docs/plans/2026-03-09-frontend-redesign-design.md` for full design documentation.

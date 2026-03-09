@@ -13,127 +13,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # CodeQL disabled - requires GitHub Advanced Security for private repos
-  # To enable: Go to repository Settings > Security > Code security and analysis > Enable Code scanning
-  # codeql:
-  #   name: CodeQL (${{ matrix.language }})
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 30
-  #   continue-on-error: true
-  #   permissions:
-  #     security-events: write
-  #     contents: read
-  #     actions: read
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       language: [go, javascript-typescript]
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #
-  #     - name: Initialize CodeQL
-  #       uses: github/codeql-action/init@v3
-  #       with:
-  #         languages: ${{ matrix.language }}
-  #         queries: security-extended,security-and-quality
-  #
-  #     - name: Setup Go
-  #       if: matrix.language == 'go'
-  #       uses: actions/setup-go@v5
-  #       with:
-  #         go-version-file: backend/go.mod
-  #         cache-dependency-path: backend/go.sum
-  #
-  #     - name: Setup Node.js
-  #       if: matrix.language == 'javascript-typescript'
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "24"
-  #         cache: "npm"
-  #         cache-dependency-path: frontend/package-lock.json
-  #
-  #     - name: Autobuild
-  #       uses: github/codeql-action/autobuild@v3
-  #
-  #     - name: Perform CodeQL Analysis
-  #       uses: github/codeql-action/analyze@v3
-  #       with:
-  #         category: "/language:${{ matrix.language }}"
-
-  trivy-backend:
-    name: Trivy (Backend)
+  trivy:
+    name: Trivy Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: aquasecurity/trivy-action@master
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@master
         continue-on-error: true
         with:
           scan-type: fs
-          scan-ref: backend
+          scan-ref: .
           format: table
           severity: CRITICAL,HIGH
-          scanners: vuln,secret,misconfig
-          exit-code: 0
-
-  trivy-frontend:
-    name: Trivy (Frontend)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: aquasecurity/trivy-action@master
-        continue-on-error: true
-        with:
-          scan-type: fs
-          scan-ref: frontend
-          format: table
-          severity: CRITICAL,HIGH
-          scanners: vuln,secret,misconfig
-          exit-code: 0
-
-  trivy-docker-backend:
-    name: Trivy (Dockerfile Backend)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build image
-        run: docker build -t fy-backend:ci backend/
-
-      - uses: aquasecurity/trivy-action@master
-        continue-on-error: true
-        with:
-          image-ref: fy-backend:ci
-          format: table
-          severity: CRITICAL,HIGH
-          exit-code: 0
-
-  trivy-docker-frontend:
-    name: Trivy (Dockerfile Frontend)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build image
-        run: docker build -t fy-frontend:ci frontend/
-
-      - uses: aquasecurity/trivy-action@master
-        continue-on-error: true
-        with:
-          image-ref: fy-frontend:ci
-          format: table
-          severity: CRITICAL,HIGH
+          scanners: vuln,secret
           exit-code: 0

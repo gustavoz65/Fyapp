@@ -68,7 +68,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background items-center justify-center p-12 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/10 via-background to-background items-center justify-center p-12 relative overflow-hidden">
         {/* Decorative background pattern */}
         <div className="absolute inset-0 opacity-5">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -93,10 +93,10 @@ export default function LoginPage() {
 
         <div className="max-w-md space-y-8 relative z-10">
           <div className="space-y-2">
-            <h1 className="text-7xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            <h1 className="text-7xl font-extrabold text-primary">
               Fy
             </h1>
-            <p className="text-sm text-primary/70 font-medium tracking-wide uppercase">
+            <p className="text-sm text-primary/70 font-semibold tracking-wide uppercase">
               Financial Next Generation
             </p>
           </div>
@@ -124,7 +124,7 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-          <blockquote className="border-l-4 border-primary/50 pl-6 py-4 bg-primary/5 rounded-r-lg">
+          <blockquote className="border-l-4 border-primary pl-6 py-4 bg-primary/5 rounded-r-lg">
             <p className="italic text-foreground/80">
               &quot;Fy mudou completamente minha relação com o dinheiro.
               Finalmente tenho controle real das minhas finanças.&quot;

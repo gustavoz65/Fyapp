@@ -297,7 +297,7 @@ export default function DashboardPage() {
       {/* Header + seletor de período */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Visão geral das suas finanças
           </p>
@@ -359,19 +359,19 @@ export default function DashboardPage() {
           return (
             <Card
               key={metric.title}
-              className={`hover:shadow-md transition-shadow ${isNegative ? "border-red-500 bg-red-50 dark:bg-red-950/20" : ""}`}
+              className={`hover:shadow-md transition-shadow border ${isNegative ? "border-red-500 bg-red-50 dark:bg-red-950/20" : "border-border"}`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+                <CardTitle className="text-sm font-semibold">
                   {metric.title}
                 </CardTitle>
                 <Icon
-                  className={`h-4 w-4 ${isNegative ? "text-red-500" : "text-muted-foreground"}`}
+                  className={`h-5 w-5 ${isNegative ? "text-red-500" : "text-muted-foreground"}`}
                 />
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${isNegative ? "text-red-600 dark:text-red-400" : ""}`}
+                  className={`text-2xl font-bold ${isNegative ? "text-red-600 dark:text-red-400" : "text-foreground"}`}
                 >
                   {metric.value}
                 </div>
@@ -401,12 +401,12 @@ export default function DashboardPage() {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#00A859" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#00A859" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -430,7 +430,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="income"
-                stroke="#16a34a"
+                stroke="#00A859"
                 fillOpacity={1}
                 fill="url(#colorIncome)"
                 strokeWidth={2}
@@ -439,7 +439,7 @@ export default function DashboardPage() {
               <Area
                 type="monotone"
                 dataKey="expense"
-                stroke="#ef4444"
+                stroke="#EF4444"
                 fillOpacity={1}
                 fill="url(#colorExpense)"
                 strokeWidth={2}

@@ -2,18 +2,14 @@ import { AuthInitializer } from "@/components/auth-initializer";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-const playfairDisplay = Playfair_Display({
-  weight: ["400", "700", "800"],
-  subsets: ["latin"],
-  variable: "--font-playfair",
-  display: "swap",
-});
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
 });
 export const metadata: Metadata = {
   title: "Fy - Gestão Financeira Inteligente",
@@ -40,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`antialiased ${playfairDisplay.variable} ${inter.variable}`}
+        className={`antialiased ${inter.variable}`}
       >
         <ThemeProvider defaultTheme="light">
           <AuthInitializer />
